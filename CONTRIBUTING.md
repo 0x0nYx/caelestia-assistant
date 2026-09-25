@@ -52,3 +52,17 @@ Small, focused commits; the subject line names the layer. Reference issues
 (`(#120)`) when the work implements or extends one. Documentation
 (`README`, layer `README.md` files, `RATIONALE.md`, `DESIGN.md`) is updated
 in the same PR as the behaviour it describes — docs that lag are bugs.
+
+## Licensing
+
+The project is licensed under the **GNU Affero General Public License v3.0**
+(or any later version, at your option). By submitting a pull request you
+agree that your contribution is licensed under AGPL-3.0-or-later, so it can
+be distributed with the project. There is no CLA and no copyright
+reassignment — your work stays yours; the license only guarantees it stays
+open.
+
+A practical note for contributors: AGPLv3 is stricter than MIT about
+combination. Keep third-party code out of `assistant/` (the stdlib-only
+policy already demands this), and if you fork, the license text in
+`LICENSE` must travel with your copy.

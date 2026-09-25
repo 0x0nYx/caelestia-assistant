@@ -8,13 +8,13 @@ version = "0.3.0"
 description = "Offline-first, no-LLM intelligence layer for caelestia-kde: deterministic diagnostics, learned routing, natural-language settings (issue #120), stream scanning, and a consent-gated agent — Python stdlib only."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-only" }
 authors = [{ name = "0x0nYx" }]
 keywords = ["kde", "quickshell", "caelestia", "assistant", "offline", "agent"]
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

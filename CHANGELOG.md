@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/)-flavoured.
 
+## [Unreleased]
+
+### Changed
+
+- **License: MIT → GNU Affero General Public License v3.0** (the latest GNU
+  AGPL version, 19 November 2007). Rationale: the assistant is a community
+  project whose safety contract ("propose, never execute") only means
+  something if every derivative — including one offered as a network service
+  — remains equally inspectable. AGPLv3's remote-network-interaction clause
+  (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
+  metadata and classifiers updated; full license text in `LICENSE`.
+
 ## [0.3.0] — 2026-09-25
 
 The "second brain" release: the assistant stops being five troubleshooting

@@ -4,7 +4,7 @@
 
 No language model in the critical path. No training. No network. Everything runs locally from this repository using only the Python 3 standard library, and every suggestion is something you approve.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-751%20passing-brightgreen)
 ![LLM required](https://img.shields.io/badge/LLM%20required-none-success)
@@ -123,4 +123,10 @@ This is not a chatbot and does not try to be one. It cannot write an essay, reas
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Copyright © 2026 0x0nYx
+
+This program is free software: you can redistribute it and/or modify it under the terms of the **GNU Affero General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version — see [LICENSE](LICENSE).
+
+This license was chosen deliberately: the assistant is a community project built around a strict no-execution safety contract, and AGPLv3 guarantees that anyone who improves it — including someone running a modified version as a network service — owes those improvements back to the community. Source disclosure is the price of distribution; nothing here executes behind a closed door, and the license keeps it that way.
+
+If you fork it, keep it open. If you improve it, upstream it.

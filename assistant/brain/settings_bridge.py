@@ -106,7 +106,7 @@ def propose(ledger, file_path, preset=None, calls=None, reason=None, confidence=
             "blocked": False, "errors": errors}
 
 
-def decide(ledger, proposal_id, approve, bandit=None):
+def decide(ledger, proposal_id, approve, bandit=None, battery_reward=None):
     """Resolve a pending settings proposal.
 
     approve=True replans the stored calls fresh (the target file may have
@@ -116,6 +116,15 @@ def decide(ledger, proposal_id, approve, bandit=None):
     Either way, this decision rewards the bandit: once under the preset's
     own name (if any), and once per distinct tool actually touched, so
     per-tool acceptance can be learned even from raw --call proposals.
+
+    ``battery_reward`` (issue #120 Phase 3.2) is an OPTIONAL secondary
+    signal in [0, 1] (0.5 neutral) computed by the caller from battery
+    drain-rate deltas measured around the preset's active window
+    (diagnostics/telemetry.py::reward_from_drain). It only ever adds
+    fractional pseudo-counts (weight 0.25) on top of the primary
+    approve/reject signal — never replaces it, and is a strict no-op
+    (byte-identical updates) when None, i.e. when telemetry is
+    unavailable.
     """
     item = ledger.decide(proposal_id, approve)
     diff = item["diff"]
@@ -129,7 +138,7 @@ def decide(ledger, proposal_id, approve, bandit=None):
 
     if bandit is not None:
         if diff.get("preset"):
-            bandit.reward(diff["preset"], approve)
+            bandit.reward(diff["preset"], approve, secondary=battery_reward)
         for tool_name in {c.get("tool") for c in diff.get("calls", []) if c.get("tool")}:
             bandit.reward(TOOL_ARM_PREFIX + tool_name, approve)
 

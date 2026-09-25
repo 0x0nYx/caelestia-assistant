@@ -16,6 +16,47 @@ All notable changes to this project are documented here. The format follows
   (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
   metadata and classifiers updated; full license text in `LICENSE`.
 
+## [0.6.0] — 2026-09-26
+
+Issue #120 round three: Phase 3 — telemetry-grounded features, on-demand
+only.
+
+### Added
+
+- **Read-only telemetry probes (`assistant/diagnostics/telemetry.py`)** —
+  plain pathlib/glob reads of /proc/loadavg, /proc/meminfo,
+  /sys/class/power_supply/*/capacity and /sys/class/thermal/*/temp, the
+  same file-probe precedent Layer 1 already uses. On-demand only: every
+  call is one snapshot (the `telemetry_snapshot` bridge op and the module's
+  own `main()` exist for diagnostic/report/dreamtime callers); there is no
+  daemon and no poller. Missing interfaces report
+  `{"available": false}` — honestly unavailable, never a fake number.
+  Tests run against fixture proc/sys trees, never the live kernel.
+- **Battery-aware secondary preset reward (Phase 3.2)** —
+  `NamedBandit.reward(name, approved, secondary=None)` accepts an optional
+  [0, 1] signal computed from battery drain-rate deltas
+  (`telemetry.drain_rate_percent_per_hour` + `reward_from_drain_delta`);
+  it contributes fractional Beta pseudo-counts at weight 0.25 so it can
+  never outweigh one real approve/reject decision, and is byte-identical
+  to the old update when None. Plumbed through `settings_bridge.decide`,
+  `brain settings decide --battery-reward R`, and the settings decide
+  service path. Existing preset_bandit tests pass unmodified.
+- **Startup-time regression detection (Phase 3.3)** —
+  `genius/data.py::startup_regressions(series, timestamps, labels)`
+  feeds a caller-supplied boot-time series into the EXISTING two-sided
+  CUSUM (`changepoints`, no duplicate detector) and classifies each
+  changepoint as regression/improvement/level-shift at a 15% mean delta.
+  Dates/versions come only from the caller's input
+  (`genius data --startup-regressions --series ... --stamps ... --versions ...`).
+
+### Tests
+
+- 795 → **811** unittests, all green
+  (`diagnostics/tests/test_telemetry_battery_startup.py`: fixture-based
+  probes + honest unavailability, drain-rate math and its [0,1] mapping,
+  secondary-reward no-op/dominance/ranking-shift properties, bridge
+  plumbing, CUSUM index stability + honest interpretation).
+
 ## [0.5.0] — 2026-09-26
 
 Issue #120 round two: Phase 2 — workspace, monitor topology, appearance,

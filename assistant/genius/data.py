@@ -392,6 +392,63 @@ def changepoints(series: Sequence[float], drift: float = 0.5, h: float = 5.0,
                         else "no significant shift beyond noise")}
 
 
+def startup_regressions(series: Sequence[float], timestamps: Optional[Sequence[str]] = None,
+                        labels: Optional[Sequence[str]] = None,
+                        drift: float = 0.5, h: float = 5.0,
+                        regression_ratio: float = 0.15) -> Dict[str, Any]:
+    """Issue #120 Phase 3.3: startup-time regression detection over the
+    EXISTING CUSUM changepoint detector (:func:`changepoints`, above —
+    no duplicate detector here).
+
+    A changepoint is a REGRESSION when the post-segment mean startup time
+    is >= ``regression_ratio`` (default 15%) higher than the pre-segment
+    mean, an improvement when it is <= -15%, otherwise a neutral level
+    shift. Dates/versions come only from the input: pass ISO
+    ``timestamps`` (one per sample) and/or ``labels`` (e.g. shell/package
+    versions) and each event reports the stamp/label of the first sample
+    AFTER the changepoint — nothing is invented about when or why.
+
+    Pure and read-only. Series are caller-supplied (a boot-time list from
+    `systemd-analyze` exports, the user's own logs, or a future telemetry
+    feed); this module has no startup-time source of its own — that is
+    the honesty rule every Phase 3 feature follows.
+    """
+    base = changepoints(series, drift=drift, h=h)
+    s = [float(v) for v in series]
+    n = len(s)
+    events: List[Dict[str, Any]] = []
+    for cp in base["changepoints"]:
+        pre, post = s[:cp], s[cp:]
+        pre_mean = sum(pre) / len(pre) if pre else 0.0
+        post_mean = sum(post) / len(post) if post else 0.0
+        delta = (post_mean - pre_mean) / pre_mean if pre_mean else 0.0
+        if delta >= regression_ratio:
+            kind = "regression"
+        elif delta <= -regression_ratio:
+            kind = "improvement"
+        else:
+            kind = "level shift"
+        event: Dict[str, Any] = {
+            "index": cp,
+            "kind": kind,
+            "pre_mean": round(pre_mean, 2),
+            "post_mean": round(post_mean, 2),
+            "delta_pct": round(100.0 * delta, 1),
+        }
+        if timestamps and cp < len(timestamps):
+            event["at"] = str(timestamps[cp])
+        if labels and cp < len(labels):
+            event["version"] = str(labels[cp])
+        events.append(event)
+    return {
+        "n": n,
+        "verdict": base["verdict"],
+        "bootstrap_p": base["bootstrap_p"],
+        "regressions": [e for e in events if e["kind"] == "regression"],
+        "events": events,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Clustering
 # ---------------------------------------------------------------------------

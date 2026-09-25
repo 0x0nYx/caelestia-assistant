@@ -173,7 +173,8 @@ def cmd_settings(args, out):
     elif args.action == "decide":
         pid = int(args.arg1)
         approve = args.arg2 == "approve"
-        r = service.settings_decide(pid, approve, args.ledger, args.state)
+        r = service.settings_decide(pid, approve, args.ledger, args.state,
+                                    battery_reward=args.battery_reward)
         if r["applied"]:
             out.write(f"#{pid} approved and written\n")
         elif approve:
@@ -310,6 +311,11 @@ def build_parser():
     se.add_argument("--top", type=int, default=10)
     se.add_argument("--tools", action="store_true",
                     help="recommend: rank individual tools instead of presets")
+    se.add_argument("--battery-reward", type=float, default=None, metavar="R",
+                    help="decide: optional secondary bandit signal in [0, 1] "
+                         "(0.5 neutral) from battery drain-rate deltas around "
+                         "the preset's active window; never replaces the "
+                         "approve/reject signal")
     se.set_defaults(fn=cmd_settings)
 
     # ---- shell-native second-brain surfaces (brief / tidy / prefs) ----

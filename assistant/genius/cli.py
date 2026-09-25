@@ -272,6 +272,11 @@ def cmd_data(args, out) -> int:
                 _print(km, args.json)
             elif args.changepoints:
                 _print(data.changepoints(nums), args.json)
+            elif args.startup_regressions:
+                _print(data.startup_regressions(
+                    nums, timestamps=args.stamps.split(",") if args.stamps else None,
+                    labels=args.versions.split(",") if args.versions else None),
+                    args.json)
             elif args.forecast:
                 _print(data.forecast_ar(nums, horizon=args.forecast), args.json)
             else:
@@ -671,6 +676,11 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--corr", choices=["pearson", "spearman"])
     q.add_argument("--cluster", type=int)
     q.add_argument("--changepoints", action="store_true")
+    q.add_argument("--startup-regressions", action="store_true", dest="startup_regressions",
+                   help="interpret --series as boot times: CUSUM changepoints "
+                        "flagged as regressions/improvements (--stamps, --versions optional)")
+    q.add_argument("--stamps", default=None, help="comma-separated ISO timestamps for --startup-regressions")
+    q.add_argument("--versions", default=None, help="comma-separated version labels for --startup-regressions")
     q.add_argument("--forecast", type=int)
 
     q = sp("text", cmd_text, help="text intelligence")

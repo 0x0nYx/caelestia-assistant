@@ -49,6 +49,7 @@ OPS = {
         q["file"], s, l, propose=bool(q.get("propose"))),
     "settings_rhythm": lambda q, s, l: service.settings_rhythm(
         q["file"], scheme_switches=q.get("scheme_switches"), ledger_path=l),
+    "telemetry_snapshot": lambda q, s, l: _telemetry_snapshot(q),
     # ---- cortex ops (learned intelligence layer; routing is read-only) ----
     "route": lambda q, s, l: _cortex_route(q, s),
     "chat_turn": lambda q, s, l: _cortex_chat_turn(q, s),
@@ -84,6 +85,14 @@ OPS = {
     "prefs_report": lambda q, s, l: _prefs_report(l),
     "conformal_verdict": lambda q, s, l: _conformal_verdict(q, s),
 }
+
+
+def _telemetry_snapshot(q):
+    """One on-demand /proc + /sys read (issue #120 Phase 3.1). Not a
+    daemon: every call is exactly one snapshot the caller asked for."""
+    from ..diagnostics import telemetry
+    return telemetry.snapshot(proc_dir=str(q.get("proc_dir", "/proc")),
+                              sys_dir=str(q.get("sys_dir", "/sys")))
 
 
 def _cortex_state(state_path):

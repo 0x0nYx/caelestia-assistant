@@ -58,11 +58,12 @@ def settings_propose(file_path, ledger_path, preset=None, calls=None, reason=Non
                                    reason=reason, confidence=confidence)
 
 
-def settings_decide(pid, approve, ledger_path, state_path):
+def settings_decide(pid, approve, ledger_path, state_path, battery_reward=None):
     ledger = Ledger(ledger_path)
     s = st.load(state_path)
     bandit = NamedBandit.from_dict(s.get("preset_bandit", {}))
-    outcome = settings_bridge.decide(ledger, int(pid), bool(approve), bandit=bandit)
+    outcome = settings_bridge.decide(ledger, int(pid), bool(approve), bandit=bandit,
+                                     battery_reward=battery_reward)
     s["preset_bandit"] = bandit.to_dict()
     st.save(s, state_path)
     return outcome

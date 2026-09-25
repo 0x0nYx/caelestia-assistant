@@ -26,7 +26,7 @@ This package is split in two, deliberately:
 | --- | --- | --- |
 | `ledger.py` | JSON proposal ledger (pending / approved / rejected) | What is waiting for my decision? |
 | `settings_bridge.py` | dry-run plan → ledger proposal → approve-then-apply via the settings applier | Issue #120's "Apply these changes?" loop, with the bandit fed on every decision |
-| `preset_bandit.py` | Thompson sampling over named Beta arms (presets, individual tools) | Which settings/presets do you actually approve, hour by hour? |
+| `preset_bandit.py` | Thompson sampling over named Beta arms (presets, individual tools); optional battery-drain secondary reward at 0.25 weight (never replaces the approve/reject signal) | Which settings/presets do you actually approve, hour by hour — and did they help your battery? |
 | `prefs.py` | Beta-Binomial posteriors per (group, direction, hour-bucket), exact binomial-sum credible intervals | What do you usually approve, and when? |
 | `placement.py` | Token-Jaccard between free text and a caller-supplied target registry | Which existing setting/tag/project does this sentence resemble? (ISS-120-safe: ranks only, never writes) |
 | `calibrate.py` | Beta-Binomial acceptance rate per proposal kind; two-armed budget bandit | Which proposal kinds do I actually approve? How many should I be shown today? |

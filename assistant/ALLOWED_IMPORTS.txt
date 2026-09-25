@@ -51,3 +51,7 @@ contextlib
 # csv (data.py read-only table parsing — a parser, never a writer or connector),
 # colorsys was rejected as unused; unicodedata was rejected as unused.
 csv
+# struct (issue #120 phase 2.4): pure binary pack/parse for the
+# minimal stdlib PNG reader in genius/palette_extract.py
+# (wallpaper -> candidate accent). No execution, no network.
+struct

@@ -16,6 +16,73 @@ All notable changes to this project are documented here. The format follows
   (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
   metadata and classifiers updated; full license text in `LICENSE`.
 
+## [0.5.0] — 2026-09-26
+
+Issue #120 round two: Phase 2 — workspace, monitor topology, appearance,
+accessibility.
+
+### Added
+
+- **Workspace profiles (`assistant/brain/workspace.py`, issue #120 Phase 3
+  "workspace profiles")** — k-means (k-means++ seeded, reusing
+  `genius/data.py::kmeans`) over (app, workspace, monitor, hour-of-day)
+  session vectors with circular hour encoding; clusters pass a
+  cluster-purity + minimum-support filter before becoming named
+  `workspace_profile` LEDGER PROPOSALS. Data-source honesty: the upstream
+  shell persists no session log (the workspace-tracker effect broadcasts
+  live state only; verified in the caelestia-kde tree before writing this),
+  so sessions arrive caller-supplied — no invented schema. Surfaced as
+  `brain workspace SESSIONS.json [--propose]` and the `workspace_profiles`
+  bridge op.
+- **Per-monitor-topology memory (`assistant/brain/topology.py`)** — sha256
+  fingerprint over the per-monitor override directory set (the layout the
+  shell's own config loader maintains); deltas (non-default, non-global
+  registry leaves) are remembered per hash in the brain state file, and a
+  topology change that matches remembered memory emits ONE
+  `topology_restore` ledger proposal — never auto-applied.
+  `brain topology [--propose]` + `topology_observe` bridge op.
+- **Idle-state throttling rule (`assistant/diagnostics/rules.d/
+  idle_throttle.json`)** — deterministic rule matching idle/overnight
+  battery-drain complaints; its fix steps propose the shipped battery-saver
+  preset's exact tool calls (setBlurEnabled/setAnimationSpeed) as a
+  ledger throttle + revert pair, with a plain-file probe clarify probe.
+  Round-trip propose→approve→revert→approve pinned by test through
+  settings_bridge.
+- **Wallpaper palette extraction (`assistant/genius/palette_extract.py`)** —
+  k-means color quantization in OKLab over wallpaper pixels (minimal stdlib
+  PNG reader: zlib+struct, deterministic stride sampling); accent
+  selection = highest-chroma cluster among clusters with pixel share
+  >= 0.15; WCAG contrast verdicts included. Surfaced through the EXISTING
+  inert scheme-suggestion path: `settings --wallpaper-palette PATH`
+  renders via the same SUGGESTED verdict and SUGGESTED_NOT_EXECUTED lines
+  the parser uses for accent-color requests — no new suggestion mechanism.
+- **Scheme accessibility audit (same module, Phase 2.5)** — all pairwise
+  text/background WCAG contrast with failing pairs flagged at AA (4.5:1);
+  protanopia/deuteranopia/tritanopia simulation via the Viénot-Brettel-
+  Mollon (1999) linear-RGB matrices; nearest compliant color via bounded
+  bisection on the OKLab L axis (hue/chroma preserved) with an honest
+  failure verdict when the hue cannot reach the target.
+- **Shell-event rhythm (Phase 2.6)** — `brain rhythm --settings-file FILE
+  [--scheme-switches ...]` feeds the unchanged rhythm engine from
+  settings-apply history + ledger decision stamps (+ caller-supplied
+  scheme-switch timestamps, since the scheme system persists no switch
+  history — verified upstream). Existing rhythm tests untouched.
+
+### Changed
+
+- ALLOWED_IMPORTS.txt: `struct` added with rationale (pure binary
+  pack/parse for the PNG reader). `shutil` remains forbidden and unused.
+
+### Tests
+
+- 775 → **795** unittests, all green (`brain/tests/test_issue120_phase2.py`:
+  20 tests covering the correct cluster proposed and nothing auto-applied,
+  noise never becoming a profile, two topology hashes with asserted deltas,
+  the observe→remember→propose round-trip, rule load+match, the idle
+  throttle propose/revert round-trip, synthetic-wallpaper extraction, the
+  documented failing pair caught, dichromacy mapping, compliant repair +
+  honest failure, and shell-event rhythm surfacing).
+
 ## [0.4.0] — 2026-09-26
 
 Issue #120 round one: the Directive-0 scope split plus Phase 1 (config

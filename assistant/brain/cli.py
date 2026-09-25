@@ -48,6 +48,20 @@ def cmd_focus(args, out):
 
 
 def cmd_rhythm(args, out):
+    if args.settings_file or args.scheme_switches:
+        # Phase 2.6: rhythm over shell events (settings applies from the
+        # undo history + ledger decisions + any caller-supplied scheme
+        # switch timestamps).
+        r = service.settings_rhythm(args.settings_file,
+                                    scheme_switches=(args.scheme_switches.split(",")
+                                                     if args.scheme_switches else None),
+                                    ledger_path=args.ledger)
+        out.write(f"events: {r['events']}\n")
+        for row in r["notable_days"]:
+            out.write(f"day {row['day']}: z={row['z']} (n={row['count']})\n")
+        for row in r["notable_hours"]:
+            out.write(f"hour {row['hour']}: z={row['z']} (n={row['count']})\n")
+        return 0
     weekdays = [int(x) for x in args.weekdays.split(",")] if args.weekdays else []
     hours = [int(x) for x in args.hours.split(",")] if args.hours else []
     r = service.rhythm_report(weekdays, hours)
@@ -55,6 +69,44 @@ def cmd_rhythm(args, out):
         out.write(f"day {row['day']}: z={row['z']} (n={row['count']})\n")
     for row in r["notable_hours"]:
         out.write(f"hour {row['hour']}: z={row['z']} (n={row['count']})\n")
+    return 0
+
+
+def cmd_workspace(args, out):
+    records = json.loads(pathlib.Path(args.sessions).read_text(encoding="utf-8"))
+    r = service.workspace_profiles(records, args.ledger, propose=args.propose,
+                                   k=args.k, min_support=args.min_support,
+                                   purity=args.purity)
+    if args.propose:
+        for pid in r["proposals"]:
+            out.write(f"proposal #{pid} pending (approve: brain ledger approve {pid})\n")
+        if not r["proposals"]:
+            out.write("no consistent co-occurrence found — nothing proposed\n")
+    else:
+        out.write(f"sessions: {r['n_sessions']}  clusters: {r['k']}  "
+                  f"rejected: {r['rejected_clusters']}\n")
+        for pr in r["profiles"]:
+            out.write(f"  {pr['name']}: app={pr['app']} monitor={pr['monitor']} "
+                      f"ws={pr['workspace']} support={pr['support']} "
+                      f"purity={pr['purity']} mean-hour={pr['hours_mean']}\n")
+        if not r["profiles"]:
+            out.write("no consistent co-occurrence found\n")
+        out.write("(dry-run: nothing proposed; add --propose to write "
+                  "ledger proposals)\n")
+    return 0
+
+
+def cmd_topology(args, out):
+    from ..settings.cli import default_target
+    r = service.topology_observe(args.file or default_target(), args.state,
+                                 args.ledger, propose=args.propose)
+    fp = r["fingerprint"]
+    out.write(f"monitors: {', '.join(fp['monitors']) or '(none)'}  hash: {fp['hash']}\n")
+    out.write(f"changed since last observe: {r['changed']}  "
+              f"remembered deltas for this set: {r['remembered']}\n")
+    out.write(f"current override deltas: {len(r['deltas'])}\n")
+    if r["proposal_id"] is not None:
+        out.write(f"proposal #{r['proposal_id']} pending (approve: brain ledger approve {r['proposal_id']})\n")
     return 0
 
 
@@ -214,7 +266,30 @@ def build_parser():
     rh = sub.add_parser("rhythm")
     rh.add_argument("--weekdays", default="")
     rh.add_argument("--hours", default="")
+    rh.add_argument("--settings-file", default=None,
+                    help="derive events from this file's settings-apply "
+                         "history and ledger decisions instead of lists")
+    rh.add_argument("--scheme-switches", default="",
+                    help="comma-separated ISO scheme-switch timestamps "
+                         "(the scheme system persists no switch history)")
     rh.set_defaults(fn=cmd_rhythm)
+
+    ws = sub.add_parser("workspace", help="session clustering -> workspace "
+                                          "profile proposals (issue #120)")
+    ws.add_argument("sessions")
+    ws.add_argument("--propose", action="store_true")
+    ws.add_argument("--k", type=int, default=None)
+    ws.add_argument("--min-support", type=int, default=3)
+    ws.add_argument("--purity", type=float, default=0.6)
+    ws.set_defaults(fn=cmd_workspace)
+
+    tp = sub.add_parser("topology", help="per-monitor-topology config memory "
+                                         "(issue #120)")
+    tp.add_argument("--file", default=None,
+                    help="target shell.json (default: the settings layer's "
+                         "default target)")
+    tp.add_argument("--propose", action="store_true")
+    tp.set_defaults(fn=cmd_topology)
 
     ca = sub.add_parser("calibration")
     ca.set_defaults(fn=cmd_calibration)

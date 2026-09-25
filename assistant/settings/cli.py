@@ -452,6 +452,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "keys, out-of-range or mistyped values, silent no-ops, inert "
              "customizations); never writes",
     )
+    arg_parser.add_argument(
+        "--wallpaper-palette", metavar="PATH", default=None,
+        help="read-only: derive a WCAG-checked accent candidate from a "
+             "wallpaper PNG (k-means in OKLab) and surface it through the "
+             "same inert scheme-suggestion path as accent-color requests",
+    )
     return arg_parser
 
 
@@ -558,6 +564,35 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\n".join(_header(False)))
         print("")
         print("\n".join(lint_mod.render_findings(findings)))
+        return 0
+
+    if args.wallpaper_palette is not None:
+        # Issue #120 Phase 2.4: wallpaper -> candidate accent, surfaced
+        # through the EXISTING inert scheme-suggestion mechanism (same
+        # constants, same renderer, same SUGGESTED_NOT_EXECUTED prefix).
+        from . import parser as parser_mod
+        from ..genius import palette_extract as palette_mod
+        try:
+            data = Path(args.wallpaper_palette).read_bytes()
+            result = palette_mod.accent_from_png(data)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        suggestions = list(parser_mod.SCHEME_SUGGESTIONS) + \
+            list(parser_mod.WALLPAPER_SUGGESTIONS)
+        notes = [
+            (f"derived from {args.wallpaper_palette}: dominant accent-like "
+             f"color {result['accent']} (k-means quantization in OKLab over "
+             f"{result['n_pixels']} sampled pixels; {result['selection']})"),
+            (f"WCAG contrast of the derived accent: on white "
+             f"{result['contrast']['on_white']['ratio']}:1, on black "
+             f"{result['contrast']['on_black']['ratio']}:1 — the scheme "
+             "system owns the actual change"),
+            parser_mod.SCHEME_NOTE,
+            "nothing was executed and nothing was written; these are inert suggestions only",
+        ]
+        print("\n".join(render_verdict(
+            {"verdict": "SUGGESTED", "suggestions": suggestions, "notes": notes})))
         return 0
 
     if args.explain is not None:

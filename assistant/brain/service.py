@@ -87,6 +87,58 @@ def rhythm_report(weekdays, hours, threshold=1.5):
             "notable_days": notable(dow, threshold), "notable_hours": notable(hod, threshold)}
 
 
+def settings_rhythm(target, scheme_switches=None, ledger_path=None,
+                    threshold=1.5):
+    """Issue #120 Phase 2.6: the rhythm engine fed by SHELL events instead
+    of generic caller lists.
+
+    Event sources, all read-only:
+    - settings applies: the undo history ring of the target file
+      (settings/history.py records an ISO 'at' per apply);
+    - ledger decisions of kind 'settings' (decided_at stamps);
+    - scheme-switch timestamps: the scheme system persists only the
+      CURRENT scheme (verified upstream: Colours.qml writes scheme.json,
+      no switch history), so switch times arrive caller-supplied —
+      the same honesty rule as every caller-supplied series here.
+
+    Returns the plain rhythm_report shape plus the event count.
+    """
+    import json as _json
+    from datetime import datetime as _dt
+    from pathlib import Path as _Path
+
+    from ..settings import history as _history
+
+    stamps = []
+    try:
+        stamps.extend(e["at"] for e in _history.entries(target) if e.get("at"))
+    except _history.HistoryError:
+        pass
+    if ledger_path:
+        p = _Path(ledger_path)
+        if p.exists():
+            try:
+                data = _json.loads(p.read_text(encoding="utf-8"))
+                stamps.extend(i["decided_at"] for i in data.get("proposals", [])
+                              if i.get("kind") == "settings" and i.get("decided_at"))
+            except (OSError, ValueError):
+                pass
+    stamps.extend(str(s) for s in (scheme_switches or []))
+
+    weekdays = []
+    hours = []
+    for raw in stamps:
+        try:
+            stamp = _dt.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue  # unparseable stamps are skipped, never guessed
+        weekdays.append(stamp.weekday())
+        hours.append(stamp.hour)
+    result = rhythm_report(weekdays, hours, threshold=threshold)
+    result["events"] = len(weekdays)
+    return result
+
+
 # ---- config/target placement (ISS-120-safe: proposal only, never a write) ----
 
 def placement_propose(text, registry, ledger_path=None, propose=False, top=5):
@@ -134,6 +186,35 @@ def drift_check(old_snapshot, new_snapshot, ledger_path=None, propose=False,
             ledger.propose("drift_changed", row["id"], row,
                            f"drifted (similarity={row['similarity']})", 1 - row["similarity"])
     return result
+
+
+# ---- workspace profiles & topology memory (issue #120 phase 2) --------------
+
+def workspace_profiles(records, ledger_path=None, propose=False, k=None,
+                       min_support=3, purity=0.6):
+    """Session records -> k-means clusters -> ledger profile proposals.
+    Records come from a caller-supplied JSON (the shell persists no
+    session log — see workspace.py's data-source note)."""
+    from . import workspace as _workspace
+    if propose and ledger_path is None:
+        raise ValueError("propose=True needs a ledger path")
+    if not propose:
+        return _workspace.cluster(records, k=k, min_support=min_support,
+                                   purity=purity)
+    ledger = Ledger(ledger_path)
+    return _workspace.propose_profiles(records, ledger, k=k,
+                                       min_support=min_support,
+                                       purity=purity)
+
+
+def topology_observe(target, state_path, ledger_path=None, propose=False):
+    """Monitor-topology memory: fingerprint the connected-monitor set,
+    remember its config deltas, and on topology change propose the
+    remembered deltas through the ledger (never auto-apply)."""
+    from . import topology as _topology
+    ledger = Ledger(ledger_path) if (propose and ledger_path) else None
+    return _topology.observe(target, state_path, ledger=ledger,
+                             propose=propose)
 
 
 # ---- idle-time scheduling --------------------------------------------------------

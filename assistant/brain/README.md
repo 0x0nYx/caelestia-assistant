@@ -31,6 +31,8 @@ This package is split in two, deliberately:
 | `placement.py` | Token-Jaccard between free text and a caller-supplied target registry | Which existing setting/tag/project does this sentence resemble? (ISS-120-safe: ranks only, never writes) |
 | `calibrate.py` | Beta-Binomial acceptance rate per proposal kind; two-armed budget bandit | Which proposal kinds do I actually approve? How many should I be shown today? |
 | `rhythm.py` | Day-of-week / hour-of-day histograms vs. a uniform-baseline deviation | When do scheme switches / settings applies actually happen? |
+| `workspace.py` | k-means (k-means++, OKLab-agnostic) over (app, workspace, monitor, hour) session vectors; cluster-purity filter | Which apps/monitors/workspaces co-occur consistently enough to become a named profile proposal? (issue #120 phase 3) |
+| `topology.py` | sha256 fingerprint over the per-monitor override directory set; delta memory keyed by that hash | This monitor set reconnected — which overrides were active last time? (proposed, never applied) |
 | `forecast.py` | Holt linear trend; 1-D Kalman filter | Where is this series going; what is its smoothed level? |
 | `anomaly.py` | z-score, deferral flag, Shannon entropy of switches | Is this unusual? Is my attention fragmented? |
 | `bandit.py` | Thompson sampling over hour-of-day Beta arms (the engine `preset_bandit.py` generalizes) | Per-hour Beta arms for any caller-supplied reward stream |
@@ -55,7 +57,11 @@ function, and `bridge.py`/`cli.py` expose the same surface.
 python3 -m assistant.brain forecast 3,4,5,6,7,8 --horizon 7
 python3 -m assistant.brain focus work,work,email,code,email
 python3 -m assistant.brain rhythm --weekdays 0,1,1,1,2,3 --hours 9,9,14,14,20
-python3 -m assistant.brain calibration                          # per-kind approval rate
+python3 -m assistant.brain rhythm --settings-file ~/.config/caelestia/shell.json   # shell-event rhythm (issue #120)
+python3 -m assistant.brain workspace sessions.json            # k-means profiles (dry-run)
+python3 -m assistant.brain workspace sessions.json --propose  # write ledger proposals
+python3 -m assistant.brain topology --propose                 # monitor-topology memory
+python3 -m assistant.brain calibration                        # per-kind approval rate
 python3 -m assistant.brain ledger list | approve ID | reject ID
 python3 -m assistant.brain settings propose shell.json --preset minimal --reason "try it"
 python3 -m assistant.brain settings decide 1 approve

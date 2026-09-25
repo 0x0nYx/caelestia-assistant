@@ -40,6 +40,15 @@ OPS = {
         similarity_threshold=float(q.get("similarity_threshold", 0.85))),
     "dream_window": lambda q, s, l: service.dream_window(
         q["idle_minutes"], q["on_ac_power"], q["cpu_load_percent"], q["jobs"], q["budget_min"]),
+    # ---- issue #120 phase 2 ops (workspace profiles / topology / settings rhythm) ----
+    "workspace_profiles": lambda q, s, l: service.workspace_profiles(
+        q["records"], l, propose=bool(q.get("propose")),
+        k=q.get("k"), min_support=int(q.get("min_support", 3)),
+        purity=float(q.get("purity", 0.6))),
+    "topology_observe": lambda q, s, l: service.topology_observe(
+        q["file"], s, l, propose=bool(q.get("propose"))),
+    "settings_rhythm": lambda q, s, l: service.settings_rhythm(
+        q["file"], scheme_switches=q.get("scheme_switches"), ledger_path=l),
     # ---- cortex ops (learned intelligence layer; routing is read-only) ----
     "route": lambda q, s, l: _cortex_route(q, s),
     "chat_turn": lambda q, s, l: _cortex_chat_turn(q, s),

@@ -21,7 +21,7 @@ A shell-side assistant organized as **ten cooperating layers**, each replaceable
 | Retrieval | `assistant/retrieval/` | "What is the closest *real* past resolution?" | BM25 over the repo's own docs and resolved issues |
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
-| Brain | `assistant/brain/` | Notes, tasks, time, habits, files | 27 classical-ML modules (see below) |
+| Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief — with the personal-PKM tools split out into an opt-in subpackage |
 | Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory |
 | Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo, presets |
 | Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system | 18-domain meta-router over stdlib engines |
@@ -31,6 +31,18 @@ A shell-side assistant organized as **ten cooperating layers**, each replaceable
 ### The brain layer (a partial inventory)
 
 Multinomial Naive Bayes · MinHash+LSH near-duplicate detection · PageRank / label-propagation link graphs · Adamic-Adar link recommendation · logistic priority scoring · Bayesian log-normal duration estimates · 0/1 knapsack day-planning + Critical Path Method · Kaplan-Meier "this task will never finish" survival analysis · Holt trend + Kalman smoothing forecasts · FSRS-inspired spaced repetition · Thompson-sampling reminder bandits · z-score/entropy anomaly flags · SymSpell typo correction · TF-IDF + TextRank summarization · Brier-score confidence calibration · Beta-Binomial preference posteriors with exact credible intervals · journaled filesystem organization (crc32 dedup, collision-safe moves, rollback) · a deterministic daily brief.
+
+**Scope split:** the personal-knowledge-management engines in that list (vault
+organization, wiki-link graphs, spaced repetition, task survival, decision
+journal, day planning, duration/priority models) live in
+[`assistant/brain/personal/`](assistant/brain/personal/README.md) behind their
+own entry point (`python3 -m assistant.brain.personal`). They read your notes,
+not your shell config, and are **not** part of the caelestia-kde issue #120
+feature surface. The brain root keeps only shell-native machinery: the
+proposal ledger, the settings bridge (#120), preference/calibration models,
+rhythm/forecast/anomaly engines, the filesystem organizer, and the brief.
+The two halves share the generic utility libraries (`nlp.py`, `minhash.py`,
+`naive_bayes.py`, `textmine.py`, `spellfix.py`) and nothing else.
 
 ### The settings layer — issue #120's contract
 
@@ -92,6 +104,9 @@ caelestia-assist genius optimize pareto --help
 caelestia-assist brief                       # today on one deterministic page
 caelestia-assist brain tidy survey ~/Downloads
 caelestia-assist brain prefs                 # what it believes about you
+
+# Opt-in personal tools (NOT part of the #120 shell surface)
+python3 -m assistant.brain.personal --help
 
 # Any task, no chat needed
 caelestia-assist do "solve x^2 - 2 = 0"

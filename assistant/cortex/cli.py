@@ -476,16 +476,22 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             from ..brain import ledger as brain_ledger
             from ..brain import settings_bridge
             top = suggestions[0]["surface"]
-            ledger = brain_ledger.load()
+            # brain/ledger.py exposes the Ledger class (no module-level
+            # load/save helpers); use DEFAULT_LEDGER for continuity with the
+            # brain CLI's proposal store.
+            from ..brain.cli import DEFAULT_LEDGER
+            ledger = brain_ledger.Ledger(DEFAULT_LEDGER)
             pid = settings_bridge.propose(
                 ledger, str(default_target()), None, [], 
                 reason=f"cortex co-change suggestion after {args.surface} "
                        f"({top} changed together {suggestions[0]['count']}x)",
                 confidence=round(min(0.9, 0.4 + 0.1 * suggestions[0]["count"]), 2),
             )
-            brain_ledger.save(ledger)
-            print(f"ledger proposal {pid} created (approve with: "
-                  f"caelestia-assist brain ledger approve {pid})")
+            if pid is None:
+                print("nothing to propose (the dry-run plan was blocked or a no-op)")
+            else:
+                print(f"ledger proposal {pid} created (approve with: "
+                      f"caelestia-assist brain ledger approve {pid})")
         return 0
 
     return 2

@@ -55,31 +55,20 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(self.call(["not", "a", "dict"])["ok"])
 
     def test_missing_field_is_an_error_not_a_crash(self):
-        r = self.call({"op": "estimate_observe"})
+        r = self.call({"op": "forecast"})
         self.assertFalse(r["ok"])
         self.assertIn("KeyError", r["error"])
 
-    def test_plan_then_propose_then_approve_then_learn(self):
-        tasks = [{"id": "a", "effort_min": 30, "importance": 0.9, "deadline_days": 1},
-                 {"id": "b", "effort_min": 30, "importance": 0.2}]
-        r = self.call({"op": "plan", "tasks": tasks, "minutes": 60, "propose": True, "top": 2})
+    def test_propose_then_list_then_decide_roundtrip(self):
+        registry = [{"id": "bar.thickness", "description": "bar height thickness"}]
+        r = self.call({"op": "placement_propose", "text": "make bar thinner",
+                       "registry": registry, "propose": True})
         self.assertTrue(r["ok"])
-        self.assertEqual(r["result"]["proposed"], 2)
         pending = self.call({"op": "ledger_list"})["result"]
-        self.assertEqual(len(pending), 2)
-        self.assertTrue(self.call({"op": "ledger_decide", "id": pending[0]["id"], "approve": True})["ok"])
-        learned = self.call({"op": "ledger_learn"})
-        self.assertEqual(learned["result"]["examples"], 1)
-
-    def test_review_and_estimate_ops(self):
-        self.assertTrue(self.call({"op": "review_grade", "id": "c", "rating": 3, "days": 0})["ok"])
-        due = self.call({"op": "review_due", "days": 30})["result"]
-        self.assertIn("c", due)
-        self.assertTrue(self.call({"op": "estimate_observe", "category": "x", "minutes": 40})["ok"])
-        self.assertEqual(self.call({"op": "estimate_query", "category": "x"})["result"]["n"], 1)
-
-    def test_invalid_hour_is_rejected(self):
-        self.assertFalse(self.call({"op": "remind_feedback", "hour": 99, "acted": True})["ok"])
+        self.assertEqual(len(pending), 1)
+        self.assertTrue(self.call({"op": "ledger_decide", "id": pending[0]["id"],
+                                   "approve": True})["ok"])
+        self.assertEqual(self.call({"op": "ledger_list"})["result"], [])
 
     def test_genius_decide_op_ranks_options(self):
         r = self.call({"op": "genius_decide",

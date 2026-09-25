@@ -9,7 +9,7 @@ suggestions work from the very first note.
 """
 import math
 
-from .minhash import jaccard, signature
+from ..minhash import jaccard, signature
 
 
 def _neighbours(graph):

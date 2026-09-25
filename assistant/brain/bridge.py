@@ -2,10 +2,16 @@
 
 For a QML Process (or any local caller) to drive the brain without parsing text:
 
-    echo '{"op": "plan", "tasks": [...], "minutes": 120}' | caelestia-assist api
+    echo '{"op": "forecast", "series": [3, 4, 5]}' | caelestia-assist api
 
 Response: {"ok": true, "op": ..., "result": ...} or {"ok": false, "op": ..., "error": ...}.
 Every op returns plain data; proposals are only ever created, never applied.
+
+Scope note (issue #120 split): the personal-knowledge-management ops
+(organize, tag, plan, estimate_*, review_*, remind_*, cull, ledger_learn,
+links_suggest, note_keywords, note_summarize, spellcheck, ghosts, journal_*,
+health_report) moved to assistant/brain/personal/ and are NOT exposed here —
+the bridge is shell-native surface only.
 """
 import argparse
 import json
@@ -16,49 +22,11 @@ from . import state as st
 from .cli import DEFAULT_LEDGER
 
 
-def _allowed(value):
-    if value is None:
-        return None
-    return [int(h) for h in value]
-
-
 OPS = {
-    "organize": lambda q, s, l: service.organize(q["vault"], l, dup=q.get("dup", 0.8),
-                                                 min_conf=q.get("min_conf", 0.25)),
-    "tag": lambda q, s, l: [{"tag": t, "p": round(p, 4)}
-                            for t, p in (service.tag(q["vault"], q["text"]) or [])],
-    "plan": lambda q, s, l: service.plan(q["tasks"], int(q.get("minutes", 240)), s,
-                                         l, propose=bool(q.get("propose")),
-                                         top=int(q.get("top", 5))),
-    "estimate_observe": lambda q, s, l: service.estimate_observe(q["category"], q["minutes"], s),
-    "estimate_query": lambda q, s, l: service.estimate_query(q["category"], s),
-    "review_add": lambda q, s, l: service.review_add(q["id"], s),
-    "review_grade": lambda q, s, l: service.review_grade(q["id"], q["rating"],
-                                                         float(q.get("days", 0.0)), s),
-    "review_due": lambda q, s, l: service.review_due(float(q.get("days", 0.0)), s),
-    "remind_choose": lambda q, s, l: service.remind_choose(_allowed(q.get("allowed")), s),
-    "remind_feedback": lambda q, s, l: service.remind_feedback(q["hour"], q["acted"], s),
     "forecast": lambda q, s, l: service.forecast(q["series"], horizon=int(q.get("horizon", 7))),
-    "cull": lambda q, s, l: service.cull(q["history"], horizon=int(q.get("horizon", 14)),
-                                         threshold=float(q.get("threshold", 0.05))),
     "focus": lambda q, s, l: service.focus(list(q["labels"])),
     "ledger_list": lambda q, s, l: service.ledger_list(l),
     "ledger_decide": lambda q, s, l: service.ledger_decide(q["id"], q["approve"], l),
-    "ledger_learn": lambda q, s, l: service.ledger_learn(l, s),
-    "links_suggest": lambda q, s, l: service.links_suggest(
-        q["vault"], l, propose=bool(q.get("propose")), top=int(q.get("top", 10)),
-        min_jaccard=float(q.get("min_jaccard", 0.15))),
-    "note_keywords": lambda q, s, l: service.note_keywords(q["vault"], q["note_id"],
-                                                           top=int(q.get("top", 8))),
-    "note_summarize": lambda q, s, l: service.note_summarize(q["vault"], q["note_id"],
-                                                              sentences=int(q.get("sentences", 3))),
-    "spellcheck": lambda q, s, l: service.spellcheck(q["vault"], top=int(q.get("top", 20))),
-    "ghosts": lambda q, s, l: service.ghosts(q["vault"], q.get("known_task_titles", []),
-                                             overlap_threshold=float(q.get("overlap_threshold", 0.4))),
-    "journal_record": lambda q, s, l: service.journal_record(q["id"], q["statement"],
-                                                              q["confidence"], s),
-    "journal_resolve": lambda q, s, l: service.journal_resolve(q["id"], q["correct"], s),
-    "journal_report": lambda q, s, l: service.journal_report(s, bins=int(q.get("bins", 5))),
     "rhythm_report": lambda q, s, l: service.rhythm_report(q.get("weekdays", []),
                                                            q.get("hours", []),
                                                            threshold=float(q.get("threshold", 1.5))),
@@ -70,8 +38,6 @@ OPS = {
     "drift_check": lambda q, s, l: service.drift_check(
         q["old"], q["new"], l, propose=bool(q.get("propose")),
         similarity_threshold=float(q.get("similarity_threshold", 0.85))),
-    "health_report": lambda q, s, l: service.health_report(q["vault"],
-                                                           dup_threshold=float(q.get("dup_threshold", 0.8))),
     "dream_window": lambda q, s, l: service.dream_window(
         q["idle_minutes"], q["on_ac_power"], q["cpu_load_percent"], q["jobs"], q["budget_min"]),
     # ---- cortex ops (learned intelligence layer; routing is read-only) ----

@@ -4,7 +4,12 @@ only. This module never spawns anything itself (ALLOWED_IMPORTS bans
 subprocess for the whole assistant); the caller outside this layer is
 responsible for actually invoking whichever jobs get chosen.
 """
-from .planner import knapsack
+# The 0/1 knapsack engine moved to brain/personal/ with the day-planning
+# tools it was built for; dreamtime (the assistant's OWN batch-window
+# scheduler, shell-native) still reuses the algorithm. This is the only
+# root->personal import in the brain layer and it imports an engine, not
+# a personal-surface function.
+from .personal.planner import knapsack
 
 
 def eligible(idle_minutes, on_ac_power, cpu_load_percent, min_idle=5, max_load=30):

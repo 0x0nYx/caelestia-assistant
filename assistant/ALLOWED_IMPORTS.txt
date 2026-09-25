@@ -1,0 +1,49 @@
+# The single import allow-list for all assistant Python code.
+# Enforced by assistant/diagnostics/schema_lint.py::check_import_policy
+# (AST scan) and by the unittest suite.
+#
+# Rationale: the assistant must never be able to execute shell commands or
+# open network connections from inside the assistant itself. Anything that
+# could do so (subprocess, socket, http, urllib, requests, pty, shutil,
+# ctypes, asyncio, ...) is rejected by name even if it were added here.
+#
+# Layer 1 (diagnostics): text matching, file probes, JSON, CLI.
+# Layer 2 (retrieval): + math/collections for BM25 scoring.
+# Layer 4 (issue drafting): + datetime for report timestamps.
+# Layer 3 (generative): may use http.client ONLY via the explicit allow-list
+# entry below — loopback-only, single attempt, suggestion-only.
+
+json
+re
+os
+sys
+glob
+pathlib
+argparse
+unittest
+dataclasses
+typing
+difflib
+math
+collections
+itertools
+datetime
+textwrap
+ast
+# tempfile (Task 5): local temporary dirs for the retrieval tests and the
+# settings tests (temp files for test isolation). Creates files; never
+# spawns or connects.
+tempfile
+# http.client (Task 6-a, Layer 3): loopback-only Ollama transport; generative/client.py hard-rejects non-loopback hosts before connecting.
+http.client
+# brain/ (stdlib-only intelligence layer, no I/O beyond its own state files):
+# random (Thompson sampling in bandit.py), hashlib (MinHash seeds in minhash.py).
+random
+hashlib
+# io / contextlib: brain tests capture stdout (StringIO, redirect_stdout).
+io
+contextlib
+# genius/ (universal intelligence layer, stdlib-only like everything else):
+# csv (data.py read-only table parsing — a parser, never a writer or connector),
+# colorsys was rejected as unused; unicodedata was rejected as unused.
+csv

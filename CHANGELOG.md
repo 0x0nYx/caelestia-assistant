@@ -16,6 +16,71 @@ All notable changes to this project are documented here. The format follows
   (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
   metadata and classifiers updated; full license text in `LICENSE`.
 
+## [0.7.0] — 2026-09-26
+
+Issue #120 round four: Phase 4 — setup wizard, compound ordering, batch
+active learning, and two grounded regression rules.
+
+### Added
+
+- **Setup wizard (`assistant/settings/wizard.py`, issue #120 phase 3
+  "setup wizards")** — six pairwise tradeoff questions over four criteria
+  (visual fidelity / battery / minimalism / performance) -> AHP weights
+  (`genius/decision.py::ahp`, Saaty, consistency ratio reported) -> TOPSIS
+  (`genius/decision.py::topsis`) over the five shipped presets scored by
+  `optimize.score_plan` against the mapped objective profiles. The six
+  questions (not "4-5") are deliberate: AHP's full-matrix reciprocity
+  check makes C(4,2) the honest minimum; a spanning subset would need
+  invented cells. Pure and write-free: the recommendation rides the
+  ordinary `--preset` gate. `settings --wizard [--answers N,...]`.
+- **Tool-dependency ordering (`assistant/cortex/compound.py::order_ops`,
+  phase 4.2)** — a small declared precedence DAG (master toggle before
+  dependent strength inside one subsystem: transparency/toasts/blur
+  families, cited from the registry groups) applied via a stable Kahn
+  topological sort with last-value dedup ("later clause wins" kept);
+  wired into the pipeline before planning, so "disable transparency and
+  set transparency base to 0.5" applies in the safe order.
+- **Batch-curated active learning (`assistant/cortex/learn.py`,
+  phase 4.3)** — near-threshold phrases (the router's own ABSTAIN
+  min_score=0.30 / AMBIGUOUS min_margin=0.06 gates) are LOGGED into a
+  bounded review bucket (state key `cortex_review`) by the chat loop
+  instead of being silently absorbed online; the new
+  `cortex review list|label INDEX SURFACE|dismiss INDEX` subcommand
+  surfaces the batch: labeling teaches the learner (outcome "applied"
+  for the named surface) and clears the candidate; dismissing just
+  clears it. Nothing is learned without an explicit review decision.
+- **Two grounded regression rules (`rules.d/known_regressions.json`,
+  phase 4.4)** — (1) `CL-regression-ccache-629`: the installer's
+  permanent system-wide ccache flip in /etc/makepkg.conf, cited to
+  upstream issue #629 (closed 2026-09-06), verified against the issue
+  body before writing. (2) `CL-regression-dualupdater-565`: the
+  dual-updater state-desync symptom (Nexus pending-commit badge vs the
+  real clone, uncommitted edits overwritten by the shadow clone), cited
+  to upstream issue **#565** (OPEN). Corpus docs ISS-629.md and ISS-565.md
+  added and the committed BM25 index rebuilt.
+
+### Flagged (mission deviation, in the open)
+
+- **The mission's "#818" reference for the dual-updater bug is wrong.**
+  Upstream issue #818 is "CAELESTIA-KDE OVERHAUL" — a PR-template issue
+  with no updater content (fetched and read 2026-09-26). The actual,
+  verified dual-updater state-desync issue is **#565** ("Two independent
+  update mechanisms share version-tracking state but pull from different
+  repo checkouts", still open). The rule cites #565 and fingerprints the
+  PRE-fix symptom exactly as the mission intended; inventing an #818
+  citation would have violated the every-claim-verifiable rule.
+
+### Tests
+
+- 811 → **827** unittests, all green
+  (`cortex/tests/test_issue120_phase4.py`: wizard determinism +
+  consistency flagging + honest battery-preset ranking expectation +
+  off-scale rejection, master-before-strength ordering + spoken-order
+  preservation + last-value dedup + pipeline wiring, near-threshold
+  logging (never silently learned), dedup/bounding, label-teaches-
+  learner, CLI list/dismiss, and the router's real threshold constants
+  pinned).
+
 ## [0.6.0] — 2026-09-26
 
 Issue #120 round three: Phase 3 — telemetry-grounded features, on-demand

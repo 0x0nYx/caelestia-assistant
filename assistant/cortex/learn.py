@@ -359,3 +359,93 @@ class CortexLearner:
                 name: round(w, 4) for name, w in zip(_FEATURES, self.model.weights)
             },
         }
+
+
+# ---------------------------------------------------------------------------
+# Batch-curated active learning (issue #120 Phase 4.3): near-threshold
+# phrases are LOGGED for batch review instead of being learned silently.
+#
+# The router's own cutoffs live in RouterState (router.py): min_score
+# (default 0.30) gates ABSTAIN and min_margin (default 0.06) gates
+# AMBIGUOUS. A phrase that falls below either is exactly the evidence an
+# active learner wants — but learning from it online would silently bend
+# the router toward phrases nobody confirmed. So the candidate is parked
+# in the state dict (key "cortex_review", bounded), and `cortex review`
+# surfaces the batch for the user to label (teaching outcome "applied"
+# for the named surface) or dismiss. Nothing here routes, writes, or
+# learns by itself: pure list/dict transforms over caller-owned state.
+# ---------------------------------------------------------------------------
+
+REVIEW_KEY = "cortex_review"
+MAX_CANDIDATES = 50
+
+
+def log_review_candidate(bucket: List[Dict[str, object]], text: str,
+                         verdict: str, candidates: List[Dict[str, object]],
+                         at: str) -> List[Dict[str, object]]:
+    """Append one near-threshold phrase to the review bucket (pure).
+
+    ``bucket`` is the caller's list (state[REVIEW_KEY]); identical texts
+    are deduplicated (the newest occurrence wins). Bounded at
+    MAX_CANDIDATES, oldest evicted.
+    """
+    if verdict not in ("ABSTAIN", "AMBIGUOUS"):
+        return bucket
+    top = candidates[0] if candidates else None
+    entry: Dict[str, object] = {
+        "text": text[:120],
+        "verdict": verdict,
+        "surface": top.get("surface") if top else None,
+        "p": top.get("p") if top else None,
+        "at": at,
+    }
+    kept = [c for c in bucket if c.get("text") != entry["text"]]
+    kept.insert(0, entry)
+    return kept[:MAX_CANDIDATES]
+
+
+def is_near_threshold(verdict: str) -> bool:
+    """The verdicts that mark a near-threshold phrase (router.py's own
+    ABSTAIN/AMBIGUOUS gates: below min_score or below min_margin)."""
+    return verdict in ("ABSTAIN", "AMBIGUOUS")
+
+
+def label_candidate(state: Dict[str, object], index: int, surface: str,
+                    learner: "CortexLearner") -> Dict[str, object]:
+    """Teach the router one reviewed phrase: text -> surface.
+
+    The features come from a fresh route of the text (deterministic); if
+    the router currently maps the phrase to a different surface, the
+    labeled surface gets an empty feature vector — the update still moves
+    the bias honestly instead of inventing agreement. The labeled
+    candidate is REMOVED from the bucket (it is no longer outstanding).
+    """
+    from .router import route as _route
+
+    bucket = list(state.get(REVIEW_KEY, []))
+    if index < 0 or index >= len(bucket):
+        raise ValueError(f"no review candidate {index} (0..{len(bucket) - 1})")
+    entry = bucket.pop(index)
+    text = str(entry["text"])
+    fresh = _route(text)
+    top = fresh.top
+    if top is not None and top.surface == surface and top.p is not None:
+        p = float(top.p)
+    else:
+        p = float(entry.get("p") or 0.0)
+    features = fresh.features.get(surface, {})
+    learner.observe(text, surface, features, p, "applied")
+    state[REVIEW_KEY] = bucket
+    return {"labeled": True, "text": text, "surface": surface,
+            "remaining": len(bucket)}
+
+
+def dismiss_candidate(state: Dict[str, object], index: int) -> Dict[str, object]:
+    """Drop one candidate from the bucket without teaching anything."""
+    bucket = list(state.get(REVIEW_KEY, []))
+    if index < 0 or index >= len(bucket):
+        raise ValueError(f"no review candidate {index} (0..{len(bucket) - 1})")
+    removed = bucket.pop(index)
+    state[REVIEW_KEY] = bucket
+    return {"dismissed": True, "text": str(removed["text"]),
+            "remaining": len(bucket)}

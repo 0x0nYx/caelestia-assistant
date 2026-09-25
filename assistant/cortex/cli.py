@@ -37,6 +37,7 @@ from ..brain import state as brain_state
 from ..settings import applier as settings_applier
 from ..settings import history as settings_history
 from ..settings.cli import default_target, render_plan
+from . import learn as cortex_learn
 from .learn import CortexLearner
 from .memory import (
     followup_suggestion,
@@ -266,6 +267,7 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
     state = brain_state.load()
     learner = None if args.no_learn else _load_learner(state)
     episodes = _load_memory(state)
+    review_bucket = list(state.get("cortex_review", []))
     session = SessionState()
 
     print(f"cortex chat — natural-language shell.json assistant")
@@ -296,6 +298,13 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
             continue
 
         result = cortex_process(text, session=session, learner=learner, file_path=target, now=_now())
+
+        # Issue #120 phase 4.3: near-threshold phrases are parked for batch
+        # review instead of being silently absorbed by the online learner.
+        if cortex_learn.is_near_threshold(result.verdict):
+            review_bucket = cortex_learn.log_review_candidate(
+                review_bucket, text, result.verdict,
+                result.candidates or [], at=_now())
 
         # Genius delegation: the request left the settings surface entirely
         # (math / logic / statistics / text analysis / planning / ...) — run
@@ -365,10 +374,11 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
                           f"({suggestion['count']}x together) — say '{suggestion['surface'].replace('set', 'change ').strip()}' "
                           f"if you want it proposed")
 
-    if learner is not None or episodes:
+    if learner is not None or episodes or review_bucket:
         state = brain_state.load()
         state[LEARN_KEY] = learner.to_dict() if learner is not None else state.get(LEARN_KEY)
         state[MEMORY_KEY] = episodes
+        state["cortex_review"] = review_bucket
         brain_state.save(state)
     if not args.json:
         print("session ended; learned routing and memory updated")
@@ -436,6 +446,15 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     suggest_p.add_argument("--apply", action="store_true",
                            help="record the suggestion as a pending LEDGER proposal "
                                 "(still needs ledger approve to write)")
+    review_p = sub.add_parser("review", help="batch-review near-threshold phrases "
+                                              "(issue #120 phase 4.3: logged, never "
+                                              "silently learned)")
+    review_p.add_argument("action", nargs="?", default="list",
+                          choices=["list", "label", "dismiss"])
+    review_p.add_argument("arg1", nargs="?", default="",
+                          help="label/dismiss: the candidate index (see list)")
+    review_p.add_argument("arg2", nargs="?", default="",
+                          help="label: the correct surface (e.g. setBarScale)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -462,6 +481,45 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         brain_state.save(state)
         print("learned routing weights reset to priors (memory kept)")
         return 0
+
+    if args.cmd == "review":
+        from . import learn as cortex_learn
+        bucket = list(state.get(cortex_learn.REVIEW_KEY, []))
+        if args.action == "list":
+            if not bucket:
+                print("no near-threshold candidates logged yet (ambiguous or "
+                      "abstained chat phrases land here)")
+                return 0
+            print(f"{len(bucket)} candidate(s), oldest last:")
+            for i, c in enumerate(bucket):
+                print(f"  [{i}] {c['verdict']:<8} p={c.get('p')} :: {c['text']}")
+            print("label with: cortex review label INDEX SURFACE   "
+                  "(teaches the router, nothing applies)")
+            print("drop with:  cortex review dismiss INDEX")
+            return 0
+        if learner is None:
+            print("learning is disabled (--no-learn or no state); cannot label",
+                  file=sys.stderr)
+            return 1
+        try:
+            if args.action == "label":
+                if not args.arg1 or not args.arg2:
+                    print("review label needs INDEX and SURFACE", file=sys.stderr)
+                    return 2
+                res = cortex_learn.label_candidate(state, int(args.arg1),
+                                                   args.arg2, learner)
+                state[LEARN_KEY] = learner.to_dict()
+                brain_state.save(state)
+                print(f"taught: {res['text']!r} -> {res['surface']} "
+                      f"({res['remaining']} candidate(s) left)")
+            else:
+                res = cortex_learn.dismiss_candidate(state, int(args.arg1))
+                brain_state.save(state)
+                print(f"dismissed: {res['text']!r} ({res['remaining']} left)")
+            return 0
+        except (ValueError, KeyError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
 
     if args.cmd == "suggest":
         suggestions = followup_suggestion(episodes, args.surface, now=_now())
@@ -510,7 +568,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_chat(argv[1:])
     if argv[0] == "route":
         return cmd_route(argv[1:])
-    if argv[0] in ("report", "recall", "reset-learning", "suggest"):
+    if argv[0] in ("report", "recall", "reset-learning", "suggest", "review"):
         return cmd_cortex(argv)
     return cmd_cortex(argv)
 

@@ -162,3 +162,99 @@ def route_compound(text: str, state: RouterState = DEFAULT_STATE, k: int = 3) ->
     if kept:
         notes.append("keep-clauses are honored as do-not-touch, not changes: " + "; ".join(kept))
     return CompoundResult(clauses=clauses, routes=routes, single=False, notes=notes)
+
+
+# ---------------------------------------------------------------------------
+# Issue #120 Phase 4.2: tool-dependency ordering for compound requests.
+#
+# A small, explicitly declared DAG over tool names: an edge (A -> B) means
+# A must be applied BEFORE B. The only order-sensitive shape the shipped
+# registry actually has is master-toggle -> dependent-strength inside one
+# subsystem (a strength of a mode you are switching off is dead weight and
+# can flash a transient state; the mode decision comes first). The table
+# is hand-written from the registry's own group structure and cited — not
+# inferred at runtime. Tools not in the table keep their spoken order.
+#
+# Ordering algorithm: stable Kahn topological sort over the ops' tool
+# names (indegree ties break by original spoken order, preserving the
+# existing "later clause wins" rule), plus last-value deduplication when
+# two clauses touch the same tool.
+# ---------------------------------------------------------------------------
+
+_PRECEDES: Dict[str, Tuple[str, ...]] = {
+    # master toggle                dependent strengths (same subsystem)
+    "setTransparencyEnabled": ("setTransparencyBase", "setTransparencyLayers"),
+    "setToastsTransparency": ("setToastsTransparencyBase",),
+    "setBlurEnabled": ("setBlurMask", "setVisualiserBlur"),
+}
+
+
+def order_ops(ops: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Deduplicate (same tool twice -> the later clause wins) and order the
+    composed ops so declared precedences hold. Deterministic; no I/O.
+
+    Returns (ordered_ops, notes). Ops whose tools are not in the
+    precedence table keep their original relative order.
+    """
+    if not ops:
+        return [], []
+    notes: List[str] = []
+
+    # Last-value deduplication (mirrors "later clauses win conflicts").
+    seen: Dict[str, int] = {}
+    for idx, op in enumerate(ops):
+        seen[str(op.get("tool", ""))] = idx
+    deduped: List[Dict[str, Any]] = []
+    dropped: List[str] = []
+    for idx, op in enumerate(ops):
+        tool = str(op.get("tool", ""))
+        if seen.get(tool) != idx and tool in seen:
+            dropped.append(tool)
+            continue
+        deduped.append(op)
+    if dropped:
+        notes.append("duplicate tools collapsed to the last spoken value: "
+                     + ", ".join(sorted(set(dropped))))
+
+    if not deduped:
+        return [], notes
+
+    # Stable Kahn topological sort over the declared edges.
+    names = [str(op.get("tool", "")) for op in deduped]
+    position = {name: i for i, name in enumerate(names)}
+    indegree = {name: 0 for name in names}
+    dependents: Dict[str, List[str]] = {name: [] for name in names}
+    for before, afters in _PRECEDES.items():
+        if before not in position:
+            continue
+        for after in afters:
+            if after in position and after != before:
+                indegree[after] += 1
+                dependents[before].append(after)
+
+    import heapq  # local import: only needed when ops exist
+
+    heap = [position[name] for name, deg in indegree.items() if deg == 0]
+    heapq.heapify(heap)
+    ordered_names: List[str] = []
+    while heap:
+        pos = heapq.heappop(heap)
+        name = names[pos]
+        ordered_names.append(name)
+        for after in dependents.get(name, ()):  # release dependents
+            indegree[after] -= 1
+            if indegree[after] == 0:
+                heapq.heappush(heap, position[after])
+    if len(ordered_names) != len(names):
+        # The declared table is acyclic by construction; a cycle here would
+        # be a bug, so refuse to reorder rather than guess.
+        notes.append("order: precedence cycle detected; keeping spoken order")
+        return deduped, notes
+
+    by_name = {name: op for name, op in zip(names, deduped)}
+    ordered = [by_name[name] for name in ordered_names]
+    reordered = ordered_names != names
+    if reordered:
+        notes.append("order: mode toggles applied before their dependent "
+                     "strengths (issue #120 phase 4.2 ordering)")
+    return ordered, notes

@@ -458,6 +458,17 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "wallpaper PNG (k-means in OKLab) and surface it through the "
              "same inert scheme-suggestion path as accent-color requests",
     )
+    arg_parser.add_argument(
+        "--wizard", action="store_true",
+        help="first-run setup wizard: pairwise tradeoff questions -> AHP "
+             "weights -> TOPSIS over the shipped presets -> a starting-preset "
+             "recommendation (writes nothing; apply via --preset yourself)",
+    )
+    arg_parser.add_argument(
+        "--answers", metavar="N,N,N,N,N,N", default=None,
+        help="non-interactive wizard answers, one 1-5 intensity per "
+             "question, in the order --wizard prints them",
+    )
     return arg_parser
 
 
@@ -594,6 +605,30 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\n".join(render_verdict(
             {"verdict": "SUGGESTED", "suggestions": suggestions, "notes": notes})))
         return 0
+
+    if args.wizard:
+        # Issue #120 Phase 3 "setup wizards": pure AHP+TOPSIS over the
+        # shipped presets; renders a recommendation and writes nothing.
+        from . import wizard as wizard_mod
+        answers = None
+        if args.answers:
+            try:
+                answers = [int(x) for x in args.answers.split(",")]
+            except ValueError:
+                print("error: --answers must be comma-separated integers",
+                      file=sys.stderr)
+                return 2
+        elif args.text:
+            answers = [int(x) for x in args.text.split(",")]
+        if answers is not None:
+            try:
+                result = wizard_mod.run(answers)
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+            print("\n".join(wizard_mod.render(result)))
+            return 0
+        return wizard_mod.mainish()
 
     if args.explain is not None:
         # Read-only explainability: never writes, never plans.

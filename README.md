@@ -100,6 +100,19 @@ caelestia-assist settings "make everything minimal" --apply
 # Optimization profiles (issue #120 phase 3)
 caelestia-assist genius optimize pareto --help
 
+# Setup wizard (issue #120 phase 3): AHP+TOPSIS over the shipped presets
+caelestia-assist settings --wizard --answers 2,3,2,3,3,2
+
+# Config health lint + wallpaper palette (inert suggestions only)
+caelestia-assist settings --lint
+caelestia-assist settings --wallpaper-palette ~/Pictures/wall.png
+
+# One-shot telemetry snapshot (read-only /proc + /sys file reads)
+python3 -m assistant.diagnostics.telemetry
+
+# Batch-review near-threshold phrases (logged, never silently learned)
+caelestia-assist cortex review list
+
 # The second brain
 caelestia-assist brief                       # today on one deterministic page
 caelestia-assist brain tidy survey ~/Downloads

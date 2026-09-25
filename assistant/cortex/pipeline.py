@@ -42,6 +42,7 @@ from ..settings.cli import default_target
 from ..settings.explain import ExplainError as SettingsExplainError
 from ..settings.explain import explain as settings_explain
 from ..settings.registry import ToolSpec, tool_by_name
+from . import compound as compound_mod
 from .compound import CompoundResult, route_compound
 from .learn import CortexLearner
 from .memory import new_episode
@@ -437,6 +438,12 @@ def process(
         result.questions.append("no addressable request")
         result.notes = notes
         return result
+
+    # 4.2 ordering: dedupe same-tool clauses (last spoken wins) and apply
+    # the declared precedence DAG so a mode toggle never lands after the
+    # strength change of a subsystem it is switching off.
+    ops, order_notes = compound_mod.order_ops(ops)
+    notes.extend(order_notes)
 
     notes.extend(_resolve_toggle(ops, target))
     try:

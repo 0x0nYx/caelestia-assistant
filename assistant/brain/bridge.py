@@ -98,11 +98,92 @@ OPS = {
     "genius_summarize": lambda q, s, l: _genius_safe(
         q, "language.summarize_focused", q["text"],
         q.get("query", ""), n_sentences=int(q.get("sentences", 3))),
+    # ---- round-three ops (agent / scan / optimize / prefs / conformal) ----
+    "agent_plan": lambda q, s, l: _agent_plan(q),
+    "agent_simulate": lambda q, s, l: _agent_simulate(q),
+    "scan_text": lambda q, s, l: _scan_text(q),
+    "brief": lambda q, s, l: _brief(l),
+    "tidy_survey": lambda q, s, l: _tidy_survey(q),
+    "optimize_recommend": lambda q, s, l: _optimize_recommend(q),
+    "optimize_score": lambda q, s, l: _optimize_score(q),
+    "prefs_report": lambda q, s, l: _prefs_report(l),
+    "conformal_verdict": lambda q, s, l: _conformal_verdict(q, s),
 }
 
 
 def _cortex_state(state_path):
     return st.load(state_path) if state_path else {}
+
+
+def _agent_plan(q):
+    from ..agent import goals
+    return goals.decompose(str(q.get("text", "")))
+
+
+def _agent_simulate(q):
+    from ..agent.engine import Agent
+    return Agent().simulate(str(q.get("text", "")))
+
+
+def _scan_text(q):
+    from ..scan import Automaton, scan_text
+    patterns = [str(p) for p in q.get("patterns", [
+        "quickshell", "kwin", "dbus", "error", "critical", "segfault",
+        "failed to", "timeout"])]
+    return scan_text(str(q.get("text", "")), Automaton(patterns),
+                     chunk_size=int(q.get("chunk", 500)))
+
+
+def _brief(ledger_path):
+    from . import brief as brief_mod
+    from .ledger import Ledger
+    b = brief_mod.compose(pending=Ledger(ledger_path).pending())
+    return {"brief": b, "rendered": brief_mod.render(b)}
+
+
+def _tidy_survey(q):
+    from . import tidy as tidy_mod
+    plan = tidy_mod.survey(str(q.get("root", "~/Downloads")))
+    return {"rendered": tidy_mod.render_plan(plan), **{
+        k: plan[k] for k in ("root", "scanned", "type_moves", "duplicates",
+                             "stale", "big_files", "empty_dirs",
+                             "space_recoverable", "inert_suggestions")}}
+
+
+def _optimize_recommend(q):
+    from ..settings import optimize as opt
+    return opt.recommend(str(q.get("profile", "gaming")),
+                         k=int(q.get("k", 6)))
+
+
+def _optimize_score(q):
+    from ..settings import optimize as opt
+    return opt.score_plan(str(q.get("profile", "gaming")),
+                          list(q.get("ops", [])))
+
+
+def _prefs_report(ledger_path):
+    from . import prefs as prefs_mod
+    from .ledger import Ledger
+    model = prefs_mod.PreferenceModel()
+    n = model.from_ledger(Ledger(ledger_path).items)
+    biases = [model.bias(*key.split("|")[:2], int(key.split("|")[2]))
+              for key in sorted(model.table.keys())[:12]]
+    return {"decisions_learned": n, "biases": biases}
+
+
+def _conformal_verdict(q, state_path):
+    from ..cortex.conformal import ConformalCalibrator
+    state = _cortex_state(state_path)
+    cal = ConformalCalibrator()
+    data = state.get("conformal")
+    if data:
+        cal.from_dict(data)
+    for obs in q.get("calibration", []):
+        cal.observe(float(obs.get("score", 0.0)), str(obs.get("outcome", "rejected")))
+    return cal.verdict(float(q.get("score", 0.0)),
+                       alpha=float(q.get("alpha", 0.1))) if cal.scores else \
+        {"covered": None, "reason": "no calibration data in state", "score": q.get("score")}
 
 
 def _genius_safe(q, dotted, *args, **kwargs):

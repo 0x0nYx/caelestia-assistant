@@ -40,6 +40,10 @@ http.client
 # random (Thompson sampling in bandit.py), hashlib (MinHash seeds in minhash.py).
 random
 hashlib
+# heapq (Task: graphs.py Dijkstra/A* binary heaps) and zlib (tidy.py crc32
+# fingerprints for duplicate detection — pure checksum, no file writing).
+heapq
+zlib
 # io / contextlib: brain tests capture stdout (StringIO, redirect_stdout).
 io
 contextlib

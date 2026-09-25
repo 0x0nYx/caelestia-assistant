@@ -84,3 +84,16 @@ State lives in `~/.local/state/caelestia-brain/` (`state.json`, `ledger.json`).
 - `dreamtime.py` decides *whether* and *what*, never *how*: it returns a job
   list, and running those jobs is left to a caller outside this package, since
   `ALLOWED_IMPORTS.txt` bans `subprocess` for the assistant entirely.
+
+## Round three: prefs / tidy / brief
+
+| Module | Algorithm | What it answers |
+| --- | --- | --- |
+| `prefs.py` | Beta-Binomial posteriors per (group, direction, hour-bucket), exact binomial-sum credible intervals | What do you usually approve, and when? Ranks proposals by learned appetite |
+| `tidy.py` | size-bucketed crc32 fingerprints + byte-exact confirmation, age-quartile staleness, collision-safe renames, journaled os.rename with rollback | How should this folder be organized? (moves only — never deletes) |
+| `brief.py` | pure assembler over the other modules' outputs | What matters today, on one honest page? |
+
+`prefs` learns exclusively from ledger decisions (approve/reject = the same
+training signal every learner here uses). `tidy` applies only behind the
+agent's consent gate with a rollback journal written before the first move.
+CLI: `caelestia-assist brain brief | tidy survey ROOT | prefs`.

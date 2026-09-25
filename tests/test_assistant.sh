@@ -20,8 +20,10 @@ run_assistant_suite() {
         echo "python3 not available; skipping assistant tests" >&2
         return 0
     fi
+    # -t "$REPO_ROOT" keeps `assistant` a proper package (relative imports
+    # stay valid) while discovering only this suite's tests.
     PYTHONPATH="$REPO_ROOT" python3 -m unittest discover \
-        -s "$REPO_ROOT/$suite_dir" >/dev/null 2>&1
+        -s "$REPO_ROOT/$suite_dir" -t "$REPO_ROOT" >/dev/null 2>&1
     assert_status 0 "$?" "assistant suite $suite_dir"
 }
 
@@ -49,4 +51,19 @@ test_assistant_brain() {
     run_assistant_suite "assistant/brain/tests"
 }
 
-run_tests
+test_assistant_layer1
+test_assistant_layer2
+test_assistant_layer3
+test_assistant_layer4
+test_assistant_layer5
+test_assistant_brain
+test_agent_suite() { run_assistant_suite "assistant/agent/tests"; }
+test_scan_suite()   { run_assistant_suite "assistant/scan/tests"; }
+test_cortex_suite() { run_assistant_suite "assistant/cortex/tests"; }
+test_genius_suite() { run_assistant_suite "assistant/genius/tests"; }
+test_agent_suite
+test_scan_suite
+test_cortex_suite
+test_genius_suite
+
+finish

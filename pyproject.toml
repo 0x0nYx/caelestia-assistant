@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caelestia-assistant"
+version = "0.3.0"
+description = "Offline-first, no-LLM intelligence layer for caelestia-kde: deterministic diagnostics, learned routing, natural-language settings (issue #120), stream scanning, and a consent-gated agent — Python stdlib only."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "0x0nYx" }]
+keywords = ["kde", "quickshell", "caelestia", "assistant", "offline", "agent"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+dependencies = []
+
+[project.scripts]
+caelestia-assist = "assistant.hub:_run"
+
+[tool.setuptools.packages.find]
+include = ["assistant*"]
+exclude = ["assistant/retrieval/corpus"]

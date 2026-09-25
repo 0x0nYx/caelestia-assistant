@@ -303,6 +303,59 @@ def cmd_settings(args, out):
     return 0
 
 
+def cmd_brief(args, out):
+    """Daily brief: compose what the ledger + vault + forecasts already know."""
+    from . import brief as brief_mod
+    from .ledger import Ledger
+    ledger = Ledger(args.ledger)
+    brief = brief_mod.compose(pending=ledger.pending())
+    out.write(brief_mod.render(brief) + "\n")
+    return 0
+
+
+def cmd_tidy(args, out):
+    """Filesystem organizer: survey (read-only) / rollback — apply goes via the agent."""
+    from . import tidy as tidy_mod
+    if args.action == "survey":
+        plan = tidy_mod.survey(args.root)
+        if args.json:
+            out.write(json.dumps(plan, indent=2) + "\n")
+        else:
+            out.write(tidy_mod.render_plan(plan) + "\n")
+        return 0
+    if args.action == "rollback":
+        res = tidy_mod.rollback(args.journal)
+        out.write(f"undone {len(res['undone'])} move(s); "
+                  f"missing {len(res['missing'])}\n")
+        return 0
+    out.write("tidy: use `survey ROOT`, `rollback` — moves are applied via the "
+              "agent (`caelestia-assist agent 'clean my downloads'`), never "
+              "blindly\n")
+    return 2
+
+
+def cmd_prefs(args, out):
+    """Preference model: what the Beta posteriors currently believe."""
+    from . import prefs as prefs_mod
+    from .ledger import Ledger
+    model = prefs_mod.PreferenceModel()
+    ledger = Ledger(args.ledger)
+    n = model.from_ledger(ledger.items)
+    if n == 0:
+        out.write("no decided proposals yet — approve/reject some and I learn "
+                  "your patterns\n")
+        return 0
+    out.write(f"learned from {n} decision(s):\n")
+    keys = sorted(model.table.keys())
+    for key in keys[:12]:
+        group, direction, bucket = key.split("|")
+        line = model.explain(group, direction, hour=None)
+        b = model.bias(group, direction, int(bucket) if int(bucket) >= 0 else None)
+        out.write(f"  {group:<16} {direction:<9} bucket {bucket}: "
+                  f"p={b['p_accept']} n={b['n']} ({b['verdict']})\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -432,6 +485,22 @@ def build_parser():
     se.add_argument("--tools", action="store_true",
                     help="recommend: rank individual tools instead of presets")
     se.set_defaults(fn=cmd_settings)
+
+    # ---- round-three: brief / tidy / prefs (second-brain surfaces) ----
+    br = sub.add_parser("brief", help="one deterministic page connecting "
+                                       "ledger, plans, forecasts")
+    br.set_defaults(fn=cmd_brief)
+
+    td = sub.add_parser("tidy", help="filesystem survey (read-only) + rollback")
+    td.add_argument("action", choices=["survey", "rollback"])
+    td.add_argument("root", nargs="?", default="~/Downloads")
+    td.add_argument("--journal", default=None)
+    td.add_argument("--json", action="store_true")
+    td.set_defaults(fn=cmd_tidy)
+
+    pf = sub.add_parser("prefs", help="what the preference model believes "
+                                      "about your approve/reject patterns")
+    pf.set_defaults(fn=cmd_prefs)
     return p
 
 

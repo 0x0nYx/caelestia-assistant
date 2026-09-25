@@ -15,6 +15,16 @@ It is **not** a chatbot, **not** a general LLM feature, and nothing was
 trained for this. Everything runs locally from this repository using only
 the Python 3 standard library.
 
+Round three adds three more surfaces: the **scan layer**
+(`assistant/scan/` — one-pass bounded-memory log scanning with
+Aho-Corasick, Bloom, Count-Min, HyperLogLog, reservoir sampling and
+Page-Hinkley drift alarms), the **agent layer** (`assistant/agent/` — HTN
+goal decomposition over every module, simulate-first projection, per-node
+consent, outcome-driven learning), and the settings **optimizer**
+(`assistant/settings/optimize.py` — issue #120 phase-3 profiles, Pareto
+frontiers, preset synthesis, AC-3 conflict refusal). The brain gains a
+preference model, a journaled filesystem organizer, and the daily brief.
+
 ## What it does (and does not do)
 
 | It does | It never does |

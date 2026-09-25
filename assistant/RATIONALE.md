@@ -285,3 +285,31 @@ only writers).
   `GlobalConfig` property assignments; the offline CLI writes the watched
   file), and which one Caelestia wants is a design call that belongs to the
   maintainer, not to this branch.
+
+## 5. Round three: agency without autonomy creep
+
+The agent (`assistant/agent/`) was designed against the failure mode the
+layers above exist to prevent: an "AI that does things" that quietly does
+them wrong. Three choices follow from that. First, decomposition is
+hierarchical and deterministic (HTN methods over cue-classified goals), and
+the graph is *projected* (`--simulate`) before anything runs — the plan is
+an artifact the user reads, not a hidden process. Second, consent is
+per-node and structural: a node above READ_ONLY risk carries
+`consent_required=True` and the engine refuses to run it without a True
+from the caller; there is no "trust me" flag, and no PRIVILEGED or
+DESTRUCTIVE node type exists at all — that work stays an inert suggested
+string. Third, learning observes outcomes (accepted / refused / failed /
+skipped) through the same ledger-shaped signal every other learner uses, so
+the agent gets better at proposing exactly what you approve — and the
+preference model, conformal layer, and drift detector make that improvement
+auditable instead of mystical.
+
+The scan layer exists because the honest bottleneck on a low-end machine is
+memory, not intelligence: Aho-Corasick makes signature scanning O(stream)
+regardless of rule count, and the probabilistic structures (Bloom, Count-Min,
+HLL, reservoir) give provable-bounds answers under fixed RAM where exact
+answers would require loading the file. The settings optimizer keeps the
+#120 contract intact — Pareto fronts and AC-3 constraint propagation
+*propose*, the planner *validates*, the applier *gates* — because an
+optimizer that could write directly would be the most dangerous code in the
+repository.

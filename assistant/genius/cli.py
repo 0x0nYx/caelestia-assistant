@@ -423,6 +423,94 @@ def cmd_plan(args, out) -> int:
     return 0 if result["verdict"] == "DECOMPOSED" else 2
 
 
+
+def cmd_graphs(args, out) -> int:
+    """graphs: dijkstra / topsort / mst / assign — classical graph algorithms."""
+    import json as _json
+    from . import graphs as g
+    try:
+        if args.action == "dijkstra":
+            graph = _json.loads(args.data)
+            res = g.dijkstra(graph, args.source, target=args.target)
+            res["algorithm"] = "dijkstra O((V+E) log V)"
+        elif args.action == "topsort":
+            edges = [tuple(e) for e in _json.loads(args.data)]
+            res = g.toposort(edges)
+            res["algorithm"] = "kahn toposort O(V+E)"
+        elif args.action == "mst":
+            payload = _json.loads(args.data)
+            res = g.min_spanning_tree(payload["nodes"],
+                                      [tuple(e) for e in payload["edges"]])
+            res["algorithm"] = "kruskal O(E log E)"
+        elif args.action == "assign":
+            rows = [float(x) for x in args.rows.split(",")]
+            cost = [[float(x) for x in row.split(",")]
+                    for row in args.costs.split(";")]
+            res = g.hungarian(cost)
+            res["rows"] = rows
+            res["algorithm"] = "hungarian/jonker-volgenant O(n^2 m)"
+        else:
+            raise ValueError(f"unknown graphs action {args.action!r}")
+    except (ValueError, KeyError, TypeError, _json.JSONDecodeError) as exc:
+        print(f"genius graphs: {exc}", file=sys.stderr)
+        return 1
+    _print(res, args.json)
+    return 0
+
+
+def cmd_optimize(args, out) -> int:
+    """optimize: anneal / hillclimb / genetic / pareto / ternary."""
+    import json as _json
+    from . import mathengine as me
+    from . import optimize as op
+    try:
+        if args.action == "pareto":
+            points = _json.loads(args.target or "[]")
+            axes = args.axes or (list(points[0].keys()) if points else [])
+            dirs = (args.directions.split(",") if args.directions
+                    else ["min"] * len(axes))
+            res = op.pareto_frontier(points, list(axes), dirs)
+            res["algorithm"] = "non-dominated frontier"
+        elif args.action == "ternary":
+            expr = args.expr or args.target or "x^2"
+            res = op.ternary_min(lambda x: me.expression_info(expr, {"x": x})["value"],
+                                 args.lo, args.hi)
+            res["algorithm"] = "ternary search on unimodal f"
+        elif args.action in ("anneal", "hillclimb", "genetic"):
+            node = me.parse(args.expr or args.target or "x^2")
+            bounds = ([tuple(b) for b in
+                       _json.loads(args.bounds)] if args.bounds else [])
+            lo_x = bounds[0][0] if bounds else -10.0
+            # variable names from the AST (parse-level, no evaluation):
+            var_names = sorted({n.name for n in me._walk(node)
+                                if n.kind == "var"}) or ["x"]
+
+            def energy(vec):
+                env = dict(zip(var_names, vec))
+                return me.evaluate(node, env)
+            x0 = ([float(v) for v in args.x0.split(",")] if args.x0
+                  else [lo_x])
+            if args.action == "anneal":
+                res = op.anneal(energy, x0, bounds=bounds)
+                res["algorithm"] = "simulated annealing"
+            elif args.action == "hillclimb":
+                res = op.hill_climb(energy, x0, bounds=bounds)
+                res["algorithm"] = "hill climbing + restarts"
+            else:
+                if not bounds:
+                    raise ValueError("genetic needs --bounds [[lo,hi], ...]")
+                res = op.genetic(energy, bounds)
+                res["algorithm"] = "steady-state genetic algorithm"
+        else:
+            raise ValueError(f"unknown optimize action {args.action!r}")
+    except (ValueError, KeyError, TypeError, _json.JSONDecodeError,
+            me.CalcError) as exc:
+        print(f"genius optimize: {exc}", file=sys.stderr)
+        return 1
+    _print(res, args.json)
+    return 0
+
+
 def cmd_report(args, out) -> int:
     from ..brain import state as st
     state = st.load() if Path(st.DEFAULT_STATE).exists() else {}
@@ -647,6 +735,28 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("goal")
     q.add_argument("--fit", type=int)
 
+    gr = sp("graphs", cmd_graphs, help="graph algorithms: dijkstra/topsort/mst/assign")
+    gr.add_argument("action", choices=["dijkstra", "topsort", "mst", "assign"])
+    gr.add_argument("data", nargs="?", default="{}", help="JSON payload")
+    gr.add_argument("--source", default="a")
+    gr.add_argument("--target", default=None)
+    gr.add_argument("--rows", default="", help="comma numbers for assign")
+    gr.add_argument("--costs", default="", help="';'-separated rows for assign")
+
+    op_ = sp("optimize", cmd_optimize, help="anneal/hillclimb/genetic/pareto/ternary")
+    op_.add_argument("action",
+                     choices=["anneal", "hillclimb", "genetic", "pareto", "ternary"])
+    op_.add_argument("target", nargs="?", default=None,
+                     help="energy expression in x (optimizers) or JSON points (pareto)")
+    op_.add_argument("--expr", default=None,
+                     help="override the energy expression")
+    op_.add_argument("--x0", default=None)
+    op_.add_argument("--bounds", default=None, help="JSON [[lo,hi], ...]")
+    op_.add_argument("--lo", type=float, default=-10.0)
+    op_.add_argument("--hi", type=float, default=10.0)
+    op_.add_argument("--axes", nargs="*", default=None)
+    op_.add_argument("--directions", default=None)
+
     q = sp("report", cmd_report, help="self-reflection over your ledger")
     q.add_argument("--ledger", default=str(Path.home() /
                                             ".local/state/caelestia-brain/ledger.json"))
@@ -666,7 +776,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     subcommands = {"do", "math", "solve", "calc", "stats", "matrix", "prob",
                    "logic", "decide", "tree", "data", "text", "qa", "summarize",
                    "classify", "palette", "gen", "sys", "history", "plan",
-                   "report", "learn"}
+                   "graphs", "optimize", "report", "learn"}
     if argv and not argv[0].startswith("-") and argv[0] not in subcommands:
         argv = ["do"] + argv
     args = parser.parse_args(argv)

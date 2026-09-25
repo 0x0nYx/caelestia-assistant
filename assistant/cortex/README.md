@@ -138,3 +138,15 @@ JSON bridge ops (for the shell / scripts):
 every module, the router↔parser agreement regression, end-to-end pipeline
 plans against temp files, apply/undo round-trips, learning convergence,
 persistence round-trips, and the y/N consent gate.
+
+## Round three: conformal honesty (`conformal.py`)
+
+| Where | Algorithm |
+|---|---|
+| `ConformalCalibrator` | **split-conformal prediction** over accepted-route scores — a verdict at/above the threshold carries a distribution-free guarantee ("routes this confident were right >= 1-alpha of the time historically"); empty calibration says so instead of pretending |
+| `query_by_committee` | **active learning**: when the router's weight profiles disagree (score std across strategies), the request is surfaced as a teach-me candidate — one label buys the most information |
+| `PageHinkleyDrift` | Page-Hinkley change detection over the acceptance stream (negated-stream variant, so it detects DROPS in your approval rate), latched with an explicit reset |
+
+These compose with the existing learners: the logistic learns the route, the
+bandit learns the strategy, the calibration maps softmax to acceptance, and
+the conformal layer turns all of it into a statement you can hold it to.

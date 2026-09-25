@@ -38,8 +38,12 @@ import re
 import sys
 from typing import Any, Dict, List, Optional
 
-from ..diagnostics import risk
-from ..retrieval import search
+try:  # normal path: `assistant` is a package under the repo root
+    from ..diagnostics import risk
+    from ..retrieval import search
+except ImportError:  # discovery from inside assistant/ makes it top-level
+    from assistant.diagnostics import risk  # type: ignore
+    from assistant.retrieval import search  # type: ignore
 from . import client
 
 GENERATIVE_BANNER = (

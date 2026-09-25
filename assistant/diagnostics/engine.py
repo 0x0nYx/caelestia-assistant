@@ -524,7 +524,31 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"LINT FAIL: {failure}")
         if failures:
             return 1
-        print("selfcheck OK: rule schema valid, risk tiers consistent, import policy clean")
+        # Settings config-lint rule table (issue #120 Phase 1.1): the lint
+        # rule table itself must be structurally sound. If a real shell.json
+        # exists it is linted INFORMATIONALLY — findings about the user's
+        # config never fail the selfcheck (the assistant's health is what
+        # selfcheck verifies, not the user's config).
+        from ..settings import lint as config_lint
+        rule_failures = config_lint.lint_rules_ok()
+        for failure in rule_failures:
+            print(f"LINT FAIL: settings lint rule table: {failure}")
+        if rule_failures:
+            return 1
+        note = ""
+        try:
+            from ..settings.cli import default_target
+            target = default_target()
+            if Path(target).exists():
+                findings = config_lint.lint_file(target)
+                if findings:
+                    note = (f"; config lint of {target}: {len(findings)} "
+                            "finding(s) (informational — see: caelestia-assist "
+                            "settings --lint)")
+        except (OSError, ValueError, ImportError):
+            pass
+        print("selfcheck OK: rule schema valid, risk tiers consistent, "
+              "import policy clean, settings lint rules valid" + note)
         return 0
 
     if args.input == "-":

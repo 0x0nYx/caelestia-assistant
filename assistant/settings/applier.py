@@ -110,7 +110,8 @@ def _deep_unset(data: Dict[str, Any], dotted: str) -> None:
 
 
 def apply(plan: Dict[str, Any], file_path: Union[str, Path], write: bool = False,
-          label: Optional[str] = None, record_history: bool = True) -> Dict[str, Any]:
+          label: Optional[str] = None, record_history: bool = True,
+          scheme: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Apply a validated plan to the target file (§5.3).
 
     Dry-run (default): writes NOTHING — no target, no backup, no tmp — and
@@ -119,11 +120,21 @@ def apply(plan: Dict[str, Any], file_path: Union[str, Path], write: bool = False
     parsed current JSON, serialize with 4-space indent + trailing newline,
     write ``.assistant-tmp`` then atomic ``os.replace`` onto the target.
 
+    Before any byte is written, the POST-apply state runs through the
+    sanity simulator (sanity.check): a projected WCAG-contrast refusal
+    (only with scheme context) raises ApplierError with nothing written —
+    target, backup and history stay byte-identical — and tap-target
+    warnings ride the result. This runs for single-setting applies too
+    (they skip the multi-change preview, so this is their only invariant
+    gate). The write=True gate semantics are unchanged.
+
     A successful write also appends to the bounded undo history
     at ``<file>.assistant-history.json`` (history.MAX_ENTRIES entries,
     oldest evicted first) unless ``record_history=False`` (used by
     history.undo so an undo is not itself recorded). ``label`` is the
-    human-readable request the entry stores.
+    human-readable request the entry stores. ``scheme`` optionally supplies
+    {"role": "#hex"} colors for the projected-contrast check; without it
+    the contrast check honestly reports itself skipped.
     """
     target = _resolved(file_path)
     entries: List[Dict[str, Any]] = plan.get("entries", [])
@@ -156,6 +167,18 @@ def apply(plan: Dict[str, Any], file_path: Union[str, Path], write: bool = False
     # The merge target: the parsed CURRENT JSON (fresh read at write time),
     # so every other key survives the merge untouched.
     current = _parse_current(target)
+
+    # Pre-write sanity simulator (issue #120 Phase 1.2): check the POST-apply
+    # state BEFORE the backup slot is touched, so a refusal leaves the
+    # target, its backup and the undo history byte-identical.
+    from . import sanity as _sanity
+    projected = _sanity.project(current, applicable)
+    verdict = _sanity.check(projected, scheme=scheme)
+    if verdict["refusals"]:
+        detail = "; ".join(r["message"] for r in verdict["refusals"])
+        raise ApplierError(
+            f"sanity check refused the apply: {detail}; nothing was written"
+        )
 
     if not target.parent.is_dir():
         # §5: never create parent directories — a missing config directory
@@ -234,6 +257,7 @@ def apply(plan: Dict[str, Any], file_path: Union[str, Path], write: bool = False
         "message": f"wrote {len(applicable)} change(s) to {target}; backup at {backup}{history_note}",
         "backup": str(backup),
         "changes": len(applicable),
+        "sanity": {"warnings": verdict["warnings"], "notes": verdict["notes"]},
     }
 
 

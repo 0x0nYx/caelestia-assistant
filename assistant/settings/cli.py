@@ -446,6 +446,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "an interactive yes), a plan touching more than one setting is "
              "previewed but NOT written",
     )
+    arg_parser.add_argument(
+        "--lint", action="store_true",
+        help="read-only config health lint of the target shell.json (unknown "
+             "keys, out-of-range or mistyped values, silent no-ops, inert "
+             "customizations); never writes",
+    )
     return arg_parser
 
 
@@ -539,6 +545,21 @@ def main(argv: Optional[List[str]] = None) -> int:
                                    args.file, True, apply_result, None)))
         return 0
 
+    if args.lint:
+        # Read-only config health lint (issue #120 Phase 1.1). Never writes;
+        # findings are advisory — the applier/planner remain the only gate.
+        from . import lint as lint_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            findings = lint_mod.lint_file(target)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(_header(False)))
+        print("")
+        print("\n".join(lint_mod.render_findings(findings)))
+        return 0
+
     if args.explain is not None:
         # Read-only explainability: never writes, never plans.
         from . import explain as explain_mod
@@ -558,6 +579,28 @@ def main(argv: Optional[List[str]] = None) -> int:
                 "(value readback — no causal rule fired for this key; rules "
                 "needing live session state do not fire from the CLI)"
             )
+        # Multi-hop provenance (Phase 1.3): best-effort and read-only —
+        # missing/unreadable ledger or state files simply shorten the chain.
+        try:
+            from ..brain.cli import DEFAULT_LEDGER
+            from ..brain import state as brain_state
+            ledger_path = DEFAULT_LEDGER if Path(DEFAULT_LEDGER).exists() else None
+            bandit_state = None
+            state_file = Path(brain_state.DEFAULT_STATE)
+            if state_file.exists():
+                try:
+                    bandit_state = brain_state.load().get("preset_bandit")
+                except (OSError, ValueError):
+                    bandit_state = None
+            if ledger_path is not None or bandit_state is not None:
+                prov = explain_mod.provenance(
+                    args.explain, target, ledger_path=ledger_path,
+                    bandit_state=bandit_state)
+                if prov["chain"]:
+                    print("")
+                    print("\n".join(explain_mod.render_provenance(prov)))
+        except ImportError:
+            pass  # brain layer unavailable: value readback alone still answers
         return 0
 
     if args.history:
@@ -639,7 +682,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.text is None and args.calls is None:
         arg_parser.error(
             "TEXT is required unless --list-tools, --tool, --restore, --call, "
-            "--explain, --history or --undo is given"
+            "--explain, --history, --undo or --lint is given"
         )
 
     target = Path(args.file) if args.file else default_target()

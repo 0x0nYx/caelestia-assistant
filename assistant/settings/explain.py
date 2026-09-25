@@ -338,3 +338,174 @@ def explain(query: str, target: FileTarget) -> Dict[str, Any]:
         "rule": False,
         "spec": _spec_json(spec),
     }
+
+
+# ---------------------------------------------------------------------------
+# Multi-hop provenance (issue #120 Phase 1.3) — read-only backward walk:
+#   current value <- which apply set it (undo history)
+#                 <- which preset/tool call produced that apply (ledger)
+#                 <- that preset's approval rate for this user (bandit)
+# Stop at the first ledger entry found or MAX_PROVENANCE_HOPS, whichever
+# comes first. Every source is read; nothing is written, ever.
+# ---------------------------------------------------------------------------
+
+MAX_PROVENANCE_HOPS = 5
+
+
+def _call_paths(ops: List[Any]) -> List[str]:
+    """Registry paths touched by a ledger diff's call list."""
+    from .registry import tool_by_name
+
+    paths: List[str] = []
+    for call in ops or []:
+        if not isinstance(call, dict):
+            continue
+        tool = str(call.get("tool", ""))
+        spec = tool_by_name(tool)
+        if spec is not None:
+            paths.append(spec.path)
+    return paths
+
+
+def _ledger_settings_items(ledger_path: Optional[FileTarget]) -> List[Dict[str, Any]]:
+    """The ledger's decided settings proposals, newest decision last-walked
+    first. Missing file -> []. Unreadable -> [] (provenance is best-effort
+    and read-only; it must never break the explain answer)."""
+    import json as _json
+
+    if not ledger_path:
+        return []
+    path = Path(ledger_path)
+    if not path.exists():
+        return []
+    try:
+        data = _json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    items = data.get("proposals", []) if isinstance(data, dict) else []
+    return [i for i in items
+            if isinstance(i, dict) and i.get("kind") == "settings"]
+
+
+def provenance(query: str, target: FileTarget,
+               ledger_path: Optional[FileTarget] = None,
+               bandit_state: Optional[Dict[str, Any]] = None,
+               max_hops: int = MAX_PROVENANCE_HOPS) -> Dict[str, Any]:
+    """Backward provenance chain for one setting, fully read-only.
+
+    Returns {ok, path, value, hops, chain, stopped_by} where chain is a
+    list of rendered hop strings (newest first) and stopped_by names the
+    stop rule ("no more sources", "ledger entry", or "hop limit").
+    """
+    from . import history as history_mod
+
+    spec = resolve_spec(query)
+    if spec is None:
+        raise ExplainError(
+            f"cannot resolve {query!r} to a registry setting "
+            f"(see --list-tools for paths)"
+        )
+
+    chain: List[Dict[str, Any]] = []
+    stopped_by = "no more sources"
+    hops = 0
+
+    # Hop 1: the undo history — which apply set the value most recently.
+    apply_entry = None
+    try:
+        for entry in history_mod.entries(target):  # newest first
+            if any(op.get("path") == spec.path for op in entry.get("ops", [])):
+                apply_entry = entry
+                break
+    except history_mod.HistoryError:
+        apply_entry = None
+    if apply_entry is not None and hops < max_hops:
+        hops += 1
+        label = str(apply_entry.get("label") or "(unlabelled)")
+        chain.append({
+            "hop": hops,
+            "source": "apply history",
+            "detail": (f"apply #{apply_entry.get('id')} at {apply_entry.get('at')} "
+                       f"set {spec.path} (label: {label})"),
+        })
+    elif apply_entry is not None:
+        stopped_by = "hop limit"
+
+    # Hop 2: the ledger — which proposal/tool call produced that apply
+    # (matched by target file + touched path; the ledger file stores
+    # proposals oldest-first, so walk reversed() = newest first).
+    ledger_hit = None
+    items = _ledger_settings_items(ledger_path)
+    for item in reversed(items):
+        diff = item.get("diff") or {}
+        if str(diff.get("file", "")) != str(Path(target)):
+            continue
+        if spec.path in _call_paths(diff.get("calls")):
+            ledger_hit = item
+            break
+    if ledger_hit is not None:
+        if hops < max_hops:
+            hops += 1
+            status = str(ledger_hit.get("status", "?"))
+            decided = ledger_hit.get("decided_at") or "?"
+            reason = str(ledger_hit.get("reason") or "")
+            preset = (ledger_hit.get("diff") or {}).get("preset")
+            detail = (f"ledger proposal #{ledger_hit.get('id')} ({status} at "
+                      f"{decided}): {reason or 'settings change'}")
+            if preset:
+                detail += f" — via preset '{preset}'"
+            chain.append({
+                "hop": hops,
+                "source": "ledger",
+                "detail": detail,
+                "preset": preset,
+                "status": status,
+            })
+            stopped_by = "ledger entry"
+        else:
+            stopped_by = "hop limit"
+
+    # Hop 3: the preset bandit — that preset's approval rate for this user
+    # (Beta-Binomial posterior mean; preset_bandit.py's NamedBandit arms).
+    preset_name = None
+    for hop in chain:
+        if hop.get("source") == "ledger" and hop.get("preset"):
+            preset_name = hop["preset"]
+            break
+    if preset_name and bandit_state and hops < max_hops:
+        arms = bandit_state.get("arms") or {}
+        arm = arms.get(str(preset_name))
+        if isinstance(arm, (list, tuple)) and len(arm) == 2:
+            alpha, beta = float(arm[0]), float(arm[1])
+            if alpha + beta > 2.0:  # more than the prior (1, 1): real data
+                hops += 1
+                mean = alpha / (alpha + beta)
+                chain.append({
+                    "hop": hops,
+                    "source": "preset bandit",
+                    "detail": (f"preset '{preset_name}' approval estimate for "
+                               f"this user: {mean:.2f} "
+                               f"(Beta({alpha:g}, {beta:g}) posterior mean, "
+                               "Thompson-sampling arm)"),
+                })
+
+    if len(chain) >= max_hops and stopped_by == "no more sources":
+        stopped_by = "hop limit"
+
+    return {
+        "ok": True,
+        "path": spec.path,
+        "value": None,  # filled by explain(); kept explicit here
+        "hops": hops,
+        "chain": chain,
+        "stopped_by": stopped_by,
+    }
+
+
+def render_provenance(result: Dict[str, Any]) -> List[str]:
+    """Plain-text provenance chain for the --explain output."""
+    lines = [f"provenance for {result['path']} ({result['hops']} hop(s), "
+             f"stopped by: {result['stopped_by']})"]
+    for hop in result["chain"]:
+        lines.append(f"  <- hop {hop['hop']} [{hop['source']}]: {hop['detail']}")
+    return lines

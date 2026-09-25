@@ -16,6 +16,70 @@ All notable changes to this project are documented here. The format follows
   (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
   metadata and classifiers updated; full license text in `LICENSE`.
 
+## [0.4.0] — 2026-09-26
+
+Issue #120 round one: the Directive-0 scope split plus Phase 1 (config
+health, pre-write sanity, multi-hop provenance).
+
+### Added
+
+- **Directive 0 — brain scope split.** The personal-knowledge-management
+  engines (`vault`, `graph`, `srs`, `survival`, `journal`, `ghost`,
+  `linkrec`, `health`, `planner`, `duration`, `priority`) moved to
+  `assistant/brain/personal/` behind their own entry point
+  (`python3 -m assistant.brain.personal`) with a separate README stating
+  they are NOT part of the #120 feature surface. The brain root and the
+  JSON bridge keep only shell-native surface (ledger, settings bridge,
+  prefs, rhythm/forecast/anomaly, placement, calibration, drift, tidy,
+  brief, dreamtime). The single root→personal import is `dreamtime`
+  reusing the `planner.knapsack` engine (documented in both READMEs).
+  Generic utility libraries (`nlp`, `minhash`, `naive_bayes`, `textmine`,
+  `spellfix`) stay in root per the reuse contract. Top-level README module
+  table flags the split.
+- **Config health linter (`assistant/settings/lint.py`)** — deterministic
+  rule engine over shell.json: unknown keys (not a tool path and not in
+  the not_exposed table), out-of-range/mistyped values vs the shipped
+  control ranges, the blur-without-transparency silent no-op (grounded in
+  the registry's own explain rule, BlurOffsets.qml:17), and inert
+  customizations behind a disabled master switch. Wired as a read-only
+  `settings --lint` flag and into `selfcheck` (rule-table validation is
+  enforced; user-config findings are informational only).
+- **Pre-write sanity simulator (`assistant/settings/sanity.py` + applier
+  hook)** — deterministic checks over the POST-apply state before any byte
+  is written, including single-setting applies: WCAG 2.5.8 tap-target
+  warning for projected `bar.dock.iconSize` < 24px (warning, not refusal —
+  the shipped 16–96 range and the `minimal` preset stay authoritative), and
+  WCAG 1.4.3 AA projected-contrast REFUSAL via
+  `genius/creative.py::contrast_ratio` when the caller supplies scheme
+  colors (without scheme context the check honestly reports itself skipped
+  — shell.json carries no color leaves). A refused apply leaves target,
+  backup and undo history byte-identical. `write=True` gate semantics
+  unchanged.
+- **Multi-hop `--explain` provenance (`assistant/settings/explain.py`)** —
+  read-only backward walk: current value ← which apply set it (undo
+  history) ← which ledger proposal/preset produced that apply ← that
+  preset's approval estimate for this user (preset bandit Beta posterior).
+  Stops at the first ledger entry or 5 hops. Rendered under `--explain`
+  when ledger/state files exist; missing sources simply shorten the chain.
+
+### Fixed
+
+- `cortex suggest --apply` crashed on `brain_ledger.load()/save()` (which
+  do not exist); it now uses `Ledger(DEFAULT_LEDGER)` and honestly reports
+  a blocked/no-op dry-run instead of creating a phantom proposal.
+
+### Tests
+
+- 751 → **775** unittests, all green: `settings/tests/
+  test_lint_sanity_provenance.py` (18 tests: known-bad fixture lint
+  findings, clean-config zero findings, contrast refusal with a
+  byte-identical directory snapshot, tap-target warning, honest
+  contrast-skip note, full provenance chain, stop rules, read-only
+  guarantees) and `brain/personal/tests/` (moved PKM coverage), plus
+  bridge-surface pins asserting the personal ops are gone from the shell
+  bridge. No import-policy changes were needed (`copy` avoided via a JSON
+  round-trip deep copy; nothing added to ALLOWED_IMPORTS.txt).
+
 ## [0.3.0] — 2026-09-25
 
 The "second brain" release: the assistant stops being five troubleshooting

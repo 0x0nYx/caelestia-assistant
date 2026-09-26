@@ -9,6 +9,12 @@ All notable changes to this project are documented here. The format follows
 - agent exponential-build: baseline recorded on branch
   `agent/exponential-build` before any feature work — 1,297 tests OK
   (skipped=12), `selfcheck` OK, gen_adapter byte-identity OK.
+- Unified pending-decisions inbox: `caelestia-assist inbox
+  list|ranked|approve|reject` — one ranked view over ledger proposals,
+  gap clusters, the pending plan and agent consent nodes, dispatching
+  every decision through each source module's own entry point (no new
+  approval logic, no new write path; plan applies stay dry-run without
+  `--write`).
 
 ## [0.1.0] — 2026-09-26 — initial baseline
 

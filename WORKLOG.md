@@ -521,3 +521,48 @@ sub-item; branch `agent/exponential-build`; main untouched.
 Phase 1 first (highest leverage, lowest risk), then Phase 2, Phase 3,
 Phase 4 docs; STOP conditions as written in the operating prompt; a
 final WORKLOG summary entry lists every sub-item outcome.
+
+### Phase 1.1 — unified pending-decisions inbox — SHIPPED
+
+- Grep-first result: NO existing module aggregates the four decision
+  sources (brain/service.py has ledger_list/ledger_decide but no
+  join with gap clusters, the plan cache, or agent consents; brief
+  compose() is a morning digest, not a decision surface). Genuinely
+  new — built.
+- New `assistant/cortex/inbox.py`: READ + DISPATCH layer over
+  (1) `brain/ledger.py` pending proposals, (2) gap proposals —
+  surfaced `ontology_gap` ledger items AND unproposed qualifying
+  clusters previewed via `dispatch.cluster_gaps`, (3) the session
+  pending-plan cache (`cortex/plans.py`, caller-owned payload file —
+  no new session store), (4) the agent's per-node consent queue via
+  `agent/engine.py`'s own simulate/consent_fn machinery.
+- Ranking composes EXISTING values only: stated confidence (ledger /
+  gap purity), the Beta-Binomial kind posterior from
+  `brain/calibrate.acceptance_rate` (its own Beta(1,1) prior for
+  unseen kinds), and the NamedBandit arm mean (`rank()`'s stable
+  mean_estimate; the same class `cortex/learn.py` uses for its
+  strategy bandit; arms keyed exactly as `settings_bridge.decide`
+  rewards them — preset or `tool:<name>`). Score = stated x kind x
+  arm, tie-broken (source, id): deterministic, nothing new computed.
+- Dispatch goes to each source's OWN entry point: `Ledger.decide`;
+  `dispatch.propose_gap_cluster` (NEW single-cluster entry point in
+  dispatch.py, refactored out of `propose_gap_clusters` with
+  byte-identical batch behavior — the inbox never files a proposal
+  itself); plan ops re-validated by `settings.planner.plan` then
+  handed to `settings.applier.apply` (dry-run preview by default;
+  real write only behind the CLI's explicit `--write`;
+  `PlanCache.commit` only after a real apply; reject = the cache's
+  own TOTAL `discard`, stated out loud); agent decisions run
+  `Agent.execute` with a consent_fn scripted to THAT node only (all
+  other consent nodes refused) — or simulate-only without `--write`.
+- Hub: `inbox` verb added (list/ranked/approve/reject; --json,
+  --ledger/--state/--pending-plan/--goal/--file).
+- Tests: `assistant/cortex/tests/test_inbox.py` — 25 cases: four-source
+  aggregation, exact rank-input composition, deterministic ordering,
+  per-source approve/reject dispatch (ledger via tmp fixtures, gap
+  through the real dispatch entry point, plan with planner/applier
+  mocked and payload asserted, agent with the consent gate scripted),
+  honest refusals (unknown id/label/tool, missing target, agent
+  without goal), and the no-write guarantees (unproposed-gap reject
+  writes nothing; dry-run leaves the plan pending; reject never
+  executes the agent graph).

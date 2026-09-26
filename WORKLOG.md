@@ -746,6 +746,34 @@ final WORKLOG summary entry lists every sub-item outcome.
   signer outranks disjoint one), empty-history honesty, the
   never-auto-skip invariant, event-log bound.
 
+### Phase 3.1 — habit/completion correlation mining — SHIPPED
+
+- Grep-first result: NO habit log exists anywhere in the repo (no
+  "habit" data structure); survival.py tracks completion, priority.py
+  tracks task features. The habit SIGNAL is therefore caller-supplied
+  by design: pair_records() takes the task records those engines
+  already consume plus an extractor over the user's own habit data;
+  missing signals are SKIPPED, never imputed (an unstated habit value
+  is not evidence).
+- New `assistant/brain/personal/correlate.py` (stays inside
+  brain/personal per README):
+  * point_biserial() — Tate 1954 point-biserial r between a
+    continuous habit signal and binary completion (n-1 sample sd
+    documented); degenerate groups (all-completed, zero-variance)
+    refuse to fabricate a correlation;
+  * chi_square() — 2x2 independence test with Yates' continuity
+    correction (Pearson 1900 / Yates 1934); binarization of a
+    continuous signal at a stated threshold is REPORTED in the result,
+    never silent; completion rates per group ride along;
+  * honesty conventions pinned: every result carries
+    "correlational, not causal" framing; thin evidence (n < 30, or any
+    expected cell < 5) is LABELED thin while the number still computes.
+- Tests: `assistant/brain/personal/tests/test_correlate.py` (tests dir
+  already existed, matching sibling structure) — 10 cases: hand-
+  computed r and Yates X², framing pins, thin labeling, degenerate
+  refusals, signal-skip behavior, stated binarization.
+
+
 ### Phase 2.4 — dimensional/units algebra — SHIPPED
 
 - Grep-first result: no units/dimension module anywhere in genius/ or

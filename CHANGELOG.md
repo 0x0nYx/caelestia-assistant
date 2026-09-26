@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Habit/completion correlation mining
+  (`brain/personal/correlate.py`): point-biserial (Tate 1954) and
+  Yates-corrected chi-square tests between caller-supplied habit
+  signals and task completion — framed correlational-never-causal,
+  thin evidence labeled thin, missing signals skipped not imputed.
 - Dimensional/units algebra (`genius/units.py`, wired into the genius
   dispatcher): SI unit parsing, prefixes, derived and accepted non-SI
   units, dimension-checked arithmetic and conversion — mismatched

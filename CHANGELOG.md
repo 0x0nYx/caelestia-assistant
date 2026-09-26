@@ -8,6 +8,26 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Unified local/cloud dispatcher (§5: one decision point, gap-mining).**
+  The local-vs-cloud decision for the AI sidebar moved out of the QML and
+  into `assistant/cortex/dispatch.py`: every user prompt is offered to the
+  local cortex pipeline first (bridge op `dispatch`), and only a request
+  the router ABSTAINs on, a QUESTION with no candidates at all, a DELEGATE
+  verdict, or a PLAN whose top-route score is not covered by the conformal
+  calibrator (when calibration data exists) hands off to the cloud tier —
+  the existing gates decide, no second threshold system. Local answers
+  apply plans/undos through the existing SettingsTools gates (single
+  change applies undoable; multiple changes show the preview card). Every
+  hand-off is logged into a bounded `cortex_gaps` state bucket (stemmed
+  query shape + intent category, never raw text; near-threshold hand-offs
+  also feed the `cortex_review` batch). `cortex gaps [--propose]`
+  (and bridge ops `gap_report` / `gap_propose`) cluster the gaps with the
+  genius k-means under the SAME minimum-support (3) + purity (0.6) floor
+  `workspace.py` uses — a small or noisy gap set produces zero candidates
+  by design — and a qualifying cluster becomes a pending LEDGER proposal
+  (kind `ontology_gap`, never auto-applied). `learn_feedback` now also
+  persists the conformal calibrator's history (state key `conformal`),
+  which previously lived only inside a single bridge call. 25 tests.
 - **Command execution gate for the AI sidebar (T2, prompt-injection
   closure).** A new `shell/services/CommandGate.qml` singleton gives the
   sidebar's other state-changing tools — `caelestia_command`, `open_app`,

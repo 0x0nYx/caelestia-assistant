@@ -455,6 +455,18 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                           help="label/dismiss: the candidate index (see list)")
     review_p.add_argument("arg2", nargs="?", default="",
                           help="label: the correct surface (e.g. setBarScale)")
+    gaps_p = sub.add_parser("gaps", help="cluster the logged local-ontology gaps "
+                                         "(cloud hand-offs) and surface candidates")
+    gaps_p.add_argument("--propose", action="store_true",
+                        help="record qualifying clusters as pending LEDGER "
+                             "proposals (kind ontology_gap; approve/reject "
+                             "decides — never auto-applied)")
+    gaps_p.add_argument("--min-support", type=int, default=3,
+                        help="minimum requests per cluster (default 3, the "
+                             "workspace.py floor)")
+    gaps_p.add_argument("--purity", type=float, default=0.6,
+                        help="minimum modal-shape coverage (default 0.6, the "
+                             "workspace.py floor)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -520,6 +532,41 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         except (ValueError, KeyError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+
+    if args.cmd == "gaps":
+        from .dispatch import cluster_gaps, propose_gap_clusters
+        from ..brain.cli import DEFAULT_LEDGER
+        from ..brain.ledger import Ledger
+
+        if args.propose:
+            res = propose_gap_clusters(state, Ledger(DEFAULT_LEDGER),
+                                      min_support=args.min_support,
+                                      purity=args.purity)
+            if res["proposals"]:
+                print(f"{len(res['proposals'])} pending proposal(s) recorded "
+                      f"(kind ontology_gap) — `caelestia-assist brain ledger` "
+                      f"decides; nothing is applied automatically")
+            else:
+                print("no qualifying cluster reached the support/purity floor "
+                      "— nothing proposed")
+            summary = res["summary"]
+        else:
+            summary = cluster_gaps(state, min_support=args.min_support,
+                                   purity=args.purity)
+        print(f"local-ontology gaps: {summary['n_gaps']} logged shape(s); "
+              f"k={summary['k']}, {summary['rejected_clusters']} cluster(s) "
+              f"below the support/purity floor")
+        if not summary["candidates"]:
+            print("no candidate local tools — a handful of scattered gaps is "
+                  "noise, not a need (by design)")
+        for c in summary["candidates"]:
+            print(f"  {c['support']}x  \"{c['label']}\"  "
+                  f"(category {c['category']}, purity {c['purity']}, "
+                  f"{c['shapes']} phrasing(s))")
+        if summary["candidates"] and not args.propose:
+            print("surface with: cortex gaps --propose  (ledger proposals, "
+                  "never auto-applied)")
+        return 0
 
     if args.cmd == "suggest":
         suggestions = followup_suggestion(episodes, args.surface, now=_now())

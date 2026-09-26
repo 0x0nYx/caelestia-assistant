@@ -53,6 +53,9 @@ OPS = {
     # ---- cortex ops (learned intelligence layer; routing is read-only) ----
     "route": lambda q, s, l: _cortex_route(q, s),
     "chat_turn": lambda q, s, l: _cortex_chat_turn(q, s),
+    "dispatch": lambda q, s, l: _cortex_dispatch(q, s),
+    "gap_report": lambda q, s, l: _cortex_gap_report(s),
+    "gap_propose": lambda q, s, l: _cortex_gap_propose(s, l),
     "cortex_report": lambda q, s, l: _cortex_report(s),
     "memory_recall": lambda q, s, l: _cortex_memory_recall(q, s),
     "learn_feedback": lambda q, s, l: _cortex_learn_feedback(q, s),
@@ -264,6 +267,43 @@ def _cortex_chat_turn(q, state_path):
     return {"result": result.to_dict(), "session": session.to_dict()}
 
 
+def _cortex_dispatch(q, state_path):
+    """The unified local-vs-cloud decision point (the sidebar's ONLY
+    routing authority): run the local cortex pipeline, and either answer
+    locally or hand off to the cloud tier with a reason. A hand-off is
+    logged into the bounded ``cortex_gaps`` state bucket (query shape +
+    intent category, never raw text) before the state is saved — the
+    single write this op performs, alongside the review bucket it shares
+    with the CLI chat loop."""
+    from ..cortex.dispatch import dispatch
+    from ..cortex.session import SessionState
+
+    state = _cortex_state(state_path)
+    outcome = dispatch(q["text"], state=state,
+                       session=SessionState.from_dict(q.get("session")),
+                       file_path=q.get("file"))
+    st.save(state, state_path)
+    return outcome
+
+
+def _cortex_gap_report(state_path):
+    """Read-only clustering summary of the logged local-ontology gaps
+    (minimum-support + purity floor applied — see cortex.dispatch)."""
+    from ..cortex.dispatch import cluster_gaps
+
+    return cluster_gaps(_cortex_state(state_path))
+
+
+def _cortex_gap_propose(state_path, ledger_path):
+    """Turn qualifying gap clusters into pending LEDGER PROPOSALS (kind
+    ``ontology_gap"). Proposes, never applies — the ledger flow decides."""
+    from ..cortex.dispatch import propose_gap_clusters
+    from .ledger import Ledger
+
+    state = _cortex_state(state_path)
+    return propose_gap_clusters(state, Ledger(ledger_path))
+
+
 def _cortex_report(state_path):
     from ..cortex.learn import CortexLearner
     from ..cortex.memory import summarize
@@ -283,7 +323,11 @@ def _cortex_memory_recall(q, state_path):
 
 def _cortex_learn_feedback(q, state_path):
     """Report an outcome for a learn_hook the caller received: the
-    learning loop's only entry point from the shell side."""
+    learning loop's only entry point from the shell side. The same (p,
+    outcome) pair also feeds the conformal calibrator's history (state key
+    ``conformal``), so its distribution-free verdicts accumulate real
+    data instead of living only inside one bridge call."""
+    from ..cortex.conformal import ConformalCalibrator
     from ..cortex.learn import CortexLearner
 
     state = _cortex_state(state_path)
@@ -293,6 +337,12 @@ def _cortex_learn_feedback(q, state_path):
     if q.get("strategy"):
         learner.reward_strategy(str(q["strategy"]), q["outcome"] in ("applied", "approved"))
     state["cortex_learn"] = learner.to_dict()
+    cal = ConformalCalibrator()
+    data = state.get("conformal")
+    if isinstance(data, dict):
+        cal.from_dict(data)
+    cal.observe(float(q.get("p", 0.0)), str(q["outcome"]))
+    state["conformal"] = cal.to_dict()
     st.save(state, state_path)
     return {"examples": learner.model.examples,
             "acceptance_rate": round(learner.accepts / max(1, learner.accepts + learner.rejects), 3)}

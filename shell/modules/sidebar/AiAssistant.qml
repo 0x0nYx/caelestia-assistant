@@ -963,7 +963,9 @@ Item {
     property string accumulatedToolImage: ""
 
     function handleAgentProcessResult(type, stdout, stderr, cmd) {
-        if (type === "screenshot_take") {
+        if (type === "dispatch_verdict") {
+            handleDispatchOutcome(stdout, stderr);
+        } else if (type === "screenshot_take") {
             var convertCmd = `magick ${Paths.runtimeTemp("orion_screenshot.png")} -resize '1024x1024>' -quality 85 ${Paths.runtimeTemp("orion_screenshot.jpg")} && base64 ${Paths.runtimeTemp("orion_screenshot.jpg")}`;
             runAgentCommand(convertCmd, "screenshot_encode");
         } else if (type === "screenshot_encode") {
@@ -1520,6 +1522,7 @@ Item {
         isTyping = false;
         isThinking = false;
         inAgentLoop = false;
+        dispatchSession = null;   // a new chat starts a new local session too
         currentChatId = "chat_" + Date.now();
         chatHistory.clear();
         isHistoryTab = false;
@@ -1532,6 +1535,7 @@ Item {
         isTyping = false;
         isThinking = false;
         inAgentLoop = false;
+        dispatchSession = null;   // the loaded chat's local session does not survive
         currentChatId = id;
         chatHistory.clear();
         var found = false;
@@ -1987,6 +1991,97 @@ Item {
         }
     }
 
+    // ---- unified dispatcher wiring (§5.1) -------------------------------------
+    // The local-vs-cloud decision does NOT live in this file: every user
+    // prompt is offered to the assistant's cortex layer first (bridge op
+    // "dispatch"), which answers locally or hands off with a reason — its
+    // own ABSTAIN/AMBIGUOUS gates and conformal verdicts decide, not any
+    // keyword logic here. This section is transport only.
+    property var dispatchSession: null
+    property string pendingDispatchText: ""
+
+    function tryLocalDispatch(promptText) {
+        pendingDispatchText = promptText;
+        isTyping = true;
+        isThinking = true;
+        inAgentLoop = true;
+        currentActionText = "Checking the local assistant first...";
+        var req = { op: "dispatch", text: promptText };
+        if (dispatchSession !== null && dispatchSession !== undefined)
+            req.session = dispatchSession;
+        runAgentCommand(assistantBridgeCommand(JSON.stringify(req)), "dispatch_verdict");
+    }
+
+    function handleDispatchOutcome(stdout, stderr) {
+        var outcome = null;
+        var text = (stdout || "").trim();
+        try {
+            var envelope = JSON.parse(text);
+            if (envelope.ok !== false && envelope.result)
+                outcome = envelope.result;
+        } catch (e) {}
+        if (outcome === null) {
+            // The bridge is unavailable (assistant not installed) or
+            // refused: the cloud tier is the honest fallback; the failure
+            // is logged, never swallowed into a silent no-op.
+            Logger.log("[AI] local dispatch unavailable: "
+                       + (text || stderr || "(no output)").substring(0, 160));
+            dispatchSession = null;
+            sendCloudPrompt(pendingDispatchText, false, null, "", false);
+            return;
+        }
+        dispatchSession = outcome.session || null;
+        if (outcome.action === "cloud") {
+            // Handed off by the cortex layer's own confidence gates; the
+            // local context does not carry over into a cloud conversation.
+            dispatchSession = null;
+            sendCloudPrompt(pendingDispatchText, false, null, "", false);
+            return;
+        }
+
+        // Local answer. Writes (apply / undo) go through the EXISTING gates:
+        // SettingsTools.request for plans (single-op applies immediately and
+        // is undoable; multi-op shows the preview card) and SettingsTools
+        // undo/undoById for restores — this transport never writes directly.
+        var answerText = (outcome.answer || []).join("\n").trim()
+                         || "(the local assistant had nothing to say)";
+        if (outcome.undo !== undefined) {
+            var uRes = (outcome.undo.id !== undefined)
+                ? SettingsTools.undoById(Number(outcome.undo.id))
+                : SettingsTools.undo(Number(outcome.undo.steps || 1));
+            answerText += "\n(" + (uRes.ok ? (uRes.message || "undone")
+                                          : (uRes.reason || "undo failed")) + ")";
+        }
+        if (outcome.apply !== undefined) {
+            var aRes = SettingsTools.request(outcome.apply.calls || [],
+                                             outcome.apply.label || "");
+            if (aRes.needsConfirm) {
+                showSettingsConfirmCard(aRes.plan);
+            } else if (!aRes.ok) {
+                answerText += "\n(apply failed: " + (aRes.reason || "unknown") + ")";
+            } else if (aRes.applied) {
+                answerText += "\n(" + (aRes.message || "applied") + ")";
+            }
+        }
+        chatHistory.append({
+            "isUser": false,
+            "text": "",
+            "isFinished": false,
+            "thoughtText": "",
+            "isSettingsPlan": false,
+            "planLabel": "",
+            "planOps": [],
+            "planResolved": "",
+            "planResult": "",
+            "isCommandPlan": false,
+            "cmdLabel": "",
+            "cmdLines": [],
+            "cmdResolved": "",
+            "cmdResult": ""
+        });
+        startTypingAnimation(answerText);
+    }
+
     function sendPrompt(promptText, isSystemToolResult = false, base64Image = null, toolName = "", isRetry = false) {
         if (!promptText.trim() && !base64Image) return;
 
@@ -2015,8 +2110,18 @@ Item {
             });
             listView.positionViewAtEnd();
             saveHistory();
+
+            // Local first: the unified dispatcher decides (bridge op
+            // "dispatch"); this file only transports the verdict.
+            tryLocalDispatch(promptText);
+            return;
         }
 
+        sendCloudPrompt(promptText, isSystemToolResult, base64Image, toolName, isRetry);
+    }
+
+    function sendCloudPrompt(promptText, isSystemToolResult = false, base64Image = null, toolName = "", isRetry = false) {
+        if (!promptText.trim() && !base64Image) return;
         if (root.needsApiKey && root.getApiKey() === "") {
             const envNames = {
                 "claude": "ANTHROPIC_API_KEY",

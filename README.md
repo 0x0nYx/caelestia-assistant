@@ -57,6 +57,8 @@ This repository also ships the shell's chat sidebar, `shell/modules/sidebar/AiAs
 - **Opt-in and user-keyed.** Out of the box the sidebar targets a local Ollama instance; cloud providers (Anthropic, OpenAI-compatible endpoints, OpenRouter, Gemini, or a Claude Code subscription login) run only if you configure one, with your own API key stored in the session keyring (Secret Service / KWallet) — never in shell.json. The offline `assistant/` core makes no network calls at all beyond the loopback-only Ollama exception in its optional generative layer.
 - **A fallback, not the intelligence.** The sidebar is the escape hatch for requests outside the local ontology's domain — general questions, web search, free-form discussion. The deterministic layers remain the primary path; this tier exists so the honest answer to "write me a paragraph" is a chat model you chose, not a classical algorithm pretending.
 - **Senses ungated, actions gated.** The model's read-only observation tools (screenshot, web search/read, the deterministic `caelestia_genius_*` bridge calls, weather, settings reads) run directly. Every state-changing tool call is routed through a validated gate before anything runs: settings changes through `shell/services/SettingsTools.qml` (typed registry validation, preview, Apply/Cancel), and `caelestia_command`, `open_app` and `set_timer` through `shell/services/CommandGate.qml` (a verified read-only allow-list — `caelestia version`, `caelestia help`, bare `scheme list`/`scheme get` — then the exact command on a preview card the user must Apply). A prompt-injected instruction in a fetched webpage can at worst produce a card the user ignores.
+- **Local first, by architecture.** Every prompt is offered to the offline assistant's cortex router first — the unified dispatcher (`assistant/cortex/dispatch.py`, reached over the JSON bridge) decides with the router's own ABSTAIN/AMBIGUOUS gates and the conformal verdicts, never with sidebar-side keyword logic. Only a low-confidence request hands off to the cloud provider you configured; a confident settings request is planned, validated and applied through the same gated settings surface (single change applies and is undoable; multiple changes show the preview card). When the assistant's bridge is not installed, the sidebar says so in its log and falls back to the cloud tier.
+- **The ontology grows toward the ceiling.** Every hand-off is logged locally as a bounded "local-ontology gap" (a stemmed query shape and intent category — not your raw text), and `caelestia-assist cortex gaps` clusters them with the same minimum-support and purity floor the workspace profiles use. A consistent, repeated gap becomes a ledger proposal — "N requests like X fell through to cloud this month — want a local tool for this?" — that you approve or reject. Nothing is ever auto-added.
 - **No silent telemetry.** The only network calls are the ones you initiate in the chat, to the provider you configured. Nothing else in this repository phones home.
 
 ## The agent
@@ -121,6 +123,10 @@ python3 -m assistant.diagnostics.telemetry
 
 # Batch-review near-threshold phrases (logged, never silently learned)
 caelestia-assist cortex review list
+
+# Local-ontology gaps: what fell through to the cloud sidebar, clustered
+caelestia-assist cortex gaps            # read-only summary
+caelestia-assist cortex gaps --propose  # ledger proposals, never auto-applied
 
 # The second brain
 caelestia-assist brief                       # today on one deterministic page

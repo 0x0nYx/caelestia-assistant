@@ -462,3 +462,62 @@ Suite 1297 green; selfcheck green.
 (9a28465 -> 09d522e), 59 files changed, +10,031/-976. Working tree
 clean. Issue #120 checked at session start (OPEN, 14 comments, last
 updated 2026-09-25T17:34:30Z; snapshot's core facts still match).
+
+---
+
+## Session 2 — 2026-09-26 (Agent exponential-build — baseline)
+
+Task ID: 0
+Agent: ANI engineering agent (autonomous exponential-build run)
+
+Scope of this session (fixed by the operating prompt; no phases beyond
+it): Phase 1 unification layer (cortex/inbox.py, explain_unified.py,
+diagnostics/fusion.py), Phase 2 NLU & resource governance
+(dreamtime throttle, slot_tagger, lexicon trust, genius/units.py),
+Phase 3 second-brain depth (personal/correlate.py, linkrec blend,
+personal/selfcal.py), Phase 4 governance docs. One commit per
+sub-item; branch `agent/exponential-build`; main untouched.
+
+### Setup
+
+- Fresh clone of `0x0nYx/caelestia-assistant` (HEAD `7d53b72`,
+  branch `main`) into `/home/z/my-project/caelestia-assistant`.
+- Branch `agent/exponential-build` created from main; main will not
+  be committed to or merged by the agent.
+- Read-only reference checkout: `ladybug-me/caelestia-kde` (shallow)
+  at `/home/z/my-project/caelestia-kde`, needed only for the
+  gen_adapter byte-identity verification.
+- Read access confirmed to: assistant/genius/, assistant/cortex/,
+  assistant/brain/, assistant/settings/, assistant/diagnostics/,
+  assistant/agent/, assistant/scan/, assistant/brain/personal/.
+
+### Baseline (before any change)
+
+- Full suite: `python3 -m unittest discover -s . -p "test_*.py"`
+  → **1297 tests, OK (skipped=12)**, ~57 s. (Session 1 ended at
+  1297 OK skipped=1; two more skips are environmental — network/
+  display-free suite, deltas noted per-phase as commits land.)
+- `python3 -m assistant.hub selfcheck` → OK (rule schema valid,
+  risk tiers consistent, import policy clean, settings lint rules
+  valid).
+- Registry byte-identity: `python3 -m assistant.settings.gen_adapter
+  --verify --repo-root /home/z/my-project/caelestia-kde` → OK,
+  tools.json byte-identical to the cpp-headers adapter output.
+  NOTE on invocation: the operating prompt's literal command
+  (`python3 -m assistant.settings gen_adapter --verify`) is not the
+  recognized surface — the adapter's own module main is the entry
+  (`python3 -m assistant.settings.gen_adapter --verify`), and this
+  sandbox keeps the caelestia checkout outside the repo, hence the
+  explicit --repo-root. Equivalent check, same guard.
+- Grep-first pre-checks for Phases 1-3: no existing module named
+  inbox.py / explain_unified.py / fusion.py / slot_tagger.py /
+  units.py / correlate.py / selfcal.py anywhere in the tree — all
+  seven new-file items are genuinely new; extension items
+  (dreamtime.py, lexicon_diff.py, linkrec.py) will be re-checked
+  in place at their sub-item.
+
+### Plan for this session
+
+Phase 1 first (highest leverage, lowest risk), then Phase 2, Phase 3,
+Phase 4 docs; STOP conditions as written in the operating prompt; a
+final WORKLOG summary entry lists every sub-item outcome.

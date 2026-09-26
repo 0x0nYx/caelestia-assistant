@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/)-flavoured.
 
+## [Unreleased]
+
+- agent exponential-build: baseline recorded on branch
+  `agent/exponential-build` before any feature work — 1,297 tests OK
+  (skipped=12), `selfcheck` OK, gen_adapter byte-identity OK.
+
 ## [0.1.0] — 2026-09-26 — initial baseline
 
 The first release of the caelestia-assistant on-device intelligence

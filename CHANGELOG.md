@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Regret audit: `brain/regret.py` — every Beta bandit's cumulative
+  reward is now compared against the best-fixed-arm-in-hindsight
+  baseline in the periodic reports (`cortex report`, `brain
+  calibration`), with the estimate caveat printed, not claimed.
 - Off-policy evaluation gate: `brain ope SWITCH` replays the
   approve/reject ledger through a candidate kill-switch policy with an
   importance-weighted estimator (Dudik/Langford/Li 2011 framing) and

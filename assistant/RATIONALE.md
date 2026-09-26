@@ -980,6 +980,20 @@ the module writes NOTHING anywhere (ledger byte-identity pinned by
 test) and the standing note on every report says flipping the switch
 stays a human file edit.
 
+**3.3 regret-vs-best-fixed audit.** `brain/regret.py` (surfaced in
+`cortex report` for the strategy bandit and in `brain calibration` for
+the preset bandit): cumulative reward vs the best-fixed-arm-in-hindsight
+baseline, printed every time the periodic report runs. Honesty
+accounting: the flat prior's own mass is never counted as plays or
+rewards; the best-fixed total is labeled an ESTIMATE (it assumes the
+best arm's observed mean would have held over the whole horizon —
+unplayed rounds are unobserved) and the caveat travels on every
+report; a bandit with fewer than two played arms states that no policy
+comparison exists (regret 0 by definition); an untouched bandit
+ABSTAINS rather than reporting a meaningless zero; both input shapes
+work (aggregate posteriors and explicit per-round draw logs);
+deterministic, pure, nothing acts on the number.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -114,6 +114,19 @@ def cmd_calibration(args, out):
     r = service.calibration_report(args.ledger)
     for kind, s in r["acceptance_by_kind"].items():
         out.write(f"{kind}: mean={s['mean']} n={s['n']}\n")
+    # exponential-build 3.3: the preset bandit's regret vs always
+    # playing its best arm — an estimate, printed for the human.
+    from . import state as brain_state
+    from .preset_bandit import NamedBandit
+    from .regret import audit_from_arms
+    state_path = brain_state.resolve_path()
+    if state_path.exists():
+        state = brain_state.load(state_path)
+        bandit = NamedBandit.from_dict(state.get("preset_bandit", {}))
+        audit = audit_from_arms(bandit.arms)
+        out.write(f"preset bandit regret: {audit.get('status')} "
+                  f"(est. {audit.get('estimated_regret')} vs "
+                  f"always-{audit.get('best_fixed_arm')})\n")
     for row in r["confidence_calibration"]:
         out.write(f"  bucket {row['bucket']}: n={row['n']} "
                   f"avg_conf={row['avg_confidence']} approval_rate={row['approval_rate']}\n")

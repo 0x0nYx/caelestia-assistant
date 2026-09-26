@@ -403,6 +403,13 @@ class CortexLearner:
             "algorithm": result["algorithm"],
         }
 
+    def regret_audit(self) -> Dict[str, object]:
+        """Exponential-build 3.3: the strategy bandit's cumulative
+        reward against the best-fixed-arm-in-hindsight baseline — a
+        printed estimate over unobserved rounds, never acted on."""
+        from ..brain.regret import audit_from_arms
+        return audit_from_arms(self.bandit.arms)
+
     # -- persistence ----------------------------------------------------------
 
     def to_dict(self) -> Dict[str, object]:
@@ -438,6 +445,9 @@ class CortexLearner:
             },
             "drift": self.drift_check(),
             "drift_bocpd": self.bocpd_drift_check(),
+            # exponential-build 3.3: did the strategy bandit beat
+            # always-playing its single best arm? printed, not acted on.
+            "regret": self.regret_audit(),
             "fitted_weights": {
                 name: round(w, 4) for name, w in zip(_FEATURES, self.model.weights)
             },

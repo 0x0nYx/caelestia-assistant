@@ -18,9 +18,60 @@ class HubTests(unittest.TestCase):
         for name in ("diagnose", "ask", "search", "issue", "settings", "brain", "api"):
             self.assertIn(name, out.getvalue())
 
-    def test_unknown_command_exits_2(self):
-        with contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(hub.main(["bogus"]), 2)
+    def test_unknown_command_is_free_text_not_an_error(self):
+        # Phase 1 routing fix: a first token that matches no verb is no
+        # longer a hard exit-2 error — the whole argv routes as free text
+        # through the cortex pipeline (one-shot, read-only).
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["make", "my", "bar", "thinner"]), 0)
+        self.assertIn("[cortex]", out.getvalue())
+
+    def test_typo_verb_gets_did_you_mean_not_a_guess(self):
+        # A token within edit distance 2 of exactly one verb gets the
+        # settings layer's correction prompt on stderr — never executed.
+        err = io.StringIO()
+        out = io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["chatt"]), 1)
+        self.assertIn("did you mean: chat (distance 1)", err.getvalue())
+        self.assertNotIn("[cortex]", out.getvalue())
+
+    def test_ambiguous_typo_does_not_guess(self):
+        # "brif" is below the suggestion min length (the router's own
+        # guard): short tokens never get suggestions, so it falls through
+        # to the free-text path rather than a guess.
+        out = io.StringIO()
+        with contextlib.redirect_stderr(io.StringIO()), \
+                contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["brif"]), 0)
+        self.assertIn("[cortex]", out.getvalue())
+
+    def test_suggest_verb_tie_abstains(self):
+        # Two verbs equally close to the token: the suggestion abstains
+        # (the router's unique-correction rule) — never a coin flip.
+        saved = dict(hub.ROUTES)
+        try:
+            hub.ROUTES["alpha"] = (lambda _argv=None: 0, False)
+            hub.ROUTES["alpaa"] = (lambda _argv=None: 0, False)
+            self.assertIsNone(hub.suggest_verb("alpja"))  # distance 1 to both
+        finally:
+            hub.ROUTES.clear()
+            hub.ROUTES.update(saved)
+
+    def test_bare_help_still_prints_usage(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["help"]), 0)
+        self.assertIn("single entry point", out.getvalue())
+
+    def test_help_with_more_words_is_free_text(self):
+        # "help me make my bar thinner" is a request, not a usage request.
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["help", "me", "make", "my", "bar",
+                                       "thinner"]), 0)
+        self.assertIn("[cortex]", out.getvalue())
 
     def test_selfcheck_routes_to_diagnostics(self):
         with contextlib.redirect_stdout(io.StringIO()) as out:

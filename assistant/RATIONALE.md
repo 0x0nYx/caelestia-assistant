@@ -247,6 +247,84 @@ review round), everything in `sysintel.py` (never asked for in the
 thread), and any auto-apply path (the ledger and confirm cards stay the
 only writers).
 
+## 10. The verbless front door and inline delegation (routing fix)
+
+The assistant used to require the user to know which of 18 verbs their
+question belonged to before it would parse anything: a first token that
+matched no `ROUTES` key exited with code 2. That is a CLI-shaped contract
+imposed on a natural-language surface, and it failed exactly the users
+issue #120 is about — the person who types `caelestia-assist "make my bar
+thinner"` and has not read `--help`. The fix has three parts, each a
+generalization of machinery that already existed, not a new mechanism.
+
+**1. Verb tolerance (hub.py).** An unmatched first token is no longer an
+error. Within edit distance 2 of exactly one verb (the settings CLI's own
+forgiveness bound, `settings --tool setBarPositin` → "did you mean
+setBarPosition (distance 1)"), the hub prints the same style of
+suggestion to stderr and exits 1 — a prompt, never a silent guess; ties
+and sub-5-character tokens abstain to the free-text path (the router's
+own min-length and unique-correction discipline, applied at hub scope).
+The distance computation is `cortex/lexicon.py`'s `levenshtein` — the one
+implementation the router's query-side correction already uses — so no
+second edit-distance exists in the codebase. Everything else is free
+text: the whole argv becomes one request through the cortex pipeline
+one-shot, which is read-only and renders an answer, a pending plan, or a
+simulated agent plan. A leading `--` separator is honored and stripped,
+and a phrase that begins with a dash is passed past argparse's option
+parser with an explicit `--` guard — free text is never parsed as flags.
+
+**2. Inline delegation (cortex/delegate.py, cli.py).** The chat REPL
+already ran genius inline instead of printing a "try:" hint; that branch
+is now a table. Every DELEGATE category with a read-only entry point —
+genius (`meta.route_and_do`), diagnose (`engine.diagnose`), search
+(`retrieval.search.search`), brain (the brief — its synthesized answer to
+plan/focus-shaped requests), issue (a draft *preview*: without `--confirm`
+the issues module writes nothing, its own documented contract) — runs in
+the same turn, in both places the branch existed (the REPL loop and the
+one-shot `route` command), kept consistent the way genius already was. A
+runner failure degrades to the old hint card with an honest note; the
+"try:" strings survive as the fallback, not deleted. Nothing in the table
+adds a write path, a subprocess, or an import: ALLOWED_IMPORTS.txt is
+byte-identical before and after, and `selfcheck` stays green.
+
+**3. The agent delegate.** A fifth category, `agent`, extends the
+router's cue-lexicon and structural floors — the same mechanism that
+distinguishes settings from genius from search — rather than a second
+classifier. Two conditions must both hold: sequencing grammar on the
+full text ("... then ...", "after that", "first ... then", "step by
+step" — `router.AGENT_SEQ_RE`, floored at 0.84 like the genius pattern)
+AND boundary crossing (at least one clause the settings surface cannot
+address; checked before the compound splitter shreds the sequence,
+because for "clean my downloads then make the shell minimal" the ORDER
+is the request). Pure settings sequences keep their compound behavior:
+"disable blur then make animations faster" is still two ops in one gated
+plan. The runner calls `agent.cli.main` with `--simulate` only; the
+agent's execute path (and its stdin consent gate) is unreachable from a
+conversation — turning a simulation into action stays a manual step,
+same contract as `RATIONALE §5` (round three). Single-clause goal
+phrases ("clean up my downloads folder") reach the same delegate through
+the seeded agent surface doc, whose vocabulary is deliberately disjoint
+from the brain doc's note-taking words so "organize my notes" stays a
+brain request.
+
+**4. The sidebar's local-vs-cloud decision.** `cortex.dispatch` — the
+single decision point, never the sidebar's QML — now answers runnable
+DELEGATEs locally: the inline runner's output becomes the sidebar bubble
+(`outcome.answer`), and no gap is logged because the local ontology
+answered. Only a non-runnable delegate or a FAILED inline run hands off
+(reason `delegate:<surface>-inline-failed`, a countable category), and
+ABSTAIN / below-conformal-threshold hand-offs are untouched. The QML
+itself needed no change: it already renders `outcome.action`/`answer`,
+which is the architecture working as designed.
+
+Safety accounting for the whole fix: zero new write paths (the one write
+in chat remains the y/N-gated applier call; the one write in the bridge
+remains the state/ledger persistence the caller already owned); zero new
+imports; no auto-consent of any kind; the issue draft stays a preview;
+the agent stays simulated. Interaction edges touched: none against the
+shipped shell — no settings tool, QML property path, or doc anchor was
+changed, so no new citations are claimed.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

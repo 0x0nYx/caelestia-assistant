@@ -1,13 +1,17 @@
 """cortex.dispatch — the unified local-vs-cloud dispatcher (§5).
 
-These tests pin the three properties the architecture demands:
+These tests pin the properties the architecture demands:
 
 1. ONE DECISION POINT: the hand-off rule uses the router's own verdicts
    and the conformal calibrator's own verdict — nothing else. A confident
    settings request is answered locally (with the gated apply payload);
-   an ABSTAIN / no-candidates QUESTION / DELEGATE request hands off to
-   the cloud tier; a PLAN whose score the conformal calibrator does not
-   cover (when calibration data exists) hands off too.
+   an ABSTAIN / no-candidates QUESTION request hands off to the cloud
+   tier; a DELEGATE request to a surface WITH an inline runner answers
+   LOCALLY (phase 1.4 — genius/diagnose/search/brain/issue/agent run
+   read-only in the same turn; the agent always in --simulate), and only
+   a non-runnable delegate or a FAILED inline run hands off; a PLAN whose
+   score the conformal calibrator does not cover (when calibration data
+   exists) hands off too.
 2. GAP LOGGING: every hand-off lands in the bounded ``cortex_gaps`` state
    bucket as a query SHAPE + intent category — the raw text is never
    stored. Near-threshold hand-offs also feed the ``cortex_review`` batch.
@@ -94,13 +98,36 @@ class DispatchDecisionTests(unittest.TestCase):
         # near-threshold hand-offs also feed the batch-review surface
         self.assertTrue(state.get(REVIEW_KEY))
 
-    def test_delegate_hands_off_with_delegate_category(self):
+    def test_delegate_answers_locally_inline(self):
+        # Phase 1.4: a DELEGATE whose surface has an inline runner (genius /
+        # diagnose / search / brain / issue / agent) answers LOCALLY — the
+        # target layer runs read-only in the same turn and its output is the
+        # sidebar answer. Nothing is logged as a gap (the local ontology
+        # answered; there is nothing to cluster or count).
         state = {}
         outcome = dispatch("my shell crashed and nothing works", state=state,
                            file_path=self.target)
-        self.assertEqual(outcome["action"], "cloud")
-        self.assertEqual(outcome["reason"], "delegate:diagnose")
-        self.assertEqual(state[GAPS_KEY][0]["category"], "delegate:diagnose")
+        self.assertEqual(outcome["action"], "local")
+        self.assertIsNone(outcome["reason"])
+        self.assertTrue(outcome["answer"])
+        self.assertIn("delegate_payload", outcome)
+        self.assertEqual(outcome["result"]["delegate"], "diagnose")
+        self.assertNotIn(GAPS_KEY, state)
+
+    def test_non_runnable_delegate_still_hands_off(self):
+        # A delegate surface WITHOUT an inline runner is still a cloud
+        # hand-off with a countable reason — the gap bucket keeps its
+        # category. (No shipped surface is in this state today; the guard
+        # is pinned so a future unrunnable surface cannot silently leak
+        # local answers.)
+        from assistant.cortex.dispatch import _hand_off_reason
+
+        class _Stub:  # minimal shape of a CortexResult
+            verdict = "DELEGATE"
+            delegate = "unheard_of"
+        state = {}
+        self.assertEqual(_hand_off_reason(_Stub(), state),
+                         "delegate:unheard_of")
 
     def test_conformal_uncovered_plan_hands_off(self):
         # calibration history says accepted routes scored >= 0.99; a PLAN
@@ -132,9 +159,11 @@ class DispatchDecisionTests(unittest.TestCase):
 
     def test_hand_off_dedupes_by_shape_and_counts(self):
         state = {}
+        # Same tokens, same shape: two phrasings of the same unknown request
+        # share one counted bucket entry rather than stacking entries.
         dispatch("wibble frobnicate the quux", state=state,
                  file_path=self.target)
-        dispatch("wibble frobnicate the quux again", state=state,
+        dispatch("quux wibble frobnicate", state=state,
                  file_path=self.target)
         gaps = state[GAPS_KEY]
         # near-identical requests share a shape bucket entry (counted), and
@@ -142,6 +171,7 @@ class DispatchDecisionTests(unittest.TestCase):
         self.assertLessEqual(len(gaps), 3)
         total = sum(g["n"] for g in gaps)
         self.assertEqual(total, 2)
+        self.assertEqual(gaps[0]["n"], 2)
 
     def test_gap_bucket_is_bounded(self):
         state = {}
@@ -156,6 +186,61 @@ class DispatchDecisionTests(unittest.TestCase):
                            file_path=self.target)
         self.assertIn("session", outcome)
         self.assertIsInstance(outcome["session"], dict)
+
+    # -- phase 1.4: one bridge-level test per delegate category --------------
+    # The sidebar's dispatch op (brain.bridge handle -> cortex.dispatch)
+    # must resolve every inline-runnable delegate LOCALLY — the request
+    # must NOT be handed to the cloud tier now that the generalized
+    # DELEGATE handling answers it in-turn.
+
+    def _bridge_dispatch(self, text):
+        from assistant.brain import bridge
+
+        self._bridge_tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._bridge_tmp.cleanup)
+        state_path = Path(self._bridge_tmp.name) / "state.json"
+        response = bridge.handle(
+            {"op": "dispatch", "text": text, "file": str(self.target)},
+            state_path=str(state_path),
+            ledger_path=str(Path(self._bridge_tmp.name) / "ledger.json"),
+        )
+        self.assertTrue(response["ok"], response)
+        return response["result"]
+
+    def test_bridge_dispatch_genius_local(self):
+        outcome = self._bridge_dispatch("what is 2+2")
+        self.assertEqual(outcome["action"], "local")
+        self.assertTrue(outcome["answer"])
+
+    def test_bridge_dispatch_diagnose_local(self):
+        outcome = self._bridge_dispatch("my shell crashed and nothing works")
+        self.assertEqual(outcome["action"], "local")
+        self.assertTrue(any("diagnostics" in line for line in outcome["answer"]))
+
+    def test_bridge_dispatch_search_local(self):
+        outcome = self._bridge_dispatch("how do i find the lockscreen docs")
+        self.assertEqual(outcome["action"], "local")
+        self.assertTrue(any("retrieval hits" in line for line in outcome["answer"]))
+
+    def test_bridge_dispatch_brain_local(self):
+        outcome = self._bridge_dispatch("help me plan my tasks")
+        self.assertEqual(outcome["action"], "local")
+        self.assertTrue(any("BRIEF" in line for line in outcome["answer"]))
+
+    def test_bridge_dispatch_issue_local(self):
+        outcome = self._bridge_dispatch("i want to draft a bug report")
+        self.assertEqual(outcome["action"], "local")
+        self.assertTrue(any("DRAFT" in line for line in outcome["answer"]))
+
+    def test_bridge_dispatch_agent_local_and_simulated(self):
+        outcome = self._bridge_dispatch(
+            "clean my downloads then make the shell minimal")
+        self.assertEqual(outcome["action"], "local")
+        self.assertIsNone(outcome["reason"])
+        # the answer is a SIMULATED plan — consent nodes are visible as
+        # "would ASK" steps, never executed, never auto-consented.
+        self.assertTrue(any("simulation" in line for line in outcome["answer"]))
+        self.assertTrue(any("ASK" in line for line in outcome["answer"]))
 
 
 class GapClusteringTests(unittest.TestCase):

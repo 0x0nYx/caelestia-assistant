@@ -15,10 +15,22 @@
   caelestia-assist agent "goal" [--simulate]        agentic orchestrator (consent-gated)
   caelestia-assist api < request.json               JSON bridge for the brain (QML/IPC)
 
+Verbless front door (phase 1 routing fix): a first token that matches no
+verb above is no longer a hard error. A token within edit distance 2 of
+exactly one verb gets a "did you mean" prompt (the settings layer's own
+correction style — never a silent guess); anything else is treated as
+free text and routed through the cortex pipeline one-shot, so
+
+  caelestia-assist "make my bar thinner"
+
+works end to end: an answer, a pending plan, or a simulated agent plan.
+
 Every module keeps its own safety rules; this file only routes.
 """
 import sys
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+from .cortex.lexicon import levenshtein
 
 from .agent import cli as agent_cli
 from .brain import bridge
@@ -62,15 +74,73 @@ ROUTES = {
 }
 
 
+# Verb suggestion bounds: the same discipline the rest of the assistant
+# already applies. Distance 2 is the settings CLI's forgiveness bound
+# (``settings --tool setBarPositin`` -> "did you mean setBarPosition
+# (distance 1)"); tokens shorter than 5 characters are never suggested
+# against (the router's own min-length guard — at distance 2 short garbage
+# starts matching real verbs, and a wrong suggestion is worse than none).
+_SUGGEST_MAX_DISTANCE = 2
+_SUGGEST_MIN_LEN = 5
+
+
+def suggest_verb(cmd: str) -> Optional[Tuple[str, int]]:
+    """The unique ROUTES verb within edit distance 2 of ``cmd``.
+
+    Reuses ``cortex/lexicon.py``'s ``levenshtein`` (the single edit-distance
+    implementation the router's query-side correction already uses) — this
+    is a caller, not a second implementation. Returns ``(verb, distance)``
+    only when exactly one verb is closest (ties are abstentions, mirroring
+    the router's unique-correction rule); ``None`` otherwise.
+    """
+    if len(cmd) < _SUGGEST_MIN_LEN or not cmd.isalpha():
+        return None
+    lowered = cmd.lower()
+    ranked: List[Tuple[int, str]] = []
+    for verb in ROUTES:
+        distance = levenshtein(lowered, verb, cap=_SUGGEST_MAX_DISTANCE)
+        if distance <= _SUGGEST_MAX_DISTANCE:
+            ranked.append((distance, verb))
+    if not ranked:
+        return None
+    ranked.sort()
+    if len(ranked) > 1 and ranked[0][0] == ranked[1][0]:
+        return None  # ambiguous: two verbs equally close — do not guess
+    return ranked[0][1], ranked[0][0]
+
+
+def _route_free_text(argv: List[str]) -> int:
+    """The verbless front door: whole argv as one request, through the
+    cortex pipeline one-shot (read-only routing; writes stay behind the
+    chat confirmation gate). A leading ``--`` separator is dropped so
+    `caelestia-assist -- make my bar thinner` reads naturally too."""
+    words = argv[1:] if argv and argv[0] == "--" else argv
+    text = " ".join(words).strip()
+    if not text:
+        print(USAGE)
+        return 0
+    # Guard argparse from a free-text phrase that happens to start with
+    # a dash: everything after `--` is the positional, never an option.
+    guard = ["--"] if text.startswith("-") else []
+    return cortex_cli.main(["route", *guard, text])
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] in ("-h", "--help", "help"):
+    if not argv or (argv[0] in ("-h", "--help", "help") and len(argv) == 1):
         print(USAGE)
         return 0
     cmd, rest = argv[0], argv[1:]
     if cmd not in ROUTES:
-        print(f"caelestia-assist: unknown command {cmd!r}; try --help", file=sys.stderr)
-        return 2
+        near = suggest_verb(cmd)
+        if near is not None:
+            verb, distance = near
+            # The settings layer's own correction voice: the suggestion is
+            # printed, never executed — the user re-runs the right verb.
+            print(f"caelestia-assist: unknown command {cmd!r}", file=sys.stderr)
+            print(f"did you mean: {verb} (distance {distance})", file=sys.stderr)
+            return 1
+        return _route_free_text(argv)
     fn, keep_name = ROUTES[cmd]
     return fn(argv if keep_name else rest)
 

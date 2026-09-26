@@ -38,6 +38,7 @@ from ..settings import applier as settings_applier
 from ..settings import history as settings_history
 from ..settings.cli import default_target, render_plan
 from . import learn as cortex_learn
+from .delegate import run_delegate, runner_names
 from .learn import CortexLearner
 from .memory import (
     followup_suggestion,
@@ -88,30 +89,20 @@ def _fmt_candidates(result) -> List[str]:
 
 def _render_genius(genius_result: Dict[str, object]) -> None:
     """Compact renderer for an inline genius answer inside cortex turns."""
-    domain = genius_result.get("domain") or genius_result.get("verdict")
-    confidence = genius_result.get("confidence")
-    print(f"  genius -> {domain}" + (f" (confidence {confidence})" if confidence else ""))
-    payload = genius_result.get("result")
-    if payload is None:
-        if genius_result.get("error"):
-            print(f"  error: {genius_result['error']}")
-        elif genius_result.get("message"):
-            print(f"  {genius_result['message']}")
-        return
-    for key, value in list(payload.items())[:14]:
-        if key == "note":
-            continue  # rendered separately below
-        if isinstance(value, (int, float, str, bool)) or value is None:
-            print(f"  {key.replace('_', ' ')}: {value}")
-        elif isinstance(value, list) and value and isinstance(value[0], (int, float, str)):
-            print(f"  {key.replace('_', ' ')}: {value[:8]}")
-    note = payload.get("note") if isinstance(payload, dict) else None
-    if note:
-        print(f"  note: {note}")
+    from .delegate import _format_genius
+
+    for line in _format_genius(dict(genius_result)):
+        print(line)
 
 
-def _render_turn(result, *, applied: bool = False) -> List[str]:
-    """Human rendering of one cortex result (the chat card)."""
+def _render_turn(result, *, applied: bool = False,
+                 inline_delegate: bool = False) -> List[str]:
+    """Human rendering of one cortex result (the chat card).
+
+    ``inline_delegate``: the DELEGATE target already ran inline this turn
+    (its answer follows this card), so the "try:" hint is suppressed —
+    it stays the fallback for the rare case the inline run itself fails.
+    """
     lines: List[str] = []
     verdict_label = {
         "PLAN": "FOUND A CHANGE" if applied else "PROPOSED CHANGE",
@@ -148,12 +139,13 @@ def _render_turn(result, *, applied: bool = False) -> List[str]:
         for entry in hp.get("entries", [])[:5]:
             label = entry.get("label") or f"#{entry.get('id')}"
             lines.append(f"    - [{entry.get('id')}] {label} at {entry.get('at')}")
-    if result.delegate:
+    if result.delegate and not inline_delegate:
         hint = {
             "diagnose": "caelestia-assist diagnose <file>",
             "search": "caelestia-assist search \"...\"",
             "brain": "caelestia-assist brain --help",
             "issue": "caelestia-assist issue draft --title ...",
+            "agent": "caelestia-assist agent \"...\" --simulate",
         }.get(result.delegate, result.delegate)
         lines.append(f"  try: {hint}")
     if result.suggestions:
@@ -306,22 +298,28 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
                 review_bucket, text, result.verdict,
                 result.candidates or [], at=_now())
 
-        # Genius delegation: the request left the settings surface entirely
-        # (math / logic / statistics / text analysis / planning / ...) — run
-        # the universal layer inline, read-only, and show its work.
-        if result.verdict == "DELEGATE" and result.delegate == "genius":
-            from ..genius import meta as genius_meta
-            genius_result = genius_meta.route_and_do(text, state.get("genius_learn"))
-            if args.json:
-                print(json.dumps({"type": "turn", "verdict": "DELEGATE",
-                                  "delegate": "genius", "genius": genius_result}))
-            else:
-                print("\n".join(_render_turn(result)))
-                _render_genius(genius_result)
-            if learner is not None:
-                episodes = memory_record(episodes,
-                                         episode_for(result, text, "routed", now=_now()))
-            continue
+        # Inline delegation (routing fix, phase 1.2/1.3): the DELEGATE
+        # target runs in this turn — genius (as before, now generalized),
+        # diagnose, search, brain, issue, and the agent's simulated task
+        # graph. A failed inline run degrades to the hint card below.
+        if result.verdict == "DELEGATE" and result.delegate in runner_names():
+            inline = run_delegate(result.delegate, text, state)
+            if inline is not None:
+                payload, inline_lines = inline
+                if args.json:
+                    print(json.dumps(
+                        {"type": "turn", "verdict": "DELEGATE",
+                         "delegate": result.delegate,
+                         result.delegate: payload}, default=str))
+                else:
+                    print("\n".join(_render_turn(result, inline_delegate=True)))
+                    print("\n".join(inline_lines))
+                if learner is not None:
+                    episodes = memory_record(episodes,
+                                             episode_for(result, text, "routed", now=_now()))
+                continue
+            result.notes.append(
+                f"inline {result.delegate} run failed — the fallback hint stands")
 
         applied = False
         undone = False
@@ -406,17 +404,22 @@ def cmd_route(argv: Optional[List[str]] = None) -> int:
     state = brain_state.load()
     learner = _load_learner(state)
     result = cortex_process(args.text, learner=learner, file_path=target, now=_now())
-    if result.verdict == "DELEGATE" and result.delegate == "genius":
-        # run the universal layer inline so `route` answers, not just points
-        from ..genius import meta as genius_meta
-        genius_result = genius_meta.route_and_do(args.text, state.get("genius_learn"))
-        if args.json:
-            print(json.dumps({"verdict": "DELEGATE", "delegate": "genius",
-                              "genius": genius_result}))
-        else:
-            print("\n".join(_render_turn(result)))
-            _render_genius(genius_result)
-        return 0
+    # Inline delegation (routing fix, phase 1.2/1.3): one-shot answers the
+    # same way the chat REPL does — run the target layer inline, render in
+    # the same turn; a failed run falls through to the hint card.
+    if result.verdict == "DELEGATE" and result.delegate in runner_names():
+        inline = run_delegate(result.delegate, args.text, state)
+        if inline is not None:
+            payload, inline_lines = inline
+            if args.json:
+                print(json.dumps({"verdict": "DELEGATE", "delegate": result.delegate,
+                                  result.delegate: payload}, default=str))
+            else:
+                print("\n".join(_render_turn(result, inline_delegate=True)))
+                print("\n".join(inline_lines))
+            return 0
+        result.notes.append(
+            f"inline {result.delegate} run failed — the fallback hint stands")
     if args.json:
         print(json.dumps(result.to_dict()))
     else:

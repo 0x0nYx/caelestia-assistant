@@ -160,6 +160,18 @@ _SURFACE_DOCS: Tuple[Tuple[str, str], ...] = (
     ("genius", "solve calculate compute derivative integral equation root "
                "probability bayes matrix eigenvalue tautology truth table "
                "permutation regression correlation outlier average numbers"),
+    # agent: the consent-gated orchestrator over every layer. Goal-shaped
+    # requests ("clean my downloads", "tidy up my files", "audit my
+    # packages") name filesystem/maintenance work no settings tool and no
+    # single genius domain owns — the agent composes across layers, always
+    # starting from a simulated task graph. Seeded with archetype nouns
+    # (clean/tidy/organize/downloads/backup/audit), deliberately disjoint
+    # from the brain doc's note-taking vocabulary (notes/journal/remind)
+    # so "organize my notes" stays a brain request while "organize my
+    # downloads" is agent-shaped.
+    ("agent", "clean tidy declutter downloads backups archive audit "
+              "packages my files folder go through step by step checklist "
+              "multi-step workflow goal do everything"),
 )
 
 # Pattern boosts: (regex, surface, floor). A matching pattern floors the
@@ -178,12 +190,31 @@ _GENIUS_RE = re.compile(r"\d\s*[+\-*/^%]\s*\d|\d+(?:\.\d+)?\s*%\s*(?:of|off)\s*\
                         r"\btaylor\b|\btautolog\w*\b|\bsatisfiable\b|\btruth table\b|"
                         r"\bbayes\b|\beigenvalue\b|\bhow many ways\b")
 
+# Agent sequencing grammar: "... then ..." / "after that" / "first ... then"
+# / "step by step" signal a TIME-ORDERED multi-step goal spanning more than
+# one clause. The compound splitter splits on "then" and routes each side
+# independently, which is right for "disable blur then move the dock" (two
+# settings ops, one plan) but wrong for "clean my downloads then make the
+# shell minimal" — the sequence IS the request. This regex is the
+# structural cue the pipeline consults on the FULL resolved text (before
+# the splitter shreds it); high-precision sequencing vocabulary only, so
+# simultaneous conjunction ("and") is never agent-shaped by accident.
+AGENT_SEQ_RE = re.compile(
+    r"\bthen\b|\bafter\s+that\b|\bafterwards\b|\bstep\s+by\s+step\b|"
+    r"\bfirst\b[^.!?]{0,80}\bthen\b|\bone\s+by\s+one\b|\bdirectly\s+after\b"
+)
+
 PATTERN_BOOSTS: Tuple[Tuple[re.Pattern[str], str, float], ...] = (
     (_WHY_RE, "explain", 0.78),
     (_EXPLAIN_HINT_RE, "explain", 0.66),
     (_UNDO_RE, "undo", 0.78),
     (_HISTORY_RE, "history", 0.80),
     (_GENIUS_RE, "genius", 0.82),
+    # Sequencing grammar floors the agent surface on any route() call that
+    # still sees the connective (single-clause requests and whole-text
+    # calls). The pipeline applies the same regex pre-split for compound
+    # requests — one mechanism, both scopes.
+    (AGENT_SEQ_RE, "agent", 0.84),
 )
 
 # Preset triggers (parser.py §3.7 precedence: preset BEFORE per-tool

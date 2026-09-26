@@ -48,7 +48,13 @@ from .learn import CortexLearner
 from .memory import new_episode
 from .nlhistory import parse_query as parse_history_query
 from .nlhistory import plan as plan_history
-from .router import RouteResult, RouterState, DEFAULT_STATE, route
+from .router import (
+    AGENT_SEQ_RE,
+    RouteResult,
+    RouterState,
+    DEFAULT_STATE,
+    route,
+)
 from .session import SessionState, turn as session_turn
 
 # Intensity modifiers scale the step count / multiply factor.
@@ -70,6 +76,50 @@ _WALLPAPER_SUGGESTIONS = [
     "SUGGESTED_NOT_EXECUTED: caelestia wallpaper -f <path>",
     "SUGGESTED_NOT_EXECUTED: caelestia wallpaper -r (random)",
 ]
+
+
+# Surfaces that are not shell.json tools: routing to any of these means
+# the clause left the settings ontology (the same set the pipeline's
+# delegate branch handles, plus the inert/terminal verdict surfaces).
+_NON_TOOL_SURFACES = frozenset({
+    "explain", "undo", "history", "scheme", "wallpaper",
+    "diagnose", "search", "brain", "issue", "genius", "agent",
+})
+
+
+def agent_shaped(text: str, compound: CompoundResult) -> bool:
+    """True when the request is a sequenced multi-step GOAL that crosses
+    the settings boundary — the structural cue the agent delegate keys on.
+
+    Two conditions, both required (the router's own cue-lexicon +
+    structural-floor discipline, applied at full-text scope):
+
+    - sequencing grammar: ``router.AGENT_SEQ_RE`` ("... then ...",
+      "after that", "first ... then", "step by step") on the full text —
+      the connective the compound splitter would otherwise shred is the
+      signal that the ORDER of the clauses is part of the request;
+    - boundary crossing: at least one clause the settings surface cannot
+      turn into an op (ABSTAIN / no top candidate / routed to a
+      non-tool surface such as genius or search).
+
+    Pure settings sequences ("disable blur then make the dock smaller")
+    keep their existing compound behavior: two ops, one composed plan,
+    one confirmation gate. Sequencing + boundary crossing is exactly the
+    shape the agent's simulated task graph exists for.
+    """
+    if compound.single:
+        # A single clause keeps its sequencing vocabulary intact, so the
+        # router's pattern boost already floors the agent surface — the
+        # per-clause delegate branch below handles it.
+        return False
+    if not AGENT_SEQ_RE.search(text.lower()):
+        return False
+    for clause_route in compound.routes:
+        top = clause_route.top
+        if (top is None or clause_route.verdict == "ABSTAIN"
+                or top.surface in _NON_TOOL_SURFACES):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +386,20 @@ def process(
         result.questions.append(compound.routes[0].question or "no addressable request")
         return result
 
+    # 2.5 Agent shape: a sequenced multi-step goal that crosses the settings
+    # boundary delegates to the agent layer WHOLE — the per-clause splitter
+    # would shred the sequence and half-address it. The agent answers with a
+    # simulated task graph (consent stays a manual step, always).
+    if agent_shaped(resolved, compound):
+        result.verdict = "DELEGATE"
+        result.delegate = "agent"
+        result.resolved_text = resolved
+        result.confidence = 0.0
+        result.notes.append(
+            "multi-step request across layers — the agent layer owns it "
+            "(simulated plan only; nothing runs without your consent)")
+        return result
+
     ops: List[Dict[str, Any]] = []
     questions: List[str] = []
     notes: List[str] = list(compound.notes)
@@ -389,7 +453,7 @@ def process(
                 "reason": history_plan.reason,
                 "entries": history_plan.entries, "total": history_plan.total_entries,
             }
-        elif surface in ("diagnose", "search", "brain", "issue", "genius"):
+        elif surface in ("diagnose", "search", "brain", "issue", "genius", "agent"):
             result.delegate = surface
             notes.append(f"this reads like a {surface} request — the {surface} layer owns it")
         else:

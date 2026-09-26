@@ -448,6 +448,65 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("setDockIconSize", tools)
 
 
+class AgentDelegationTests(unittest.TestCase):
+    """Phase 1.3: multi-step / goal-shaped requests route to the agent
+    layer (a simulated task graph, consent untouched) instead of ABSTAIN
+    or a settings misfire."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.dir = Path(self._tmp.name)
+        self.target = _write_target(self.dir)
+
+    def test_sequenced_goal_delegates_to_agent(self):
+        result = process("clean my downloads then make the shell minimal",
+                         file_path=self.target)
+        self.assertEqual(result.verdict, "DELEGATE")
+        self.assertEqual(result.delegate, "agent")
+        self.assertIn("consent", " ".join(result.notes))
+
+    def test_more_multi_step_phrases_delegate_to_agent(self):
+        for text in (
+            "tidy up my files then make the bar smaller",
+            "first audit my packages then declutter the dock",
+            "clean my downloads, after that make everything minimal",
+            "back up my dotfiles then make the shell minimal",
+        ):
+            result = process(text, file_path=self.target)
+            self.assertEqual(result.verdict, "DELEGATE", text)
+            self.assertEqual(result.delegate, "agent", text)
+
+    def test_single_step_goal_shape_delegates_to_agent(self):
+        # No sequencing connective at all: the archetype vocabulary alone
+        # (clean + downloads) routes to the agent surface.
+        result = process("clean up my downloads folder", file_path=self.target)
+        self.assertEqual(result.verdict, "DELEGATE")
+        self.assertEqual(result.delegate, "agent")
+
+    def test_pure_settings_sequence_stays_compound(self):
+        # Sequencing over settings-addressable clauses is NOT agent-shaped:
+        # the compound planner composes both ops into one gated plan.
+        result = process("disable blur then make animations faster",
+                         file_path=self.target)
+        self.assertEqual(result.verdict, "PLAN")
+        self.assertIsNone(result.delegate)
+        tools = {e["tool"] for e in result.plan["entries"]}
+        self.assertEqual(tools, {"setBlurEnabled", "setAnimationSpeed"})
+
+    def test_simultaneous_conjunction_is_not_agent_shaped(self):
+        result = process("make the bar thinner and the dock smaller",
+                         file_path=self.target)
+        self.assertEqual(result.verdict, "PLAN")
+        self.assertIsNone(result.delegate)
+
+    def test_note_taking_vocabulary_stays_brain(self):
+        # The agent doc is deliberately disjoint from the brain doc's
+        # note vocabulary: "organize my notes" is a brain request.
+        result = process("organize my notes", file_path=self.target)
+        self.assertEqual(result.delegate, "brain")
+
+
 class CliAndWiringTests(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -473,6 +532,116 @@ class CliAndWiringTests(unittest.TestCase):
         payload = json.loads(buffer.getvalue())
         self.assertEqual(payload["verdict"], "PLAN")
         self.assertEqual(payload["ops"][0]["tool"], "setBarScale")
+
+    # -- inline delegate runs (routing fix, phase 1.2/1.3) ------------------
+    # One phrase per DELEGATE category: each must now produce an INLINE
+    # ANSWER in the same turn, not the old "try: <command>" hint. The hint
+    # itself stays as the fallback when the inline run itself fails.
+
+    def _route_capture(self, text):
+        import io
+        from contextlib import redirect_stdout
+        from assistant.cortex.cli import cmd_route
+
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = cmd_route([text, "--file", str(self.target)])
+        return code, buffer.getvalue()
+
+    def test_inline_genius_answers_instead_of_hint(self):
+        code, out = self._route_capture("what is 2+2")
+        self.assertEqual(code, 0)
+        self.assertIn("genius ->", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_diagnose_answers_instead_of_hint(self):
+        code, out = self._route_capture("my shell crashed and nothing works")
+        self.assertEqual(code, 0)
+        self.assertIn("diagnostics", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_search_answers_instead_of_hint(self):
+        code, out = self._route_capture("how do i find the lockscreen docs")
+        self.assertEqual(code, 0)
+        self.assertIn("retrieval hits", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_brain_answers_instead_of_hint(self):
+        code, out = self._route_capture("help me plan my tasks")
+        self.assertEqual(code, 0)
+        self.assertIn("BRIEF", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_issue_answers_instead_of_hint(self):
+        code, out = self._route_capture("i want to draft a bug report")
+        self.assertEqual(code, 0)
+        self.assertIn("DRAFT — NOT SUBMITTED", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_agent_simulates_instead_of_hint(self):
+        code, out = self._route_capture(
+            "clean my downloads then make the shell minimal")
+        self.assertEqual(code, 0)
+        self.assertIn("simulation (nothing executed)", out)
+        self.assertIn("[would ASK you]", out)
+        self.assertNotIn("try:", out)
+
+    def test_inline_run_failure_keeps_the_hint_fallback(self):
+        # The safety net: when the inline run itself fails, the turn shows
+        # the "try:" hint instead of crashing — never silence, never a crash.
+        import io
+        from contextlib import redirect_stdout
+        from unittest import mock
+
+        from assistant.cortex import delegate as delegate_mod
+        from assistant.cortex.cli import cmd_route
+
+        original = delegate_mod.RUNNERS["diagnose"]
+        with mock.patch.dict(delegate_mod.RUNNERS,
+                             {"diagnose": mock.Mock(side_effect=RuntimeError("boom"))}):
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                code = cmd_route(["my shell crashed and nothing works",
+                                  "--file", str(self.target)])
+        self.assertEqual(code, 0)  # degraded, not crashed
+        self.assertIn("try: caelestia-assist diagnose", buffer.getvalue())
+        self.assertIn("inline diagnose run failed", buffer.getvalue())
+        self.assertIs(delegate_mod.RUNNERS.get("diagnose"), original)
+
+    def test_inline_delegate_json_shape(self):
+        import io
+        from contextlib import redirect_stdout
+        from assistant.cortex.cli import cmd_route
+
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = cmd_route(["what is 2+2", "--file", str(self.target), "--json"])
+        self.assertEqual(code, 0)
+        payload = json.loads(buffer.getvalue())
+        self.assertEqual(payload["verdict"], "DELEGATE")
+        self.assertEqual(payload["delegate"], "genius")
+        self.assertIn("genius", payload)
+        self.assertEqual(payload["genius"]["domain"], "math_eval")
+
+    def test_chat_repl_inline_delegate(self):
+        # The REPL path answers delegates inline too (the same generalized
+        # branch, both sites kept consistent — the way genius already was).
+        import io
+        import sys
+        from contextlib import redirect_stdout
+
+        from assistant.cortex.cli import cmd_chat
+
+        stdin = io.StringIO("what is 2+2\n/exit\n")
+        original_stdin, sys.stdin = sys.stdin, stdin
+        try:
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                cmd_chat(["--file", str(self.target), "--no-learn"])
+        finally:
+            sys.stdin = original_stdin
+        self.assertIn("genius ->", buffer.getvalue())
+        self.assertNotIn("try:", buffer.getvalue())
 
     def test_route_command_json_explain_verdict(self):
         # Regression: an EXPLAIN verdict used to leak the raw ToolSpec

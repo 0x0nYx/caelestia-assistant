@@ -11,9 +11,14 @@ THE HAND-OFF RULE (existing gates only — no second threshold system):
 - verdict ``ABSTAIN``, or ``QUESTION`` with no candidates at all (nothing
   scored: the router's own min_score gate in effect)  -> cloud,
   reason ``router-abstain``;
-- verdict ``DELEGATE`` (the request reads like diagnose/search/brain/
-  issue/genius — outside the settings ontology by construction) -> cloud,
-  reason ``delegate:<surface>``;
+- verdict ``DELEGATE`` to a surface WITHOUT an inline runner -> cloud,
+  reason ``delegate:<surface>``. A DELEGATE surface WITH an inline
+  runner (genius / diagnose / search / brain / issue / agent — the
+  routing fix's generalized inline execution, ``cortex/delegate.py``)
+  answers LOCALLY: the target layer runs read-only in the same turn
+  (the agent always in --simulate) and its answer becomes the sidebar
+  bubble. Only a FAILED inline run hands off, reason
+  ``delegate:<surface>-inline-failed``;
 - verdict ``PLAN`` whose top-route score is NOT covered by the conformal
   calibrator's verdict, when calibration data exists (>= 5 accepted
   routes) -> cloud, reason ``below-conformal-threshold``. No calibration
@@ -21,7 +26,7 @@ THE HAND-OFF RULE (existing gates only — no second threshold system):
   local rather than being punted on a guess;
 - everything else stays LOCAL: PLAN (validated ops), QUESTION with
   candidates (the local layer owns the clarification, with its session
-  machinery), EXPLAIN / UNDO / LIST / INERT.
+  machinery), EXPLAIN / UNDO / LIST / INERT, and runnable DELEGATEs.
 
 GAP LOGGING (every hand-off, §5.2): the state's ``cortex_gaps`` bucket —
 the same bounded-bucket discipline as ``cortex_review`` (dedup by shape,
@@ -53,6 +58,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .learn import REVIEW_KEY, CortexLearner, log_review_candidate
+from .delegate import run_delegate, runner_names
 from .pipeline import process
 from .session import SessionState
 from .vectorize import tokenize
@@ -259,6 +265,22 @@ def dispatch(text: str, *, state: Optional[Dict[str, Any]] = None,
     result = process(text, session=session, learner=learner, file_path=file_path)
 
     reason = _hand_off_reason(result, state)
+
+    # Inline-runnable delegates answer LOCALLY (the routing fix's decision
+    # point, kept in the cortex layer — never the sidebar's QML): genius /
+    # diagnose / search / brain / issue / agent requests run their target
+    # layer inline, read-only, and the sidebar shows that answer instead of
+    # handing the request to the cloud tier. A failed inline run falls back
+    # to the cloud tier with a distinct, countable reason.
+    inline: Optional[tuple] = None
+    if (reason and result.verdict == "DELEGATE"
+            and result.delegate in runner_names()):
+        inline = run_delegate(result.delegate, text, state)
+        if inline is not None:
+            reason = None
+        else:
+            reason = f"delegate:{result.delegate}-inline-failed"
+
     outcome: Dict[str, Any] = {
         "action": "cloud" if reason else "local",
         "reason": reason,
@@ -276,7 +298,13 @@ def dispatch(text: str, *, state: Optional[Dict[str, Any]] = None,
                 result.candidates or [], at=now)
         return outcome
 
-    outcome["answer"] = render_answer(result)
+    if inline is not None:
+        payload, inline_lines = inline
+        answer = [line.strip() for line in inline_lines if line.strip()]
+        outcome["answer"] = answer or render_answer(result)
+        outcome["delegate_payload"] = payload
+    else:
+        outcome["answer"] = render_answer(result)
     apply_info = apply_calls(result)
     if apply_info is not None:
         outcome["apply"] = apply_info

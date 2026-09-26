@@ -21,6 +21,12 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Personal prediction calibration (`brain/personal/selfcal.py`): an
+  opt-in Brier-score ledger (Brier 1950) over the user's own STATED
+  predictions with explicit resolution — certainty claims rejected
+  rather than clamped, double resolution refused, nothing inferred
+  from unstated behavior; a distinct personal-only instance
+  (brain/calibrate.py untouched).
 - Backlink suggestion blend (`brain/personal/linkrec.py`): the
   Adamic-Adar graph signal combined with TF-IDF cosine similarity from
   the shared textmine engine (new public `tfidf_vectors`/`cosine`

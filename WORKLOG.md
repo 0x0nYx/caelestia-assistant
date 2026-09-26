@@ -746,6 +746,35 @@ final WORKLOG summary entry lists every sub-item outcome.
   signer outranks disjoint one), empty-history honesty, the
   never-auto-skip invariant, event-log bound.
 
+### Phase 3.3 — personal prediction calibration — SHIPPED
+
+- Grep-first result: brain/calibrate.py is the routing-confidence
+  posterior (untouched, pinned); personal/journal.py scores recorded
+  DECISIONS. Neither scores the user's own forward-looking STATED
+  predictions — genuinely new, built as a distinct personal-only
+  instance mirroring the calibrate pattern.
+- New `assistant/brain/personal/selfcal.py` (stays inside the personal
+  scope split; own state key `personal_predictions`; calibrate.py NOT
+  modified):
+  * predict() — records a STATED prediction with probability strictly
+    inside (0,1): certainty claims are rejected, never clamped;
+    optional due date; explicit logging ONLY (nothing inferred from
+    unstated behavior anywhere in the module);
+  * resolve() — records what happened; double resolution refused (the
+    ledger keeps its first resolution — no rewriting history);
+  * brier_score() — Brier 1950's proper scoring rule over resolved
+    predictions; None when nothing resolved (no invented scores);
+  * calibration_curve() — stated-p bucket vs hit rate, journal.py's
+    fewer/wider-bins honesty rule; open_predictions(); summary().
+- Pure functions, no I/O; the caller persists via state.py (learned-
+  state JSON, an existing write path).
+- Tests: `assistant/brain/personal/tests/test_selfcal.py` — 10 cases:
+  explicit-only creation, certainty rejection, hand-computed Brier
+  (0.45), no-invented-score honesty, double-resolution and unknown-id
+  refusals, calibration buckets, summary framing, distinct-instance
+  pins (own state key; calibrate.py surface untouched).
+
+
 ### Phase 3.2 — backlink suggestion blend — SHIPPED
 
 - Grep-first result: linkrec.py was Adamic-Adar + minhash shingle-

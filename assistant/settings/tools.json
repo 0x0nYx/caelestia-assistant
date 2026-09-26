@@ -7094,507 +7094,507 @@
     },
     {
       "path": "appearance.animDurations.expressiveDefaultEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.expressiveDefaultSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.expressiveFastEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.expressiveFastSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.expressiveSlowEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.expressiveSlowSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.extraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.large",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.normal",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.animDurations.small",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.emphasized",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.emphasizedAccel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.emphasizedDecel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveDefaultEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveDefaultSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveFastEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveFastSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveSlowEffects",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.expressiveSlowSpatial",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.standard",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.standardAccel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.curves.standardDecel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.large.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.large.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.large.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.large.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.medium.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.medium.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.medium.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.medium.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.small.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.small.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.small.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.body.small.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.clock",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.large.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.large.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.large.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.large.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.medium.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.medium.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.medium.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.medium.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.small.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.small.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.small.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.headline.small.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.icon.extraLarge.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.icon.extraLarge.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.icon.extraLarge.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.icon.extraLarge.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.large.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.large.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.large.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.large.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.medium.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.medium.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.medium.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.medium.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.small.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.small.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.small.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.label.small.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.large.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.large.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.large.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.large.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.medium.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.medium.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.medium.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.medium.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.small.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.small.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.small.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.mono.small.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.large.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.large.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.large.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.large.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.medium.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.medium.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.medium.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.medium.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.small.family",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.small.italic",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.small.size",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.title.small.weight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.font.workspaces",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.extraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.large",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.larger",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.monoLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.monoMedium",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.monoSmall",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.normal",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.small",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.fontSize.smaller",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.extraExtraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.extraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.extraLargeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.extraSmall",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.large",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.largeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.medium",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.padding.small",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.extraExtraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.extraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.extraLargeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.extraSmall",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.full",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.large",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.largeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.medium",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.rounding.small",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.extraExtraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.extraLarge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.extraLargeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.extraSmall",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.large",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.largeIncreased",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.medium",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "appearance.spacing.small",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "audio.sounds.disabledNotifApps",
@@ -7602,375 +7602,375 @@
     },
     {
       "path": "audio.sounds.notificationSound",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.background.blur",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.background.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.background.opacity",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.shadow.blur",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.shadow.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopClock.shadow.opacity",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.background.blur",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.background.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.background.opacity",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.shadow.blur",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.shadow.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.desktopLyrics.shadow.opacity",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "background.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.afternoonGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.afternoonStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.afternoonText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.compact",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.eveningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.eveningStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.eveningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.inverted",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.mode",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.morningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.morningStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.morningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.nightGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.nightStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.nightText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.showOnHover",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowFolders",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowGifs",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowIcon",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowInterval",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowRandom",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.activeWindow.slideshowText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.clock.centerClock",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.dock.monitorCenter",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.dock.pinnedApps",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.entries",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.excludedScreens",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.afternoonGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.afternoonText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.eveningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.eveningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.morningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.morningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.nightGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.nightText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.slideshowFolders",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.slideshowGifs",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.slideshowIcon",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.greeter.slideshowText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.perElementFontScale",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.perElementPreviewScale",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.performance.showText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.popouts.activeWindow",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.activeWindow",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.audio",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.battery",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.bluetooth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.dock",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.github",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.greeter",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.kblayout",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.lockStatus",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.network",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.notifications",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.peripheralBattery",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.trayMenu",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewFontScales.wirelessPassword",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewScales.activeWindow",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.previewScales.kblayout",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.peripheralBatteryExcluded",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showAudio",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showBattery",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showBluetooth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showKbLayout",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showLockStatus",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showMicrophone",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showNetwork",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showNightLight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showNotifications",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.status.showPeripheralBattery",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.tray.hiddenIcons",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.activeLabel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.capitalisation",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.ignoredTags",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.label",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.monitorCenter",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.occupiedLabel",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.perMonitorWorkspaces",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "bar.workspaces.useIcon",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "dashboard.profilePicShape",
@@ -7978,7 +7978,7 @@
     },
     {
       "path": "dashboard.showHyprlandSplash",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "enabled",
@@ -7986,27 +7986,27 @@
     },
     {
       "path": "general.apps.audio",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.apps.explorer",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.apps.playback",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.apps.terminal",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.caelestiaMode",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.debugLogs",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.krohnkiteEnabled",
@@ -8030,55 +8030,55 @@
     },
     {
       "path": "general.mediaGifSpeedAdjustment",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.sessionGifSpeed",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "general.showOverFullscreen",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.actionPrefix",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.favouriteApps",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.favouriteClips",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.favouriteEmojis",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.hiddenApps",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.specialPrefix",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.useFuzzy.clipboard",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "launcher.useFuzzy.emoji",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "lock.enableHowdy",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "lock.maxHowdyTries",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "lock.profilePicShape",
@@ -8086,11 +8086,11 @@
     },
     {
       "path": "lock.triggerHowdyOnWake",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "nexus.maxNetworksShown",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "nexus.wallpapersPerRow",
@@ -8126,39 +8126,39 @@
     },
     {
       "path": "services.arpcAppName",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcClientId",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcDetails",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcLargeImage",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcSmallImage",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcState",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcSteamBlacklist",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcTargetWindowLabels",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.arpcTargetWindows",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.autoSchemeDarkTime",
@@ -8170,7 +8170,7 @@
     },
     {
       "path": "services.bluetoothAutoReconnectDevices",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.defaultPlayer",
@@ -8178,31 +8178,31 @@
     },
     {
       "path": "services.lyricsBackend",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.useFahrenheit",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.useFahrenheitPerformance",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.useSystemd",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.useTwelveHourClock",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.wallhavenApiKey",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "services.weatherLocation",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "session.commands.hibernate",
@@ -8238,323 +8238,323 @@
     },
     {
       "path": "sizes.bar.audioWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.batteryWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.innerWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.kbLayoutWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.networkWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.trayMenuWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.bar.windowPreviewSize",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.dateTimeWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.logoSize",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaCoverArtSize",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaProgressSweep",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaProgressThickness",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaSectionWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaTabHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaTabWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.mediaWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfBattHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfBattWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfBattWidthSingle",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfHeroCardWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfNetworkCardHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfNetworkCardWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfPlaceholderWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfStorageTextWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.perfUsageShapeSize",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.resourceProgressThickness",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.tabIndicatorHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.tabIndicatorSpacing",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.uptimeSize",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.userWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.dashboard.weatherWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseMinHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseSidebarWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseTileHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseTileWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.browseWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.itemHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.itemWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.wallpaperHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.wallpaperWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.windowSwitcherHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.launcher.windowSwitcherWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.centerWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.fetch3LinesHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.fetch4LinesHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.forecastItemWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.heightMult",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.largeFontWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.largeLogoWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.ratio",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.showColourBoxRowHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.showForecastHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.lock.showWeatherDetailsHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.heightMult",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.maxContentWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.maxDialogHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.maxDialogWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.maxNavWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.maxPopupHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.minHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.minPopupHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.minWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.networkShowEthDetailWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.networkShowVpnDetailWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.popupWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.ratio",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.smallTextFieldWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.nexus.textFieldWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.notifs.badge",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.notifs.image",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.notifs.width",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.osd.sliderHeight",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.osd.sliderWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.session.button",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.sidebar.width",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.utilities.toastWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.utilities.width",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.winfo.detailsWidth",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "sizes.winfo.heightMult",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "tabSwitch.enabled",
@@ -8562,63 +8562,63 @@
     },
     {
       "path": "tabSwitch.layout",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.gameMode.autoEnableRegexes",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.quickToggles",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.audioInputChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.audioOutputChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.capsLockChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.clipboardChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.dndChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.kbLayoutChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.kbLimit",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.nowPlaying",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.numLockChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.toasts.vpnChanged",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.vpn.enabled",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
       "path": "utilities.vpn.selectedProvider",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation this round"
+      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     }
   ],
   "presets": [

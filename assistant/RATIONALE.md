@@ -1011,6 +1011,26 @@ automatically; deterministic under a seeded rng (the one stochastic
 step, Thompson sampling, is the same one every other bandit uses);
 bad inputs (hour outside [0, 24)) are refused.
 
+**4.1 disk-backed bounded-memory search index.**
+`retrieval/diskindex.py` (+ `retrieval cli disk-index / disk-search`)
+indexes an arbitrary folder tree under a stated RAM ceiling via a
+classic external merge sort: postings accumulate in a run buffer whose
+character budget IS the ceiling (checked BEFORE each append, so the
+buffer is never past it — a construction claim, not a hope), runs are
+spilled to sorted temp files, `heapq.merge` k-way merges them into a
+term-sorted postings JSONL, and queries load ONLY the metadata — the
+searcher structurally has no postings dict (pinned by test). Scoring
+reuses `indexer.tokenize`/`idf` and the Searcher's k1/b, so both
+indexes answer with the same BM25. The footprint claim is MEASURED,
+not asserted: the report carries /proc VmHWM before/after, the
+enforced budget, `budget_respected_by_construction`, and the
+process-level observation (`hwm_growth_within_ceiling`) with the
+explicit note that VmHWM includes the whole interpreter — if the
+number says the ceiling was breached at process level, the report
+says so. Read-only walk; the only writes are the index files the
+caller named plus removed spool files; no subprocess, no network;
+lookup is an honest sorted-file scan built for low RAM, not latency.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

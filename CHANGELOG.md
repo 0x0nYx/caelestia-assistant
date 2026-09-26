@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Disk-backed bounded-memory search index: `retrieval cli disk-index
+  ROOT --out DIR --ceiling MB` + `disk-search` — an external-merge-
+  sort inverted index over arbitrary folder trees (heapq.merge runs,
+  metadata-only query path, same BM25 as the in-memory index), with
+  the RAM footprint MEASURED in the build report rather than asserted.
 - Attention-aware timing: `brain/timing.py` ranks WHEN (never WHAT) a
   proposal should surface — Thompson sampling over time buckets seeded
   from the pooled prior (3.1), weighted by the rhythm engine's

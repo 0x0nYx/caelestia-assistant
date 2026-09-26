@@ -961,6 +961,25 @@ Pure, deterministic, JSON-round-trippable; the first consumer is this
 backlog's own 3.4 timing bandit (its arms are seeded from the existing
 proposal bandit's pooled statistics rather than flat).
 
+**3.2 off-policy evaluation gate.** `brain/ope.py` (CLI: `brain ope
+SWITCH`) is the gate the operating prompt demands before any agent —
+this one or a successor — proposes flipping a capability kill-switch:
+the historical approve/reject ledger is replayed through the candidate
+policy with an importance-weighted estimator (Horvitz-Thompson
+weights; the off-policy framing of Dudik, Langford & Li 2011), and the
+estimated accept rate is PRINTED with support and coverage accounting.
+Known switches have explicit candidate filters over the ledger
+episode's own (kind, target, diff) fields — a reviewable table, no
+guessed semantics; an unknown name lists what exists. Honesty
+accounting: a deterministic candidate has weight 1 inside its support
+and 0 outside, so episodes the candidate would never have proposed are
+EXCLUDED and the gap is REPORTED as 1 - coverage — never silently
+extrapolated; zero support (pure extrapolation) and thin support
+(< 5) are explicit refusals rather than shrug-of-a-number estimates;
+the module writes NOTHING anywhere (ledger byte-identity pinned by
+test) and the standing note on every report says flipping the switch
+stays a human file edit.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

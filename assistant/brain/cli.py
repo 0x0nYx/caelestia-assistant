@@ -120,6 +120,41 @@ def cmd_calibration(args, out):
     return 0
 
 
+def cmd_ope(args, out):
+    """exponential-build 3.2: the off-policy evaluation report for a
+    kill-switch candidate policy. Reads the ledger, replays it, prints
+    the evidence — and writes NOTHING anywhere (the switch stays the
+    manifest file the human edits)."""
+    from . import ope as ope_mod
+    if args.list_switches:
+        for name in sorted(ope_mod.KNOWN_SWITCHES):
+            out.write(f"{name}: {ope_mod.KNOWN_SWITCHES[name]}\n")
+        return 0
+    from .ledger import Ledger
+    ledger = Ledger(args.ledger)
+    episodes = [{"context": {"kind": i.get("kind"),
+                             "target": i.get("target"),
+                             "diff": i.get("diff"),
+                             "confidence": i.get("confidence")},
+                 "approved": i.get("status") == "approved"}
+                for i in ledger.labeled()]
+    try:
+        report = ope_mod.ope_report(episodes, args.switch)
+    except ValueError as exc:
+        out.write(f"error: {exc}\n")
+        return 1
+    out.write(f"kill-switch candidate policy: {args.switch}\n")
+    if report.get("refused"):
+        out.write(f"REFUSED: {report['refused']}\n")
+    else:
+        out.write(f"estimated accept rate if proposed: "
+                  f"{report['estimated_accept_rate']}\n")
+    out.write(f"support: {report['support']} of {report['n_episodes']} "
+              f"logged episodes (coverage {report['coverage']})\n")
+    out.write(f"{report['note']}\n")
+    return 0
+
+
 def cmd_ledger(args, out):
     if args.action == "list":
         pending = service.ledger_list(args.ledger)
@@ -323,6 +358,16 @@ def build_parser():
     lg.add_argument("action", choices=["list", "approve", "reject"])
     lg.add_argument("id", nargs="?", type=int, default=0)
     lg.set_defaults(fn=cmd_ledger)
+
+    op = sub.add_parser("ope", help="off-policy evaluation gate: replay the "
+                                    "approve/reject log through a candidate "
+                                    "kill-switch policy (evidence only, "
+                                    "flips nothing)")
+    op.add_argument("switch", help="kill-switch name (see --list-switches)")
+    op.add_argument("--list-switches", action="store_true",
+                    help="list the registered candidate policies and exit")
+    op.add_argument("--ledger", default=str(DEFAULT_LEDGER))
+    op.set_defaults(fn=cmd_ope)
 
     se = sub.add_parser("settings")
     se.add_argument("action", choices=["propose", "decide", "recommend"])

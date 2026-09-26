@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Off-policy evaluation gate: `brain ope SWITCH` replays the
+  approve/reject ledger through a candidate kill-switch policy with an
+  importance-weighted estimator (Dudik/Langford/Li 2011 framing) and
+  prints the estimated accept rate with support/coverage accounting —
+  evidence only, it writes nothing and flips nothing.
 - Hierarchical partial pooling: `brain/pooling.py` — the shared
   Efron-Morris (1975) utility; new preference/bandit posteriors seed
   from the pooled statistics of similar existing arms

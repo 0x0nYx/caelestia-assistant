@@ -1050,6 +1050,14 @@ compute; the registry entry, dispatch handler and async-count wiring
 are byte-pinned by the parity suite, and the op joins the
 read-only-genius-ops allow-list the integration suite enforces.
 
+**5.3 optimize.** `caelestia_genius_optimize` (bridge op
+`optimize_recommend`, the read-only Pareto/AC-3 recommender
+settings/optimize.py already ships): the sidebar gets a PREVIEW-ONLY
+optimizer entry — it ranks which preset profile fits a stated priority
+and changes nothing; apply stays a separate, confirmed action through
+the planner/applier gates. The op's lambda now reads its parameters
+inline so the parity suite's introspection guard covers it too.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

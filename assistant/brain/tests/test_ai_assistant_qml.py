@@ -125,6 +125,16 @@ GENIUS_TOOLS = (
      + _q("3 km in m") + " or " + _q("3 km + 200 m") + ")",
      {"text": "convert 5 m to cm"},
      ("text",), ()),
+    ("caelestia_genius_optimize",
+     "Runs the read-only settings optimizer preview on-device \u2014"
+     " Pareto fronts and AC-3 constraint propagation rank which preset"
+     " profile fits the stated priority; PREVIEW ONLY, it changes"
+     " nothing (apply stays a separate, confirmed action).",
+     "profile (string, required \u2014 one of compact, minimal, gaming,"
+     " battery-saver, macos-like), k (number, optional \u2014 how many"
+     " recommendations to return, default 6)",
+     {"profile": "battery-saver", "k": 3},
+     (), ("profile", "k")),
 )
 
 OP_OF = {
@@ -135,6 +145,7 @@ OP_OF = {
     "caelestia_genius_palette": "genius_palette",
     "caelestia_genius_graphs": "genius_graphs",
     "caelestia_genius_units": "genius_units",
+    "caelestia_genius_optimize": "optimize_recommend",
 }
 
 # q["key"]  /  q.get("key"  — as regex, quotes built from DQ

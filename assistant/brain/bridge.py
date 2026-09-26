@@ -89,7 +89,8 @@ OPS = {
     "scan_text": lambda q, s, l: _scan_text(q),
     "brief": lambda q, s, l: _brief(l),
     "tidy_survey": lambda q, s, l: _tidy_survey(q),
-    "optimize_recommend": lambda q, s, l: _optimize_recommend(q),
+    "optimize_recommend": lambda q, s, l: _optimize_recommend(
+        profile=str(q.get("profile", "gaming")), k=int(q.get("k", 6))),
     "optimize_score": lambda q, s, l: _optimize_score(q),
     "prefs_report": lambda q, s, l: _prefs_report(l),
     "conformal_verdict": lambda q, s, l: _conformal_verdict(q, s),
@@ -143,10 +144,9 @@ def _tidy_survey(q):
                              "space_recoverable", "inert_suggestions")}}
 
 
-def _optimize_recommend(q):
+def _optimize_recommend(profile, k):
     from ..settings import optimize as opt
-    return opt.recommend(str(q.get("profile", "gaming")),
-                         k=int(q.get("k", 6)))
+    return opt.recommend(str(profile), k=int(k))
 
 
 def _optimize_score(q):

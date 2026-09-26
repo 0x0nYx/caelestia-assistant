@@ -820,6 +820,14 @@ Item {
         return "'" + String(str).replace(/'/g, "'\\''") + "'";
     }
 
+    // The open_app launch pipeline (fixed shape; the model only ever controls
+    // the app NAME, which is shell-quoted into the desktop-file grep — and the
+    // gate shows the name for approval before any of this runs).
+    function openAppCommand(app) {
+        var safeApp = shellQuote("Name=.*" + app);
+        return ["sh", "-c", 'grep -i -m 1 "^Exec=" $(find /usr/share/applications ~/.local/share/applications -name "*.desktop" -exec grep -il "$1" {} + 2>/dev/null) | cut -d "=" -f 2- | sed "s/ %[a-zA-Z]//g" | xargs -I {} sh -c "setsid {} >/dev/null 2>&1 &"', "--", safeApp];
+    }
+
     // ---- assistant JSON bridge (genius compute tools) ----
 
     // Checkout fallback for the assistant's hub when the installed
@@ -1210,7 +1218,12 @@ Item {
             "planLabel": "",
             "planOps": [],
             "planResolved": "",
-            "planResult": ""
+            "planResult": "",
+            "isCommandPlan": false,
+            "cmdLabel": "",
+            "cmdLines": [],
+            "cmdResolved": "",
+            "cmdResult": ""
         });
         listView.positionViewAtEnd();
 
@@ -1536,7 +1549,12 @@ Item {
                         "planLabel": "",
                         "planOps": [],
                         "planResolved": "",
-                        "planResult": ""
+                        "planResult": "",
+                        "isCommandPlan": false,
+                        "cmdLabel": "",
+                        "cmdLines": [],
+                        "cmdResolved": "",
+                        "cmdResult": ""
                     });
                 }
                 found = true;
@@ -1828,7 +1846,12 @@ Item {
             "planLabel": "",
             "planOps": [],
             "planResolved": "",
-            "planResult": ""
+            "planResult": "",
+            "isCommandPlan": false,
+            "cmdLabel": "",
+            "cmdLines": [],
+            "cmdResolved": "",
+            "cmdResult": ""
         });
         listView.positionViewAtEnd();
         saveHistory();
@@ -1854,7 +1877,12 @@ Item {
             "planLabel": plan.label || "",
             "planOps": plan.ops,
             "planResolved": "",
-            "planResult": ""
+            "planResult": "",
+            "isCommandPlan": false,
+            "cmdLabel": "",
+            "cmdLines": [],
+            "cmdResolved": "",
+            "cmdResult": ""
         });
         listView.positionViewAtEnd();
         saveHistory();
@@ -1884,6 +1912,81 @@ Item {
         checkToolsFinished();
     }
 
+    // ---- command gate cards (the T2 execution boundary) --------------------
+    // Same preview-then-confirm shape as the settings cards: the model's
+    // request becomes a card the user Applies or Cancels; nothing state-
+    // changing runs from raw model output, ever. CommandGate.qml holds the
+    // payload; these two functions only render and resolve the card.
+    property bool commandCardPending: false
+
+    function showCommandConfirmCard(preview) {
+        // One pending card at a time: a newer request supersedes an older
+        // unresolved card, which resolves as cancelled without a run.
+        if (commandCardPending)
+            resolveCommandCard(false, true);
+        commandCardPending = true;
+        chatHistory.append({
+            "isUser": false,
+            "text": "",
+            "isFinished": true,
+            "thoughtText": "",
+            "isSettingsPlan": false,
+            "planLabel": "",
+            "planOps": [],
+            "planResolved": "",
+            "planResult": "",
+            "isCommandPlan": true,
+            "cmdLabel": preview.label || "",
+            "cmdLines": preview.lines,
+            "cmdResolved": "",
+            "cmdResult": ""
+        });
+        listView.positionViewAtEnd();
+        saveHistory();
+    }
+
+    function resolveCommandCard(applied, superseded = false) {
+        if (!commandCardPending)
+            return;
+        commandCardPending = false;
+        var res = applied ? CommandGate.confirm() : CommandGate.cancel();
+        for (var i = chatHistory.count - 1; i >= 0; i--) {
+            var m = chatHistory.get(i);
+            if (m.isCommandPlan && m.cmdResolved === "") {
+                chatHistory.setProperty(i, "cmdResolved",
+                    superseded ? "superseded" : (applied ? "approved" : "cancelled"));
+                chatHistory.setProperty(i, "cmdResult",
+                    superseded ? "Superseded by a newer request; nothing was run."
+                              : (applied ? "" : "Cancelled — nothing was run."));
+                break;
+            }
+        }
+        saveHistory();
+        if (!res.ok || !applied) {
+            // Cancelled or superseded: resolve the tool call honestly so the
+            // model learns the user refused, not that the command ran.
+            accumulatedToolResults += "Tool: command approval\nResult: The user did not approve this action; nothing was run.\n\n";
+            runningToolsCount--;
+            checkToolsFinished();
+            return;
+        }
+        if (res.kind === "caelestia") {
+            currentActionText = "Running caelestia...";
+            runAgentCommand(res.payload.argv, "exec_caelestia_command");
+        } else if (res.kind === "open_app") {
+            currentActionText = "Opening app...";
+            runAgentCommand(openAppCommand(res.payload.app), "exec_open_app");
+        } else if (res.kind === "set_timer") {
+            var secs = res.payload.seconds;
+            var msg = res.payload.message;
+            var timerQml = "import QtQuick; Timer { interval: " + (secs * 1000) + "; running: true; onTriggered: { root.runAgentCommand(['notify-send', 'Orion Timer', " + JSON.stringify(msg) + "], 'timer_trigger'); destroy(); } }";
+            Qt.createQmlObject(timerQml, root, "timer_" + Date.now());
+            accumulatedToolResults += "Tool: set_timer\nResult: Timer set for " + secs + " seconds with message: " + msg + "\n\n";
+            runningToolsCount--;
+            checkToolsFinished();
+        }
+    }
+
     function sendPrompt(promptText, isSystemToolResult = false, base64Image = null, toolName = "", isRetry = false) {
         if (!promptText.trim() && !base64Image) return;
 
@@ -1903,7 +2006,12 @@ Item {
                 "planLabel": "",
                 "planOps": [],
                 "planResolved": "",
-                "planResult": ""
+                "planResult": "",
+                "isCommandPlan": false,
+                "cmdLabel": "",
+                "cmdLines": [],
+                "cmdResolved": "",
+                "cmdResult": ""
             });
             listView.positionViewAtEnd();
             saveHistory();
@@ -2004,7 +2112,12 @@ Item {
             "planLabel": "",
             "planOps": [],
             "planResolved": "",
-            "planResult": ""
+            "planResult": "",
+            "isCommandPlan": false,
+            "cmdLabel": "",
+            "cmdLines": [],
+            "cmdResolved": "",
+            "cmdResult": ""
         });
         
         listView.positionViewAtEnd();
@@ -2159,8 +2272,10 @@ Item {
                                     var toolName = toolCall.name;
                                     var args = toolCall.args || {};
 
-                                    // Count async tools (set_timer and get_weather are synchronous, skip count for them)
-                                    if (toolName === "take_screenshot" || toolName === "web_search" || toolName === "read_webpage" || toolName === "open_app" || toolName === "caelestia_command" || toolName === "caelestia_genius_math" || toolName === "caelestia_genius_stats" || toolName === "caelestia_genius_logic" || toolName === "caelestia_genius_decide" || toolName === "caelestia_genius_palette") {
+                                    // Count async tools (get_weather is synchronous; the others
+                                    // resolve through execution or the approval card — set_timer
+                                    // included, since its result now arrives at card-Apply time).
+                                    if (toolName === "take_screenshot" || toolName === "web_search" || toolName === "read_webpage" || toolName === "open_app" || toolName === "caelestia_command" || toolName === "set_timer" || toolName === "caelestia_genius_math" || toolName === "caelestia_genius_stats" || toolName === "caelestia_genius_logic" || toolName === "caelestia_genius_decide" || toolName === "caelestia_genius_palette") {
                                         runningToolsCount++;
                                     }
 
@@ -2181,18 +2296,31 @@ Item {
                                         runAgentCommand(["env", "PYTHONIOENCODING=utf8", "python3", Quickshell.shellDir + "/scripts/orion_search.py", "--mode", "read", "--url", url], "exec_" + toolName);
 
                                     } else if (toolName === "open_app") {
-                                        currentActionText = "Opening app...";
+                                        // Gated: the card's Apply runs the launch; raw model
+                                        // output can only ever produce a preview.
                                         var app = String(args.app_name || "");
-                                        var safeApp = shellQuote("Name=.*" + app);
-                                        runAgentCommand(["sh", "-c", 'grep -i -m 1 "^Exec=" $(find /usr/share/applications ~/.local/share/applications -name "*.desktop" -exec grep -il "$1" {} + 2>/dev/null) | cut -d "=" -f 2- | sed "s/ %[a-zA-Z]//g" | xargs -I {} sh -c "setsid {} >/dev/null 2>&1 &"', "--", safeApp], "exec_" + toolName);
+                                        var appGate = CommandGate.requestOpenApp(app);
+                                        if (!appGate.ok) {
+                                            runningToolsCount--; // counted above; the error resolves it
+                                            accumulatedToolResults += "Tool: open_app\nError: " + appGate.reason + "\n\n";
+                                        } else {
+                                            currentActionText = "Waiting for your approval...";
+                                            showCommandConfirmCard(appGate.preview);
+                                        }
 
                                     } else if (toolName === "set_timer") {
-                                        currentActionText = "Setting timer...";
+                                        // Gated: a timer is a user-visible action (a notification
+                                        // will fire), so it waits for the card's Apply too.
                                         var secs = Number(args.seconds) || 5;
                                         var msg = String(args.message || "Timer finished");
-                                        var timerQml = "import QtQuick; Timer { interval: " + (secs * 1000) + "; running: true; onTriggered: { root.runAgentCommand(['notify-send', 'Orion Timer', " + JSON.stringify(msg) + "], 'timer_trigger'); destroy(); } }";
-                                        Qt.createQmlObject(timerQml, root, "timer_" + Date.now());
-                                        accumulatedToolResults += "Tool: set_timer\nResult: Timer set for " + secs + " seconds with message: " + msg + "\n\n";
+                                        var timerGate = CommandGate.requestTimer(secs, msg);
+                                        if (!timerGate.ok) {
+                                            runningToolsCount--; // counted above; the error resolves it
+                                            accumulatedToolResults += "Tool: set_timer\nError: " + timerGate.reason + "\n\n";
+                                        } else {
+                                            currentActionText = "Waiting for your approval...";
+                                            showCommandConfirmCard(timerGate.preview);
+                                        }
 
                                     } else if (toolName === "get_weather") {
                                         currentActionText = "Checking weather...";
@@ -2200,12 +2328,23 @@ Item {
                                         accumulatedToolResults += "Tool: get_weather\nResult: Local weather from system dashboard: " + weatherStr + "\n\n";
 
                                     } else if (toolName === "caelestia_command") {
-                                        currentActionText = "Running caelestia...";
+                                        // Gated: verified read-only subcommands run; everything
+                                        // else waits for the card's Apply.
                                         var subcmd = String(args.subcommand || "");
                                         var subargs = String(args.args || "").trim();
                                         var cmdArr = ["caelestia", subcmd];
                                         if (subargs) cmdArr = cmdArr.concat(subargs.split(/\s+/));
-                                        runAgentCommand(cmdArr, "exec_" + toolName);
+                                        var cmdGate = CommandGate.requestCaelestia(cmdArr);
+                                        if (!cmdGate.ok) {
+                                            runningToolsCount--; // counted above; the error resolves it
+                                            accumulatedToolResults += "Tool: caelestia_command\nError: " + cmdGate.reason + "\n\n";
+                                        } else if (cmdGate.needsConfirm) {
+                                            currentActionText = "Waiting for your approval...";
+                                            showCommandConfirmCard(cmdGate.preview);
+                                        } else {
+                                            currentActionText = "Running caelestia...";
+                                            runAgentCommand(cmdArr, "exec_" + toolName);
+                                        }
 
                                     } else if (toolName === "caelestia_setting_list") {
                                         // Synchronous, in-process (SettingsTools singleton).
@@ -2409,7 +2548,7 @@ Item {
         var enableTools = GlobalConfig.ai.enableCelestialMode;
         var sysPrompt = "You are a helpful AI assistant integrated into the user's desktop OS shell (Caelestia, running on KDE Plasma/Wayland).";
         if (enableTools) {
-            sysPrompt += "\n\nYou have access to the following tools. To call a tool, output a <tool_call> block containing ONLY valid JSON. Do not output any text inside the block other than the JSON object.\n\nFORMAT:\n<tool_call>\n{\"name\": \"TOOL_NAME\", \"args\": {ARGUMENTS}}\n</tool_call>\n\nAVAILABLE TOOLS:\n- take_screenshot: Captures the user's screen for visual analysis. Args: none.\n  Example: <tool_call>\n{\"name\": \"take_screenshot\", \"args\": {}}\n</tool_call>\n\n- web_search: Searches the web. Args: query (string, required), page (number, optional).\n  Example: <tool_call>\n{\"name\": \"web_search\", \"args\": {\"query\": \"latest news\"}}\n</tool_call>\n\n- read_webpage: Fetches and reads the text of a URL. Args: url (string, required).\n  Example: <tool_call>\n{\"name\": \"read_webpage\", \"args\": {\"url\": \"https://example.com\"}}\n</tool_call>\n\n- open_app: Launches an installed desktop application. Args: app_name (string, required).\n  Example: <tool_call>\n{\"name\": \"open_app\", \"args\": {\"app_name\": \"dolphin\"}}\n</tool_call>\n\n- set_timer: Sets a countdown timer that fires a desktop notification. Args: seconds (number, required), message (string, required).\n  Example: <tool_call>\n{\"name\": \"set_timer\", \"args\": {\"seconds\": 300, \"message\": \"Break time!\"}}\n</tool_call>\n\n- get_weather: Gets the current local weather from the system dashboard. Args: none.\n  Example: <tool_call>\n{\"name\": \"get_weather\", \"args\": {}}\n</tool_call>\n\n- caelestia_command: Runs a caelestia CLI command. Valid subcommands: shell, toggle, scheme, search, screenshot, record, clipboard, emoji, wallpaper, resizer, install, update. Args: subcommand (string, required), args (string, optional extra flags).\n  Example: <tool_call>\n{\"name\": \"caelestia_command\", \"args\": {\"subcommand\": \"wallpaper\", \"args\": \"--random\"}}\n</tool_call>\n\n- caelestia_setting_list: Lists the shell's validated settings tools (277 tools in 19 feature-area groups) with their exact value ranges/enums. Args: group (string, optional — one of bar, dock, appearance, effects, animations, notifications, launcher, lockscreen, wallpaper-scheme, overview, osd, dashboard, sidebar, nexus, border, general, services, utilities, audio). Call this FIRST when a settings request names a key you are not sure about.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_list\", \"args\": {\"group\": \"effects\"}}\n</tool_call>\n\n- caelestia_setting_get: Reads one setting's current live value, validation and default. Args: path (string, required — the dotted config path, e.g. \"bar.scale\").\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_get\", \"args\": {\"path\": \"bar.scale\"}}\n</tool_call>\n\n- caelestia_setting_explain: Explains why a setting currently looks the way it does, grounded in the shell's own code. Args: path (string, required).\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_explain\", \"args\": {\"path\": \"appearance.blur\"}}\n</tool_call>\n\n- caelestia_setting_set: Changes shell settings. Args: calls (array of {name, value}, required — tool names from caelestia_setting_list and validated values), label (string, optional — short description of the request). A single change applies immediately; multiple changes are shown to the user as a preview they must confirm — never claim a multi-change request is done until the tool result confirms it. Out-of-range or invalid values are rejected, never clamped.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_set\", \"args\": {\"calls\": [{\"name\": \"setBarScale\", \"value\": 1.2}], \"label\": \"make the bar bigger\"}}\n</tool_call>\n\n- caelestia_setting_undo: Undoes previous settings applies. Args: steps (number, optional, default 1), id (number, optional — a specific history entry id from caelestia_setting_history, for \"restore the theme I had yesterday\"-style requests).\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_undo\", \"args\": {}}\n</tool_call>\n\n- caelestia_setting_history: Lists the recent settings applies (newest first) that can be undone. Args: none.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_history\", \"args\": {}}\n</tool_call>\n\n- caelestia_preset_list: Lists the named settings presets (compact, minimal, gaming, battery-saver, macos-like). Args: none.\n  Example: <tool_call>\n{\"name\": \"caelestia_preset_list\", \"args\": {}}\n</tool_call>\n\n- caelestia_preset_apply: Applies a named preset as a bundle of validated setting changes (the user confirms it before anything is written). Args: name (string, required).\n  Example: <tool_call>\n{\"name\": \"caelestia_preset_apply\", \"args\": {\"name\": \"minimal\"}}\n</tool_call>\n\n\n- caelestia_genius_math: Evaluates a math expression deterministically on-device — no model in the loop (arithmetic, ^, sqrt, sin/cos/tan, log, factorial, pi and e). Args: expr (string, required — e.g. \"840*0.15\" or \"2^10 + sqrt(144)\").\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_math\", \"args\": {\"expr\": \"840*0.15\"}}\n</tool_call>\n\n\n- caelestia_genius_stats: Computes full descriptive statistics for a list of numbers on-device (mean, median, quartiles, spread, outliers, normality when n >= 8). Args: numbers (array of numbers, required — e.g. [3, 9, 12, 1, 44]).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_stats\", \"args\": {\"numbers\": [3, 9, 12, 1, 44]}}\n</tool_call>\n\n\n- caelestia_genius_logic: Classifies a propositional logic formula as tautology, contradiction or contingency and shows the truth table — deterministic, no model. Args: formula (string, required — e.g. \"(p and q) -> p\").\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_logic\", \"args\": {\"formula\": \"(p and q) -> p\"}}\n</tool_call>\n\n\n- caelestia_genius_decide: Ranks options against weighted criteria with a classical decision method (WSM/TOPSIS/...) and returns a winner with the full ranking — deterministic and auditable, no model judgement. Use it when the user asks which of several options to pick. Args: matrix (array of number rows, required — one row per option, e.g. [[8,256],[6,512]]), labels (array of strings, required — one per option, e.g. [\"air\",\"pro\"]), criteria (array of strings, required — one per column, e.g. [\"battery\",\"storage\"]), weights (array of numbers, optional — one per criterion, defaults to equal), benefits (array of booleans, optional — true = more is better; mark cost criteria like storage-in-GB as false), method (string, optional — wsm (default), wpm, topsis, pareto, regret).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_decide\", \"args\": {\"matrix\": [[8, 256], [6, 512]], \"labels\": [\"air\", \"pro\"], \"criteria\": [\"battery\", \"storage\"], \"weights\": [0.5, 0.5], \"benefits\": [true, false], \"method\": \"topsis\"}}\n</tool_call>\n\n\n- caelestia_genius_palette: Builds an OKLch harmony palette from a hex color and checks WCAG contrast — run it BEFORE proposing an accent or scheme change so the suggestion is grounded (scheme changes themselves stay inert suggestions the user applies). Args: hex (string, required — e.g. \"#3b7dd8\"), harmony (string, optional — analogous (default), complementary, triadic, tetradic, split_complementary), n (number, optional — palette size, default 5).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_palette\", \"args\": {\"hex\": \"#3b7dd8\", \"harmony\": \"triadic\"}}\n</tool_call>\n\n\nCRITICAL RULES:\n1. ALWAYS use a <tool_call> block to call a tool. NEVER pretend to perform actions in plain text.\n2. You may output a brief acknowledgment before the <tool_call> block (e.g. 'Opening Dolphin for you!') but you MUST include the block.\n3. You can include multiple <tool_call> blocks in one response.\n4. After receiving tool results, respond naturally to the user based on what the tool returned.";
+            sysPrompt += "\n\nYou have access to the following tools. To call a tool, output a <tool_call> block containing ONLY valid JSON. Do not output any text inside the block other than the JSON object.\n\nFORMAT:\n<tool_call>\n{\"name\": \"TOOL_NAME\", \"args\": {ARGUMENTS}}\n</tool_call>\n\nAVAILABLE TOOLS:\n- take_screenshot: Captures the user's screen for visual analysis. Args: none.\n  Example: <tool_call>\n{\"name\": \"take_screenshot\", \"args\": {}}\n</tool_call>\n\n- web_search: Searches the web. Args: query (string, required), page (number, optional).\n  Example: <tool_call>\n{\"name\": \"web_search\", \"args\": {\"query\": \"latest news\"}}\n</tool_call>\n\n- read_webpage: Fetches and reads the text of a URL. Args: url (string, required).\n  Example: <tool_call>\n{\"name\": \"read_webpage\", \"args\": {\"url\": \"https://example.com\"}}\n</tool_call>\n\n- open_app: Launches an installed desktop application. Args: app_name (string, required).\n  Example: <tool_call>\n{\"name\": \"open_app\", \"args\": {\"app_name\": \"dolphin\"}}\n</tool_call>\n\n- set_timer: Sets a countdown timer that fires a desktop notification. Args: seconds (number, required), message (string, required).\n  Example: <tool_call>\n{\"name\": \"set_timer\", \"args\": {\"seconds\": 300, \"message\": \"Break time!\"}}\n</tool_call>\n\n- get_weather: Gets the current local weather from the system dashboard. Args: none.\n  Example: <tool_call>\n{\"name\": \"get_weather\", \"args\": {}}\n</tool_call>\n\n- caelestia_command: Runs a caelestia CLI command. Valid subcommands: shell, install, update, wallpaper, scheme (list/get/set), screenshot, record, version, help. Args: subcommand (string, required), args (string, optional extra flags). State-changing commands show the user an approval card and run only if they approve; only the tool result tells you whether it ran — never claim it ran before that.\n  Example: <tool_call>\n{\"name\": \"caelestia_command\", \"args\": {\"subcommand\": \"wallpaper\", \"args\": \"--random\"}}\n</tool_call>\n\n- caelestia_setting_list: Lists the shell's validated settings tools (277 tools in 19 feature-area groups) with their exact value ranges/enums. Args: group (string, optional — one of bar, dock, appearance, effects, animations, notifications, launcher, lockscreen, wallpaper-scheme, overview, osd, dashboard, sidebar, nexus, border, general, services, utilities, audio). Call this FIRST when a settings request names a key you are not sure about.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_list\", \"args\": {\"group\": \"effects\"}}\n</tool_call>\n\n- caelestia_setting_get: Reads one setting's current live value, validation and default. Args: path (string, required — the dotted config path, e.g. \"bar.scale\").\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_get\", \"args\": {\"path\": \"bar.scale\"}}\n</tool_call>\n\n- caelestia_setting_explain: Explains why a setting currently looks the way it does, grounded in the shell's own code. Args: path (string, required).\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_explain\", \"args\": {\"path\": \"appearance.blur\"}}\n</tool_call>\n\n- caelestia_setting_set: Changes shell settings. Args: calls (array of {name, value}, required — tool names from caelestia_setting_list and validated values), label (string, optional — short description of the request). A single change applies immediately; multiple changes are shown to the user as a preview they must confirm — never claim a multi-change request is done until the tool result confirms it. Out-of-range or invalid values are rejected, never clamped.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_set\", \"args\": {\"calls\": [{\"name\": \"setBarScale\", \"value\": 1.2}], \"label\": \"make the bar bigger\"}}\n</tool_call>\n\n- caelestia_setting_undo: Undoes previous settings applies. Args: steps (number, optional, default 1), id (number, optional — a specific history entry id from caelestia_setting_history, for \"restore the theme I had yesterday\"-style requests).\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_undo\", \"args\": {}}\n</tool_call>\n\n- caelestia_setting_history: Lists the recent settings applies (newest first) that can be undone. Args: none.\n  Example: <tool_call>\n{\"name\": \"caelestia_setting_history\", \"args\": {}}\n</tool_call>\n\n- caelestia_preset_list: Lists the named settings presets (compact, minimal, gaming, battery-saver, macos-like). Args: none.\n  Example: <tool_call>\n{\"name\": \"caelestia_preset_list\", \"args\": {}}\n</tool_call>\n\n- caelestia_preset_apply: Applies a named preset as a bundle of validated setting changes (the user confirms it before anything is written). Args: name (string, required).\n  Example: <tool_call>\n{\"name\": \"caelestia_preset_apply\", \"args\": {\"name\": \"minimal\"}}\n</tool_call>\n\n\n- caelestia_genius_math: Evaluates a math expression deterministically on-device — no model in the loop (arithmetic, ^, sqrt, sin/cos/tan, log, factorial, pi and e). Args: expr (string, required — e.g. \"840*0.15\" or \"2^10 + sqrt(144)\").\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_math\", \"args\": {\"expr\": \"840*0.15\"}}\n</tool_call>\n\n\n- caelestia_genius_stats: Computes full descriptive statistics for a list of numbers on-device (mean, median, quartiles, spread, outliers, normality when n >= 8). Args: numbers (array of numbers, required — e.g. [3, 9, 12, 1, 44]).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_stats\", \"args\": {\"numbers\": [3, 9, 12, 1, 44]}}\n</tool_call>\n\n\n- caelestia_genius_logic: Classifies a propositional logic formula as tautology, contradiction or contingency and shows the truth table — deterministic, no model. Args: formula (string, required — e.g. \"(p and q) -> p\").\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_logic\", \"args\": {\"formula\": \"(p and q) -> p\"}}\n</tool_call>\n\n\n- caelestia_genius_decide: Ranks options against weighted criteria with a classical decision method (WSM/TOPSIS/...) and returns a winner with the full ranking — deterministic and auditable, no model judgement. Use it when the user asks which of several options to pick. Args: matrix (array of number rows, required — one row per option, e.g. [[8,256],[6,512]]), labels (array of strings, required — one per option, e.g. [\"air\",\"pro\"]), criteria (array of strings, required — one per column, e.g. [\"battery\",\"storage\"]), weights (array of numbers, optional — one per criterion, defaults to equal), benefits (array of booleans, optional — true = more is better; mark cost criteria like storage-in-GB as false), method (string, optional — wsm (default), wpm, topsis, pareto, regret).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_decide\", \"args\": {\"matrix\": [[8, 256], [6, 512]], \"labels\": [\"air\", \"pro\"], \"criteria\": [\"battery\", \"storage\"], \"weights\": [0.5, 0.5], \"benefits\": [true, false], \"method\": \"topsis\"}}\n</tool_call>\n\n\n- caelestia_genius_palette: Builds an OKLch harmony palette from a hex color and checks WCAG contrast — run it BEFORE proposing an accent or scheme change so the suggestion is grounded (scheme changes themselves stay inert suggestions the user applies). Args: hex (string, required — e.g. \"#3b7dd8\"), harmony (string, optional — analogous (default), complementary, triadic, tetradic, split_complementary), n (number, optional — palette size, default 5).\n  Example: <tool_call>\n{\"name\": \"caelestia_genius_palette\", \"args\": {\"hex\": \"#3b7dd8\", \"harmony\": \"triadic\"}}\n</tool_call>\n\n\nCRITICAL RULES:\n1. ALWAYS use a <tool_call> block to call a tool. NEVER pretend to perform actions in plain text.\n2. You may output a brief acknowledgment before the <tool_call> block (e.g. 'Opening Dolphin for you!') but you MUST include the block.\n3. You can include multiple <tool_call> blocks in one response.\n4. After receiving tool results, respond naturally to the user based on what the tool returned.";
         }
         
         var requestBody;
@@ -3066,9 +3205,14 @@ Item {
                          required property var planOps
                          required property string planResolved
                          required property string planResult
+                         required property bool isCommandPlan
+                         required property string cmdLabel
+                         required property var cmdLines
+                         required property string cmdResolved
+                         required property string cmdResult
 
                          width: listView.width - Tokens.padding.large
-                         visible: (!delegateItem.isFinished && isThinking) ? false : (delegateItem.text !== "" || delegateItem.thoughtText !== "" || delegateItem.isSettingsPlan)
+                         visible: (!delegateItem.isFinished && isThinking) ? false : (delegateItem.text !== "" || delegateItem.thoughtText !== "" || delegateItem.isSettingsPlan || delegateItem.isCommandPlan)
                          height: visible ? bubbleRect.height : 0
                          
                          scale: 0.0
@@ -3287,10 +3431,80 @@ Item {
                                      }
                                  }
 
+                                 // Command approval card (the execution gate for
+                                 // caelestia_command / open_app / set_timer): the exact
+                                 // command the model asked for, verbatim, with the
+                                 // user's Apply or Cancel as the only way forward.
+                                 Column {
+                                     id: commandPlanCard
+
+                                     visible: delegateItem.isCommandPlan
+                                     width: bubbleRect.maxBubbleWidth - Tokens.padding.medium * 2
+                                     spacing: Tokens.spacing.small
+
+                                     StyledText {
+                                         width: parent.width
+                                         wrapMode: Text.Wrap
+                                         text: delegateItem.cmdResolved === ""
+                                             ? (delegateItem.cmdLabel !== ""
+                                                 ? qsTr("%1 — needs your approval:").arg(delegateItem.cmdLabel)
+                                                 : qsTr("This needs your approval:"))
+                                             : (delegateItem.cmdResolved === "superseded"
+                                                 ? qsTr("Superseded by a newer request — nothing was run:")
+                                                 : (delegateItem.cmdResolved === "approved"
+                                                     ? qsTr("Approved:")
+                                                     : qsTr("Cancelled — nothing was run:")))
+                                         color: Colours.palette.m3onSurface
+                                         font: Tokens.font.body.small
+                                     }
+
+                                     Repeater {
+                                         model: delegateItem.cmdLines
+
+                                         delegate: StyledText {
+                                             required property var modelData
+
+                                             width: commandPlanCard.width
+                                             wrapMode: Text.Wrap
+                                             text: "– " + modelData
+                                             color: Colours.palette.m3onSurface
+                                             font: Tokens.font.body.small
+                                         }
+                                     }
+
+                                     Row {
+                                         visible: delegateItem.cmdResolved === ""
+                                         spacing: Tokens.spacing.small
+
+                                         TextButton {
+                                             text: qsTr("Run it")
+                                             type: TextButton.Filled
+                                             font: Tokens.font.body.small
+                                             onClicked: root.resolveCommandCard(true)
+                                         }
+
+                                         TextButton {
+                                             text: qsTr("Cancel")
+                                             type: TextButton.Text
+                                             font: Tokens.font.body.small
+                                             onClicked: root.resolveCommandCard(false)
+                                         }
+                                     }
+
+                                     StyledText {
+                                         visible: delegateItem.cmdResult !== ""
+                                         width: parent.width
+                                         wrapMode: Text.Wrap
+                                         text: delegateItem.cmdResult
+                                         color: Colours.palette.m3onSurfaceVariant
+                                         font: Tokens.font.body.small
+                                     }
+                                 }
+
                                  TextEdit {
                                      id: messageText
 
-                                     visible: !delegateItem.isSettingsPlan
+                                     visible: !delegateItem.isSettingsPlan && !delegateItem.isCommandPlan
                                      textFormat: Text.MarkdownText
                                      width: Math.min(implicitWidth, bubbleRect.maxBubbleWidth - Tokens.padding.medium * 2)
                                      

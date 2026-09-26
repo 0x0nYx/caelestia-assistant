@@ -14,8 +14,14 @@ reviewed against them first.
 2. **Never execute, never phone home.** `subprocess`, `socket`, `shutil`,
    `ctypes`, `eval`, auto-exec rule keys — rejected by the lint. Suggested
    commands are inert `SUGGESTED_NOT_EXECUTED:` strings with a risk tier.
-   The only network surface is the optional loopback Ollama client in
-   `assistant/generative/client.py`, which hard-rejects non-loopback hosts.
+   The Python package's only network surface is the optional loopback
+   Ollama client in `assistant/generative/client.py`, which hard-rejects
+   non-loopback hosts. The in-shell AI sidebar (`shell/`) is the one other
+   network surface — QML, not Python — and it is opt-in, user-keyed, and
+   user-initiated by design; any state-changing tool call you add to it
+   must route through the same gate shape (`SettingsTools.qml` /
+   `CommandGate.qml`: allow-list, preview, explicit confirm), never
+   direct execution from model output.
 3. **Every write is enumerated and gated.** New write paths need: dry-run
    default, explicit consent gate, a journal/ledger entry, and a rollback
    story. Deletion is not implemented anywhere and should not be.

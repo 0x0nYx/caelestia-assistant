@@ -6,14 +6,64 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Command execution gate for the AI sidebar (T2, prompt-injection
+  closure).** A new `shell/services/CommandGate.qml` singleton gives the
+  sidebar's other state-changing tools — `caelestia_command`, `open_app`,
+  `set_timer` — the same validated gate the settings tools already had:
+  a verified read-only allow-list (`caelestia version`, `caelestia help`,
+  and the bare read forms `caelestia scheme list` / `scheme get`, each
+  checked against upstream `src/bin/caelestia` @ dev, read 2026-09-26),
+  a preview card showing the exact command verbatim, and explicit Apply /
+  Cancel — nothing runs from raw model output. A state-changing command
+  injected into a fetched webpage can now produce, at worst, a card the
+  user ignores. `set_timer` now also reports its result at card-Apply
+  time (and rejects non-positive durations instead of silently defaulting
+  to 5 s); `open_app`'s launch pipeline moved behind the card unchanged.
+  Static guards pin the gate's API, allow-list, wiring, card plumbing and
+  bracket balance (`assistant/brain/tests/test_command_gate_qml.py`, 12
+  tests).
+- **Sidebar documentation (T1).** The README now has an "The in-shell AI
+  sidebar" section documenting `shell/modules/sidebar/AiAssistant.qml` as
+  the intentional, opt-in, user-keyed cloud chat tier — its providers,
+  its keyring-stored keys, its read-only senses vs. gated actions
+  boundary, and its fallback role relative to the offline core — which
+  had shipped with zero README/CHANGELOG mention. The safety contract
+  and CONTRIBUTING now state the two network carve-outs explicitly
+  (loopback Ollama; the sidebar's user-initiated, user-keyed calls).
+
 ### Changed
+
+- **Corrected the `caelestia_command` tool description to the verified
+  upstream subcommand list.** The sidebar's system prompt advertised
+  `shell, toggle, scheme, search, screenshot, record, clipboard, emoji,
+  wallpaper, resizer, install, update`; the upstream CLI (fetched and
+  read in full, 2026-09-26) implements `shell, install, update,
+  wallpaper, scheme (list/get/set), screenshot, record, version, help`.
+  The five phantom subcommands are gone, and the description now tells
+  the model about the approval card.
+- **`pyproject.toml` metadata (T3): version and description.** The
+  version field was stale at 0.3.0 while the changelog shipped 0.7.0 —
+  now aligned. The description now distinguishes the offline, no-LLM
+  core (the `assistant/` Python package) from the optional in-shell
+  cloud sidebar tier (`shell/`), one accurate sentence each, instead of
+  claiming the whole project has no LLM surface.
+
+### Changed (license)
 
 - **License: MIT → GNU Affero General Public License v3.0** (the latest GNU
   AGPL version, 19 November 2007). Rationale: the assistant is a community
   project whose safety contract ("propose, never execute") only means
   something if every derivative — including one offered as a network service
   — remains equally inspectable. AGPLv3's remote-network-interaction clause
-  (§13) closes the SaaS loophole that MIT leaves open. `pyproject.toml`
+  (§13) closes the SaaS loophole that MIT leaves open. Combination basis
+  (T4, stated for the record): GPLv3 §13 ("Use with the GNU Affero General
+  Public License") explicitly permits a GPLv3 work to supplement its terms
+  with AGPLv3 §13's remote-network-interaction condition, so this project
+  stays combinable with the GPLv3 KDE ecosystem it lives in — the
+  relicensing adds the network-service disclosure obligation without
+  creating a new incompatibility. `pyproject.toml`
   metadata and classifiers updated; full license text in `LICENSE`.
 
 ## [0.7.0] — 2026-09-26

@@ -2,12 +2,12 @@
 
 **An offline-first, on-device intelligence layer for [caelestia-kde](https://github.com/ladybug-me/caelestia-kde) — and a working answer to a harder question: how much of what we ask a frontier LLM can be answered by classical algorithms, deterministic pipelines, and careful engineering, at zero model cost, on a low-end machine?**
 
-No language model in the critical path. No training. No network. Everything runs locally from this repository using only the Python 3 standard library, and every suggestion is something you approve.
+No language model in the critical path. No training. No network in the offline core. The `assistant/` package runs locally from this repository using only the Python 3 standard library, and every suggestion is something you approve. (The one deliberate exception — the optional, user-keyed cloud chat sidebar in `shell/` — is documented in its own section below.)
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-751%20passing-brightgreen)
-![LLM required](https://img.shields.io/badge/LLM%20required-none-success)
+![Tests](https://img.shields.io/badge/tests-922%20passing-brightgreen)
+![LLM required](https://img.shields.io/badge/LLM%20required-none-success) *(offline core)*
 
 ---
 
@@ -50,6 +50,15 @@ Natural-language → **Intent Parser → Structured Tool Calls → validated app
 
 Issue #120 Phase 3 ("optimization profiles") ships as `assistant/settings/optimize.py`: five scored objective profiles (gaming / battery / minimal / comfort / accessibility), Pareto-frontier trade-off analysis across profiles, simulated-annealing and coordinate-descent preset synthesis, and AC-3 constraint propagation that refuses contradictory requests with reasons instead of half-applying them.
 
+### The in-shell AI sidebar — optional, user-keyed cloud tier
+
+This repository also ships the shell's chat sidebar, `shell/modules/sidebar/AiAssistant.qml` (upstream's file, extended here with the #120 settings tools and the assistant's deterministic compute tools). It is an intentional, separate tier from everything described above, and the two-tier split is the point:
+
+- **Opt-in and user-keyed.** Out of the box the sidebar targets a local Ollama instance; cloud providers (Anthropic, OpenAI-compatible endpoints, OpenRouter, Gemini, or a Claude Code subscription login) run only if you configure one, with your own API key stored in the session keyring (Secret Service / KWallet) — never in shell.json. The offline `assistant/` core makes no network calls at all beyond the loopback-only Ollama exception in its optional generative layer.
+- **A fallback, not the intelligence.** The sidebar is the escape hatch for requests outside the local ontology's domain — general questions, web search, free-form discussion. The deterministic layers remain the primary path; this tier exists so the honest answer to "write me a paragraph" is a chat model you chose, not a classical algorithm pretending.
+- **Senses ungated, actions gated.** The model's read-only observation tools (screenshot, web search/read, the deterministic `caelestia_genius_*` bridge calls, weather, settings reads) run directly. Every state-changing tool call is routed through a validated gate before anything runs: settings changes through `shell/services/SettingsTools.qml` (typed registry validation, preview, Apply/Cancel), and `caelestia_command`, `open_app` and `set_timer` through `shell/services/CommandGate.qml` (a verified read-only allow-list — `caelestia version`, `caelestia help`, bare `scheme list`/`scheme get` — then the exact command on a preview card the user must Apply). A prompt-injected instruction in a fetched webpage can at worst produce a card the user ignores.
+- **No silent telemetry.** The only network calls are the ones you initiate in the chat, to the provider you configured. Nothing else in this repository phones home.
+
 ## The agent
 
 ```bash
@@ -71,7 +80,7 @@ Every outcome feeds the learners: an AdaGrad online-logistic over routing featur
 Enforced in code, not policy — by an AST lint (`assistant/diagnostics/schema_lint.py`) over every file in the tree, pinned by tests:
 
 - **Never executes anything.** Suggested commands are inert strings prefixed `SUGGESTED_NOT_EXECUTED:` with a risk tier (`READ_ONLY < STATE_CHANGING < PRIVILEGED < DESTRUCTIVE`). Destructive suggestions are withheld outright.
-- **No network** except an explicitly enabled, loopback-only, single-attempt local Ollama call in the optional generative layer. Non-loopback hosts are rejected before connecting.
+- **No network in the offline core** except an explicitly enabled, loopback-only, single-attempt local Ollama call in the optional generative layer. Non-loopback hosts are rejected before connecting. The one other network surface is the in-shell AI sidebar (`shell/`) — an opt-in, user-keyed cloud chat tier whose calls go only to the provider the user configured, on requests the user initiated (see its section above); its state-changing tool calls are all gated (allow-list, preview, explicit confirm) before anything runs.
 - **No executor imports** (`subprocess`, `socket`, `shutil`, `ctypes`, … are rejected by name), no `os.system`/`os.popen` attribute calls, no auto-exec rule keys.
 - **Write paths are enumerated**: `settings/applier.py` (behind `--apply`/consent, backup first, bounded undo), the brain's proposal ledger (approve/reject only), the agent's journaled tidy moves (rollback-able), and learned-state JSON files. Nothing else writes.
 - **Honest verdicts everywhere**: `AMBIGUOUS` asks, `ABSTAIN` refuses, `NOT_FOUND` undo refuses to guess, out-of-range is rejected not clamped, thin evidence is labeled thin.
@@ -139,7 +148,7 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 751 tests, ~10 s
+python3 -m unittest discover -s . -p "test_*.py"   # 922 tests, ~1 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
 ```
 
@@ -147,7 +156,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the import-policy contract and the di
 
 ## Honest limits
 
-This is not a chatbot and does not try to be one. It cannot write an essay, reason about arbitrary novel prose, or see your screen. What it does — diagnose against a cited corpus, edit a configuration safely, mine a log at bounded memory, plan a day, organize files, compute, and learn your approval patterns — it does deterministically, offline, auditably, and on hardware that would struggle to load an 8B model. That trade is the point.
+This is not a chatbot and does not try to be one — the optional, user-keyed cloud sidebar is the honest answer for the requests that fall outside what classical algorithms should fake. The offline core cannot write an essay, reason about arbitrary novel prose, or see your screen — and it will not pretend otherwise. What it does — diagnose against a cited corpus, edit a configuration safely, mine a log at bounded memory, plan a day, organize files, compute, and learn your approval patterns — it does deterministically, offline, auditably, and on hardware that would struggle to load an 8B model. That trade is the point.
 
 ## License
 

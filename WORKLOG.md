@@ -604,3 +604,37 @@ final WORKLOG summary entry lists every sub-item outcome.
   single failure that never reproduced across three subsequent full
   runs (buffered and unbuffered, 1339 OK each) and never surfaced a
   test name; recorded here rather than hidden.
+
+### Phase 1.3 — evidence fusion for troubleshooting — SHIPPED
+
+- Grep-first result: no fusion step exists in genius/baysnet.py,
+  diagnostics/engine.py, or retrieval/ (each engine stops at its own
+  output). Genuinely new — built.
+- New `assistant/diagnostics/fusion.py`: READ-ONLY downstream consumer
+  combining the three engines' independently produced evidence via
+  weighted Bayes in log-odds space (weight-scaled likelihood-ratio
+  updates from a common prior; equal weights reduce exactly to the
+  naive-Bayes product brain/naive_bayes.py applies; opinion-pool view
+  cited to Genest & Zidek 1986). A source with no evidence for a
+  hypothesis ABSTAINS — never a silent 0.5 vote.
+- Calibration honesty: the rules' qualitative confidence tier
+  ("deterministic"/"probable") is a LABEL, never invented into a
+  number; all three sources' unbounded native strengths (rule match
+  points, BM25, scan hit density) go through ONE documented saturating
+  transform c = s/(s+K), monotone, deterministic, K=1 default.
+  Out-of-range values are REJECTED, never clamped (the settings
+  convention): confidence outside (0,1), negative/unknown weights,
+  duplicate votes, bad prior -> ValueError.
+- Hypotheses are caller-keyed; merging engines' candidates onto shared
+  hypotheses happens ONLY through an explicit caller-supplied
+  hypothesis_map — no fuzzy joining. Convenience diagnose() runs the
+  three engines read-only (scan only when the caller supplies
+  stream_text + patterns, the agent dispatcher's own rule), never
+  modifies their outputs, and returns one ranked list with per-source
+  contributions and the honest odds multiplier.
+- Tests: `assistant/diagnostics/tests/test_fusion.py` — 11 cases:
+  hand-computed math (incl. the naive-Bayes reduction), abstention,
+  deterministic ranking + tie-break, all rejection paths, per-source
+  collectors (engine output byte-unchanged), and the convenience path
+  with mocked retrieval (merge only via mapping; scan join; no-map
+  means no join).

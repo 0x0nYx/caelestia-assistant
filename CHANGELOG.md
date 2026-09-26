@@ -21,6 +21,13 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Evidence fusion for troubleshooting (`diagnostics/fusion.py`):
+  weighted-Bayes combination (log-odds opinion pool, Genest & Zidek
+  1986) of the diagnostics rules', retrieval BM25's and scan's
+  independently produced evidence into one ranked diagnosis with
+  per-source contributions — read-only downstream consumer, abstains
+  instead of inventing votes, rejects out-of-range inputs instead of
+  clamping, merges hypotheses only through an explicit caller map.
 
 ## [0.1.0] — 2026-09-26 — initial baseline
 

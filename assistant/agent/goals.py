@@ -60,6 +60,32 @@ _GOAL_CUES: Dict[str, List[str]] = {
         "statistics", "matrix", "regression", "forecast", "optimize",
         "minimize", "maximize", "shortest path", "assign",
     ],
+    # -- phase 2.3 archetypes (same cue-lexicon mechanism, new goals) --
+    "config_hygiene": [
+        "config hygiene", "lint my config", "lint my shell", "drift",
+        "dotfile", "dotfiles", "check my config", "validate my config",
+        "my shell.json", "reconcile my config",
+    ],
+    "package_audit": [
+        "audit my packages", "package audit", "my packages",
+        "outdated packages", "stale packages", "dependencies",
+        "what is installed", "what's installed", "installed packages",
+    ],
+    "log_triage": [
+        "triage my logs", "log triage", "mine my logs", "my logs",
+        "log templates", "journal triage", "summarize my log",
+        "draft an issue from my log",
+    ],
+    "notification_triage": [
+        "batch my notifications", "notification spam",
+        "too many notifications", "triage notifications",
+        "notification triage", "interrupting me",
+    ],
+    "screenshot_diff": [
+        "compare screenshots", "screenshot diff", "structural bug",
+        "before after screenshot", "visual regression", "diff these"
+        " screenshots", "ui changed",
+    ],
 }
 
 # Compounds: conjunctions that join independent goals
@@ -198,6 +224,52 @@ GOAL_METHODS: Dict[str, List[Dict[str, Any]]] = {
         {"id": "compute", "action": "genius_dispatch",
          "title": "Dispatch to the genius engines (math/stats/logic/...)",
          "risk": "READ_ONLY", "consent": False, "params": {}},
+    ],
+    # -- phase 2.3 archetypes: same HTN shape, new methods -------------
+    "config_hygiene": [
+        {"id": "lint", "action": "lint_config",
+         "title": "Lint the live shell.json against the registry schema",
+         "risk": "READ_ONLY", "consent": False, "params": {}},
+        {"id": "drift", "action": "config_drift",
+         "title": "Score drift against the learned preference posterior",
+         "risk": "READ_ONLY", "consent": False, "depends": ["lint"],
+         "params": {}},
+        {"id": "propose", "action": "reconcile_propose",
+         "title": "Propose reconciliation ops and WAIT for approval",
+         "risk": "STATE_CHANGING", "consent": True,
+         "depends": ["drift"], "params": {}},
+        {"id": "apply", "action": "reconcile_apply",
+         "title": "Apply the approved resets (planner validates, applier gates)",
+         "risk": "STATE_CHANGING", "consent": True, "depends": ["propose"],
+         "params": {}},
+    ],
+    "package_audit": [
+        {"id": "report", "action": "package_report",
+         "title": "Read-only package probe + static keyword match (opt-in)",
+         "risk": "READ_ONLY", "consent": False, "params": {}},
+    ],
+    "log_triage": [
+        {"id": "triage", "action": "log_triage",
+         "title": "Mine log templates + flag frequency anomalies (sysintel)",
+         "risk": "READ_ONLY", "consent": False, "params": {}},
+        {"id": "draft", "action": "triage_draft",
+         "title": "Compose the issue draft from the triage result",
+         "risk": "READ_ONLY", "consent": False, "depends": ["triage"],
+         "params": {}},
+    ],
+    "notification_triage": [
+        {"id": "classify", "action": "notification_triage",
+         "title": "Classify notification events into batch/pass proposals",
+         "risk": "READ_ONLY", "consent": False, "params": {}},
+    ],
+    "screenshot_diff": [
+        {"id": "diff", "action": "screenshot_diff",
+         "title": "Pixel-region hash diff of the two PNGs (no OCR)",
+         "risk": "READ_ONLY", "consent": False, "params": {}},
+        {"id": "draft", "action": "screenshot_draft",
+         "title": "Compose the structural-bug issue draft from the diff",
+         "risk": "READ_ONLY", "consent": False, "depends": ["diff"],
+         "params": {}},
     ],
 }
 

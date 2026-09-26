@@ -81,13 +81,16 @@ SHARE_FLOOR = 0.15
 # Minimal PNG reader (8-bit RGB / RGBA, non-interlaced) — stdlib only.
 # ---------------------------------------------------------------------------
 
-def png_pixels(data: bytes, max_pixels: int = 40000) -> List[Tuple[int, int, int]]:
-    """Decode a PNG to a deterministically sampled list of RGB pixels.
+def png_grid(data: bytes) -> Tuple[int, int, int, List[bytes]]:
+    """Decode an 8-bit truecolor (RGB/RGBA), non-interlaced PNG to its
+    full row grid: ``(width, height, channels, rows)`` where each row is
+    the defiltered scanline bytes. The ONE decoder in this codebase —
+    ``png_pixels`` below and the screenshot structural diff both call
+    it; no second PNG reader exists.
 
-    Supports the 8-bit truecolor variants wallpapers actually ship as
-    (color type 2 RGB and 6 RGBA, non-interlaced). Anything else raises
-    ValueError — honestly, not by guessing. Sampling is a fixed stride
-    over the scanline order so the result is stable for a given file.
+    Supports the 8-bit truecolor variants wallpapers and screenshots
+    actually ship as (color type 2 RGB and 6 RGBA, non-interlaced).
+    Anything else raises ValueError — honestly, not by guessing.
     """
     if data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError("not a PNG file")
@@ -152,6 +155,16 @@ def png_pixels(data: bytes, max_pixels: int = 40000) -> List[Tuple[int, int, int
         prev = line
         rows.append(bytes(line))
 
+    return width, height, channels, rows
+
+
+def png_pixels(data: bytes, max_pixels: int = 40000) -> List[Tuple[int, int, int]]:
+    """Decode a PNG to a deterministically sampled list of RGB pixels.
+
+    Sampling is a fixed stride over the scanline order (via ``png_grid``,
+    the one decoder) so the result is stable for a given file.
+    """
+    width, height, channels, rows = png_grid(data)
     total = width * height
     step = max(1, total // max_pixels) if total > max_pixels else 1
     pixels: List[Tuple[int, int, int]] = []

@@ -51,6 +51,18 @@ FORBIDDEN_IMPORTS = (
 
 FORBIDDEN_OS_ATTRS = ("system", "popen", "execv", "execve", "execvp", "spawnv", "spawnve", "fork")
 
+# Per-module quarantine carve-outs (the DBus proposal's exemption pattern,
+# applied to every module that must import something the allow-list
+# rejects BY NAME for all other files). Each entry names the ONE module
+# allowed a named import; the set is pinned by test
+# (diagnostics/tests/test_safety_lint.py) and every addition requires a
+# matching RATIONALE.md entry and a capability kill-switch defaulting to
+# off in the module itself. This is a quarantine, never a relaxation:
+# every other module in assistant/ stays under the zero-tolerance rule.
+_QUARANTINED_IMPORTS: Dict[str, frozenset] = {
+    "pkgprobe.py": frozenset({"subprocess"}),
+}
+
 
 def validate_rule_safety(rule: Dict[str, Any], source: str) -> List[str]:
     """Safety checks on one rule beyond structural validation."""
@@ -135,6 +147,7 @@ def check_import_policy() -> List[str]:
     failures: List[str] = []
     allowed = set(load_allowed_imports())
     for py in _iter_py_files():
+        quarantined = _QUARANTINED_IMPORTS.get(py.name, frozenset())
         try:
             tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
         except SyntaxError as exc:
@@ -147,6 +160,8 @@ def check_import_policy() -> List[str]:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     root_mod = alias.name.split(".")[0]
+                    if root_mod in quarantined:
+                        continue  # this module's documented quarantine
                     if root_mod not in allowed and alias.name not in allowed:
                         failures.append(f"{py.name}: import {alias.name} not in ALLOWED_IMPORTS.txt")
             elif isinstance(node, ast.ImportFrom):
@@ -158,6 +173,8 @@ def check_import_policy() -> List[str]:
                     continue  # compiler directive, not a capability
                 if root_mod == "assistant":
                     continue  # intra-package import; that module is scanned too
+                if root_mod in quarantined:
+                    continue  # this module's documented quarantine
                 if root_mod and root_mod not in allowed and full_mod not in allowed:
                     failures.append(f"{py.name}: from {node.module} import ... not in ALLOWED_IMPORTS.txt")
             elif isinstance(node, ast.Attribute):

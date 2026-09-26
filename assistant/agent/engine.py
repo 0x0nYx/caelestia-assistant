@@ -83,8 +83,8 @@ def _d_scan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
 
 def _d_fix_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """Compose the fix plan from earlier nodes' results stored in ctx."""
-    diag = ctx.get("results", {}).get("match", {})
-    retr = ctx.get("results", {}).get("retrieve", {})
+    diag = ctx.get("results", {}).get("diagnose", {})
+    retr = ctx.get("results", {}).get("retrieve_similar", {})
     lines: List[str] = []
     if diag.get("verdict") and diag["verdict"] != "NO_MATCH":
         for c in diag.get("candidates", []):
@@ -100,7 +100,7 @@ def _d_fix_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _d_explain(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
-    retr = ctx.get("results", {}).get("retrieve", {})
+    retr = ctx.get("results", {}).get("retrieve_similar", {})
     out = []
     for h in retr.get("hits", []):
         out.append(f"{h.get('id')} ({h.get('score')}): {h.get('title')}")
@@ -116,7 +116,7 @@ def _d_route_request(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, A
 
 
 def _d_validate_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
-    route = ctx.get("results", {}).get("route", {})
+    route = ctx.get("results", {}).get("route_request", {})
     verdict = route.get("verdict")
     if verdict == "PLAN":
         return {"validated": True, "note": "cortex produced a validated plan"}
@@ -130,7 +130,7 @@ def _d_validate_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, A
 def _d_propose_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """The consent presentation itself: the engine gates the node; this
     dispatcher only formats what the user is deciding on."""
-    route = ctx.get("results", {}).get("route", {})
+    route = ctx.get("results", {}).get("route_request", {})
     return {"proposal": route.get("detail", "settings plan pending"),
             "risk": "STATE_CHANGING",
             "note": "nothing is written until you approve"}
@@ -190,6 +190,136 @@ def _d_genius(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     return genius_meta.route_and_do(ctx.get("text", ""))
 
 
+# -- phase 2.3 archetype dispatchers (assistant/agent/archetypes.py) ------
+
+
+def _d_lint_config(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    result = archetypes.lint_config(ctx.get("config_target"))
+    ctx["lint_findings"] = result.get("findings", [])
+    return result
+
+
+def _d_config_drift(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    return archetypes.config_drift(ctx.get("config_target"))
+
+
+def _d_reconcile_propose(ctx: Dict[str, Any],
+                         params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    proposal = archetypes.reconcile_proposal(ctx.get("lint_findings"),
+                                             ctx.get("config_target"))
+    ctx["reconcile_ops"] = proposal.get("ops", [])
+    return proposal
+
+
+def _d_reconcile_apply(ctx: Dict[str, Any],
+                       params: Dict[str, Any]) -> Dict[str, Any]:
+    """Runs ONLY behind the engine consent gate (the node is
+    consent_required=True): the standard planner+applier path."""
+    from . import archetypes
+    return archetypes.reconcile_apply(ctx.get("reconcile_ops") or [],
+                                      ctx.get("config_target"))
+
+
+def _d_package_report(ctx: Dict[str, Any],
+                      params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    return archetypes.package_report()
+
+
+def _d_log_triage(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    text = ctx.get("stream_text") or ctx.get("text", "")
+    lines = text.splitlines() if text else []
+    if not lines:
+        return {"skipped": "no log lines (pass stream_text in ctx)"}
+    return archetypes.triage_logs(lines)
+
+
+def _d_triage_draft(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+    """sysintel triage -> issues draft PREVIEW (no --confirm, no file
+    write — the issues layer's own contract)."""
+    import contextlib
+    import io
+
+    from ..issues import cli as issues_cli
+    from . import archetypes
+
+    triage = ctx.get("results", {}).get("log_triage", {})
+    if not triage or triage.get("skipped"):
+        return {"skipped": "no triage result to draft from"}
+    body = archetypes.triage_draft_description(triage)
+    title = ("log triage: " + (ctx.get("text", "")[:60] or "template mining"))
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        code = issues_cli.main(["draft", "--title", title],
+                               stdin_text=body)
+    if code != 0:
+        return {"error": f"issue draft exited {code}"}
+    return {"draft": buffer.getvalue(),
+            "note": "preview only — nothing written; pass --confirm "
+                    "yourself to save the draft file"}
+
+
+def _d_notification_triage(ctx: Dict[str, Any],
+                           params: Dict[str, Any]) -> Dict[str, Any]:
+    from . import archetypes
+    events = ctx.get("notification_events") or []
+    result = archetypes.triage_notifications(events)
+    if not events:
+        result["skipped"] = ("no event records provided (pass "
+                             "notification_events in ctx); the live DBus "
+                             "observation surface is a separate, "
+                             "capability-gated concern")
+    return result
+
+
+def _d_screenshot_diff(ctx: Dict[str, Any],
+                       params: Dict[str, Any]) -> Dict[str, Any]:
+    import re as _re
+
+    from . import archetypes
+
+    before = ctx.get("screenshot_before") or params.get("before")
+    after = ctx.get("screenshot_after") or params.get("after")
+    if not before or not after:
+        # last resort: .png paths mentioned in the request itself
+        paths = _re.findall(r"[\w./~:-]+\.(?:png|PNG)", ctx.get("text", ""))
+        if len(paths) >= 2 and not before and not after:
+            before, after = paths[0], paths[1]
+    if not before or not after:
+        return {"skipped": "two PNG paths needed (screenshot_before / "
+                           "screenshot_after in ctx, or both named in the "
+                           "request)"}
+    return archetypes.diff_screenshots(str(before), str(after))
+
+
+def _d_screenshot_draft(ctx: Dict[str, Any],
+                        params: Dict[str, Any]) -> Dict[str, Any]:
+    import contextlib
+    import io
+
+    from ..issues import cli as issues_cli
+    from . import archetypes
+
+    diff = ctx.get("results", {}).get("screenshot_diff", {})
+    if not diff or diff.get("skipped"):
+        return {"skipped": "no diff result to draft from"}
+    body = archetypes.screenshot_draft_description(diff)
+    title = ("visual regression: " + (ctx.get("text", "")[:56]
+                                       or "structural screenshot diff"))
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        code = issues_cli.main(["draft", "--title", title],
+                               stdin_text=body)
+    if code != 0:
+        return {"error": f"issue draft exited {code}"}
+    return {"draft": buffer.getvalue(),
+            "note": "preview only — nothing written"}
+
+
 DISPATCHERS: Dict[str, Dispatcher] = {
     "diagnose": _d_diagnose,
     "retrieve_similar": _d_retrieve,
@@ -205,6 +335,17 @@ DISPATCHERS: Dict[str, Dispatcher] = {
     "tidy_apply": _d_tidy_apply,
     "brief": _d_brief,
     "genius_dispatch": _d_genius,
+    # phase 2.3 archetypes
+    "lint_config": _d_lint_config,
+    "config_drift": _d_config_drift,
+    "reconcile_propose": _d_reconcile_propose,
+    "reconcile_apply": _d_reconcile_apply,
+    "package_report": _d_package_report,
+    "log_triage": _d_log_triage,
+    "triage_draft": _d_triage_draft,
+    "notification_triage": _d_notification_triage,
+    "screenshot_diff": _d_screenshot_diff,
+    "screenshot_draft": _d_screenshot_draft,
 }
 
 READ_ONLY_RESULT_KEYS = ("plan", "explanation", "hits", "brief", "rendered",
@@ -306,7 +447,14 @@ class Agent:
                 node["result"] = result
                 node["status"] = "done"
                 done[node["id"]] = "done"
+                # Results are addressable BOTH by node id and by action
+                # name: downstream dispatchers compose from earlier nodes
+                # by action ("diff", "diagnose", ...), which is what the
+                # original method ids promised ("match", "retrieve") but
+                # never delivered — node ids are n1, n2, ... so the
+                # action-name key is the one composition actually uses.
                 self._ctx["results"][node["id"]] = result
+                self._ctx["results"][node["action"]] = result
                 self._observe(node, "accepted")
             except Exception as exc:  # honest failure, graph continues
                 node["status"] = "failed"

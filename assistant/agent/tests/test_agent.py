@@ -210,3 +210,366 @@ class TestEngine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.3: new goal archetypes, the capability manifest, the quarantine.
+# ---------------------------------------------------------------------------
+
+
+def _make_png(path, w, h, fn):
+    import struct
+    import zlib
+
+    raw = b""
+    for y in range(h):
+        raw += b"\x00" + bytes(v for x in range(w) for v in fn(x, y))
+
+    def chunk(t, dd):
+        return (struct.pack(">I", len(dd)) + t + dd
+                + struct.pack(">I", zlib.crc32(t + dd) & 0xffffffff))
+
+    data = (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+    Path(path).write_bytes(data)
+    return str(path)
+
+
+class TestPhase23Archetypes(unittest.TestCase):
+    def _setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.dir = Path(self._tmp.name)
+
+    def test_new_cue_phrases_route(self):
+        cases = [
+            ("lint my config and check my dotfiles", "config_hygiene"),
+            ("audit my packages for staleness", "package_audit"),
+            ("triage my logs", "log_triage"),
+            ("too many notifications, batch them", "notification_triage"),
+            ("compare screenshots before after", "screenshot_diff"),
+        ]
+        for text, expected in cases:
+            cls = goals.classify_goal(text)
+            self.assertEqual(cls["goal"], expected, text)
+            self.assertNotEqual(cls["verdict"], "AMBIGUOUS", text)
+
+    def test_config_hygiene_consent_shape(self):
+        graph = goals.decompose("lint my config")
+        actions = [(n["action"], n["consent_required"], n["risk"])
+                   for n in graph["nodes"]]
+        self.assertEqual([a for a, _c, _r in actions],
+                         ["lint_config", "config_drift",
+                          "reconcile_propose", "reconcile_apply"])
+        # the two STATE_CHANGING nodes require consent; the reads never do
+        self.assertEqual([c for _a, c, _r in actions],
+                         [False, False, True, True])
+
+    def test_new_methods_have_no_privileged_or_destructive(self):
+        for method in goals.GOAL_METHODS.values():
+            for step in method:
+                self.assertIn(step["risk"], ("READ_ONLY", "STATE_CHANGING"))
+                if step["risk"] == "STATE_CHANGING":
+                    self.assertTrue(step["consent"])
+
+    def test_config_hygiene_end_to_end_with_refusal(self):
+        self._setUp()
+        target = self.dir / "shell.json"
+        target.write_text(json.dumps({"bar": {"scale": "big"}}))
+        before = target.read_bytes()
+        agent = Agent(consent_fn=lambda node: False,
+                      base_ctx={"config_target": str(target)})
+        result = agent.execute("lint my config")
+        statuses = {n["action"]: n["status"] for n in result["nodes"]}
+        self.assertEqual(statuses["lint_config"], "done")
+        self.assertEqual(statuses["config_drift"], "done")
+        self.assertEqual(statuses["reconcile_propose"], "refused")
+        self.assertEqual(statuses["reconcile_apply"], "skipped")
+        self.assertEqual(target.read_bytes(), before)  # nothing written
+
+    def test_config_hygiene_reconcile_applies_out_of_range_reset(self):
+        self._setUp()
+        target = self.dir / "shell.json"
+        target.write_text(json.dumps({"bar": {"scale": 9.9}}))
+        agent = Agent(consent_fn=lambda node: True,
+                      base_ctx={"config_target": str(target)})
+        result = agent.execute("lint my config")
+        data = json.loads(target.read_text())
+        # out-of-range 9.9 reset to the registry default 1.0 through the
+        # planner/applier gate (a valid typed op — the standard path)
+        self.assertEqual(data["bar"]["scale"], 1.0)
+        applied = [n for n in result["nodes"]
+                   if n["action"] == "reconcile_apply"][0]
+        self.assertTrue(applied["result"].get("applied"))
+
+    def test_config_hygiene_type_mismatch_is_manual_not_bypassed(self):
+        # the planner refuses structural repairs by design ("never a
+        # silent cast"); the archetype must honor that, not bypass it:
+        # a type-broken key gets an honest manual instruction.
+        self._setUp()
+        target = self.dir / "shell.json"
+        target.write_text(json.dumps({"bar": {"scale": "big"}}))
+        agent = Agent(consent_fn=lambda node: True,
+                      base_ctx={"config_target": str(target)})
+        result = agent.execute("lint my config")
+        before = target.read_bytes()
+        data = json.loads(target.read_text())
+        self.assertEqual(data["bar"]["scale"], "big")  # untouched
+        proposal = [n for n in result["nodes"]
+                    if n["action"] == "reconcile_propose"][0]["result"]
+        self.assertEqual(proposal["ops"], [])
+        self.assertTrue(any("structural repair" in line
+                            for line in proposal["inert"]))
+
+    def test_package_audit_disabled_by_default(self):
+        from assistant.agent import archetypes
+
+        report = archetypes.package_report()
+        self.assertIn("error", report)
+        self.assertIn("package_audit is disabled", report["error"])
+
+    def test_log_triage_to_issue_draft(self):
+        lines = "error 404 on /home\n" * 5 + "warn disk 80%\n" \
+                + "segfault at 0x4f3a2b\n"
+        agent = Agent(base_ctx={"stream_text": lines})
+        result = agent.execute("triage my logs")
+        statuses = {n["action"]: n["status"] for n in result["nodes"]}
+        self.assertEqual(statuses["log_triage"], "done")
+        self.assertEqual(statuses["triage_draft"], "done")
+        draft = [n for n in result["nodes"]
+                 if n["action"] == "triage_draft"][0]["result"]["draft"]
+        self.assertIn("DRAFT", draft)
+        self.assertIn("template", draft.lower())
+
+    def test_notification_triage_classifier(self):
+        from assistant.agent.archetypes import triage_notifications
+
+        events = ([{"source": "chat", "ts": i, "accepted": False}
+                   for i in range(10)]
+                  + [{"source": "battery", "ts": i, "accepted": True}
+                     for i in range(3)])
+        out = triage_notifications(events)
+        self.assertEqual([r["source"] for r in out["batch"]], ["chat"])
+        self.assertEqual([r["source"] for r in out["pass"]], ["battery"])
+        self.assertIn("batch", out["proposal"].lower())
+
+    def test_notification_triage_empty_and_low_volume(self):
+        from assistant.agent.archetypes import triage_notifications
+
+        self.assertEqual(triage_notifications([])["n"], 0)
+        # low volume never batches, whatever the acceptance
+        rare = [{"source": "chat", "ts": 0, "accepted": False}]
+        self.assertEqual(triage_notifications(rare)["batch"], [])
+
+    def test_screenshot_diff_identical(self):
+        self._setUp()
+        a = _make_png(self.dir / "a.png", 64, 48,
+                      lambda x, y: (100, 100, 100))
+        b = _make_png(self.dir / "b.png", 64, 48,
+                      lambda x, y: (100, 100, 100))
+        from assistant.agent.archetypes import diff_screenshots
+
+        out = diff_screenshots(a, b)
+        self.assertTrue(out["same_geometry"])
+        self.assertEqual(out["changed_fraction"], 0.0)
+        self.assertEqual(out["regions"], [])
+
+    def test_screenshot_diff_localizes_the_change(self):
+        self._setUp()
+        a = _make_png(self.dir / "a.png", 64, 48,
+                      lambda x, y: (100, 100, 100))
+        b = _make_png(self.dir / "b.png", 64, 48,
+                      lambda x, y: (250, 250, 250) if x < 16
+                      else (100, 100, 100))
+        from assistant.agent.archetypes import diff_screenshots
+
+        out = diff_screenshots(a, b)
+        self.assertGreater(out["changed_fraction"], 0.0)
+        self.assertLess(out["changed_fraction"], 0.4)  # the left quarter
+        # every region rectangle is on the LEFT side of the image
+        self.assertTrue(all(r["x"] + r["w"] <= 31 for r in out["regions"]))
+
+    def test_screenshot_diff_geometry_change(self):
+        self._setUp()
+        a = _make_png(self.dir / "a.png", 64, 48,
+                      lambda x, y: (100, 100, 100))
+        b = _make_png(self.dir / "b.png", 32, 48,
+                      lambda x, y: (100, 100, 100))
+        from assistant.agent.archetypes import diff_screenshots
+
+        out = diff_screenshots(a, b)
+        self.assertFalse(out["same_geometry"])
+        self.assertEqual(out["changed_fraction"], 1.0)
+
+    def test_screenshot_draft_via_engine(self):
+        self._setUp()
+        a = _make_png(self.dir / "a.png", 64, 48,
+                      lambda x, y: (100, 100, 100))
+        b = _make_png(self.dir / "b.png", 64, 48,
+                      lambda x, y: (10, 10, 10) if y < 12
+                      else (100, 100, 100))
+        agent = Agent()
+        result = agent.execute(f"compare screenshots {a} and {b}")
+        statuses = {n["action"]: n["status"] for n in result["nodes"]}
+        self.assertEqual(statuses["screenshot_diff"], "done")
+        self.assertEqual(statuses["screenshot_draft"], "done")
+
+    def test_screenshot_diff_rejects_non_png(self):
+        self._setUp()
+        junk = self.dir / "junk.png"
+        junk.write_bytes(b"not a png at all")
+        other = _make_png(self.dir / "ok.png", 8, 8, lambda x, y: (0, 0, 0))
+        from assistant.agent.archetypes import diff_screenshots
+
+        with self.assertRaises(ValueError):
+            diff_screenshots(str(junk), other)
+
+
+class TestCapabilityManifest(unittest.TestCase):
+    def test_defaults_posture(self):
+        from assistant import capabilities
+
+        # read-only, zero-risk: on by default
+        for name in ("fsbrain", "config_hygiene", "log_triage",
+                     "screenshot_diff", "notification_triage"):
+            self.assertTrue(capabilities.DEFAULTS[name], name)
+        # anything that shells out or extends the import surface: off
+        for name in ("package_audit", "dbus_surface",
+                     "notification_observation"):
+            self.assertFalse(capabilities.DEFAULTS[name], name)
+
+    def test_user_file_overrides(self):
+        import os
+
+        from assistant import capabilities
+
+        user = Path(tempfile.mkdtemp()) / "caps.json"
+        user.write_text(json.dumps({"package_audit": True,
+                                    "fsbrain": False}))
+        old = os.environ.get("CAELESTIA_ASSIST_CAPABILITIES")
+        os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = str(user)
+        try:
+            self.assertTrue(capabilities.enabled("package_audit"))
+            self.assertFalse(capabilities.enabled("fsbrain"))
+            self.assertIn("edit it to flip", capabilities.render())
+        finally:
+            if old is None:
+                os.environ.pop("CAELESTIA_ASSIST_CAPABILITIES", None)
+            else:
+                os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = old
+
+    def test_broken_file_degrades_to_defaults(self):
+        import os
+
+        from assistant import capabilities
+
+        user = Path(tempfile.mkdtemp()) / "caps.json"
+        user.write_text("{not json")
+        old = os.environ.get("CAELESTIA_ASSIST_CAPABILITIES")
+        os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = str(user)
+        try:
+            self.assertFalse(capabilities.enabled("package_audit"))
+        finally:
+            if old is None:
+                os.environ.pop("CAELESTIA_ASSIST_CAPABILITIES", None)
+            else:
+                os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = old
+
+
+class TestPackageProbeQuarantine(unittest.TestCase):
+    def test_quarantine_set_is_pinned(self):
+        # the exemption list is exactly one module with exactly one
+        # import — growing it is a reviewable diff with a RATIONALE line
+        from assistant.diagnostics.schema_lint import _QUARANTINED_IMPORTS
+
+        self.assertEqual(_QUARANTINED_IMPORTS,
+                         {"pkgprobe.py": frozenset({"subprocess"})})
+
+    def test_subprocess_still_fails_elsewhere(self):
+        # test the tester: a deliberately introduced subprocess import
+        # in ANY other module must fail the import policy
+        import ast
+
+        from assistant.diagnostics.schema_lint import (
+            _QUARANTINED_IMPORTS, load_allowed_imports,
+        )
+
+        allowed = set(load_allowed_imports())
+        source = Path(tempfile.mkdtemp()) / "evil.py"
+        source.write_text("import subprocess\n")
+        tree = ast.parse(source.read_text())
+        quarantined = _QUARANTINED_IMPORTS.get("evil.py", frozenset())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    root = alias.name.split(".")[0]
+                    would_pass = root in quarantined or root in allowed
+                    self.assertFalse(would_pass)  # caught, as designed
+
+    def test_probe_refuses_when_disabled(self):
+        from assistant.agent import pkgprobe
+
+        out = pkgprobe.query_installed()
+        self.assertIn("error", out)
+        self.assertFalse(out.get("enabled", True))
+
+    def test_probe_uses_fixed_argument_arrays(self):
+        import os
+        from unittest import mock
+
+        from assistant.agent import pkgprobe
+
+        user = Path(tempfile.mkdtemp()) / "caps.json"
+        user.write_text(json.dumps({"package_audit": True}))
+        old = os.environ.get("CAELESTIA_ASSIST_CAPABILITIES")
+        os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = str(user)
+        calls = []
+        fake_result = mock.Mock(returncode=0, stdout="quickshell 1.2\n"
+                               "plasma-desktop 6.1\n", stderr="")
+
+        def fake_run(argv, **kwargs):
+            calls.append((list(argv), kwargs))
+            return fake_result
+
+        try:
+            with mock.patch.object(pkgprobe.subprocess, "run",
+                                   side_effect=fake_run), \
+                    mock.patch.object(pkgprobe.os.path, "isfile",
+                                      return_value=True):
+                out = pkgprobe.query_installed(["pacman"])
+        finally:
+            if old is None:
+                os.environ.pop("CAELESTIA_ASSIST_CAPABILITIES", None)
+            else:
+                os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = old
+        self.assertEqual(out["manager"], "pacman")
+        self.assertEqual(out["n"], 2)
+        # the fixed argument array, exactly — never a string, no shell
+        self.assertEqual(calls[0][0], ["pacman", "-Q"])
+        self.assertFalse(calls[0][1].get("shell", False))
+
+    def test_stale_match_groups(self):
+        from assistant.agent import pkgprobe
+
+        out = pkgprobe.stale_match([("quickshell", "1.2"),
+                                    ("plasma-desktop", "6.1"),
+                                    ("vim", "9.0"),
+                                    ("foo-git", "r123")])
+        keywords = {g["keyword"] for g in out["groups"]}
+        self.assertIn("quickshell", keywords)
+        self.assertIn("plasma", keywords)
+        self.assertIn("-git", keywords)
+        self.assertNotIn("vim", keywords)
+
+
+class TestEngineResultAddressing(unittest.TestCase):
+    """The engine-key fix: results addressable by action name (the latent
+    bug where fix_plan/explain composed from keys that never existed)."""
+
+    def test_results_stored_by_id_and_action(self):
+        agent = Agent()
+        result = agent.execute("what is 2+2")
+        ctx_results = result["ctx_results"]
+        self.assertIn("genius_dispatch", ctx_results)
+        self.assertTrue(any(k.startswith("n") for k in ctx_results))

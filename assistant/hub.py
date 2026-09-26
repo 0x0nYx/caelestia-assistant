@@ -35,6 +35,7 @@ from .cortex.lexicon import levenshtein
 from .agent import cli as agent_cli
 from .brain import bridge
 from .brain import cli as brain_cli
+from . import capabilities as capabilities_mod
 from .cortex import cli as cortex_cli
 from .diagnostics import cli as diagnostics_cli
 from .genius import cli as genius_cli
@@ -71,7 +72,13 @@ ROUTES = {
     "genius": (genius_cli.main, False),
     # agent: the consent-gated orchestrator over every layer
     "agent": (agent_cli.main, False),
+    # capabilities: the per-install manifest card (read-only listing)
+    "capabilities": (lambda _argv=None: (_print_card(), 0)[1], False),
 }
+
+
+def _print_card() -> None:
+    print(capabilities_mod.render())
 
 
 # Verb suggestion bounds: the same discipline the rest of the assistant

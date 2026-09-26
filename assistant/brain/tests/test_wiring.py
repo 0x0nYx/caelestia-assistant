@@ -73,6 +73,15 @@ class HubTests(unittest.TestCase):
                                        "thinner"]), 0)
         self.assertIn("[cortex]", out.getvalue())
 
+    def test_capabilities_card_lists_manifest(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(hub.main(["capabilities"]), 0)
+        card = out.getvalue()
+        self.assertIn("capability manifest", card)
+        self.assertIn("package_audit", card)
+        self.assertIn("edit it to flip", card)
+
     def test_selfcheck_routes_to_diagnostics(self):
         with contextlib.redirect_stdout(io.StringIO()) as out:
             self.assertEqual(hub.main(["selfcheck"]), 0)

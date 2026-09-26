@@ -430,6 +430,67 @@ Safety accounting: all read-only computations over caller-supplied
 inputs; no new write paths; no interaction edges against the shipped
 shell.
 
+## 13. Agent goal archetypes (phase 2.3)
+
+Five new HTN methods on the SAME consent/simulate contract — no new
+architecture, no relaxed gate:
+
+- **config_hygiene**: `settings.lint` (the `--lint` rule set verbatim)
+  + the brain's preference-posterior drift report; reconciliation
+  PROPOSES reset-to-default ops that go through the standard
+  planner/applier gate. One honest limit is pinned by test: a
+  TYPE-mismatched key is a MANUAL instruction, never a bypass — the
+  planner's own doctrine ("never a silent cast or structural repair")
+  is honored, not worked around; out-of-range values (typed, wrong
+  magnitude) do repair through the standard path.
+- **package_audit**: `agent/pkgprobe.py` — the FIRST quarantined
+  subprocess module, exactly the DBus proposal's pattern: the import
+  policy gains a per-module carve-out (pkgprobe.py alone may import
+  subprocess; a test pins the exemption set to exactly that one entry,
+  and another test proves a subprocess import anywhere else still
+  fails the lint). Fixed argument arrays (`pacman -Q`,
+  `dpkg-query -W`, `flatpak list`), read-only queries only, bounded
+  timeout, kill-switched OFF by default in the capability manifest,
+  and matched against a STATIC local keyword list — deliberately not
+  a CVE feed: no network, no version freshness claims.
+- **log_triage**: sysintel's Drain-style template mining + z-score
+  anomalies composed directly into `issues` drafting (preview only,
+  `--confirm` stays the user's) — the two packages that never talked.
+- **notification_triage**: the PURE classifier (per-source frequency +
+  Laplace-smoothed acceptance rate, the beta-posterior shape the
+  bandit layer already uses; batch = high-frequency AND
+  low-acceptance). The live DBus OBSERVATION surface is deliberately
+  NOT implemented: it requires the quarantined DBus surface (a
+  maintainer sign-off per that proposal's own escalation clause) plus
+  a bounded `dbus-monitor` watch — recorded as a known gap rather
+  than forced.
+- **screenshot_diff**: pixel-REGION hashing (grid block-mean hashes,
+  the aHash family) between two PNGs through the ONE PNG decoder
+  (palette_extract.png_grid, refactored so png_pixels and the diff
+  share it — no second reader), region rectangles merged, chained
+  into issue drafting. NO OCR anywhere, by the invariants' explicit
+  exclusion; the honest gap is stated in the draft itself.
+
+**The capability manifest** (`assistant/capabilities.py`): the
+per-install, user-editable switchboard every new surface registers
+in — read-only zero-risk defaults ON, everything that shells out or
+extends the import surface defaults OFF, flip-only-by-file-edit (an
+NL request can never enable a capability), surfaced as
+`caelestia-assist capabilities`.
+
+**Engine bug fixed en route**: results were stored under node ids
+(n1, n2, ...) while the downstream dispatchers composed from action
+names ("match", "retrieve") that never existed — the composition
+chains (fix_plan, explain, and the new drafts) silently always took
+their fallback paths. Results are now addressable by BOTH node id
+and action name; the new archetypes' tests pin the composition
+actually happening.
+
+Safety accounting: one quarantined subprocess module (off by
+default, fixed arrays, read-only, pinned by test); one consented
+write path that IS the existing applier; everything else read-only;
+no interaction edges against the shipped shell changed.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

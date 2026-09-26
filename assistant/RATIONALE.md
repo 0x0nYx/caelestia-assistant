@@ -829,6 +829,26 @@ persistence into learned-state JSON; the live pipeline is untouched
 (that wiring is the maintainer's call once the calibrator stream for
 this signal accumulates), deterministic end to end, no I/O.
 
+**Phase 2 — genius new domains (2026-09-27)**
+
+**2.1 tiny inductive program synthesis.** `genius/synth.py` (plus a
+read-only `genius synth` CLI verb) implements FlashFill-style
+trace-based synthesis (Gulwani 2011) over a deliberately tiny DSL:
+1-3 stages of prefix/suffix/between/head/tail extractions joined by
+constant strings, delimiters harvested from the examples themselves.
+Safety accounting: a candidate program must reproduce EVERY example
+exactly — the inductive check is the honesty mechanism, and anything
+the DSL cannot explain (one example, four examples, a letter/digit
+boundary the DSL cannot express) is an explicit abstain, never a
+guess; genuine ambiguity (several expressions coincide) is reported
+with a count, the canonical fewest-stage answer never hides it;
+`apply_program` refuses rather than fabricates when a stage reads an
+input the caller did not supply; the ONLY executable-looking output is
+an inert `SUGGESTED_NOT_EXECUTED: [STATE_CHANGING] mv -n -- ...` line
+the user copies themselves (shell-quoted, `-n` so it cannot clobber);
+the module is pure string algebra — no I/O, no subprocess, no clock,
+no RNG, deterministic end to end and pinned by test.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

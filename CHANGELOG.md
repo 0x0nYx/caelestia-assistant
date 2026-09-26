@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Tiny inductive program synthesis: `genius synth` (Gulwani 2011,
+  FlashFill-style) induces a string transformation from 2-3
+  before/after examples over a tiny explainable DSL — every example
+  must verify exactly, anything else abstains; the only executable-
+  looking output is an inert SUGGESTED_NOT_EXECUTED mv line.
 - Discriminative re-ranker: `cortex/reranker.py` — an averaged pairwise
   max-margin perceptron (Rosenblatt 1958 / Herbrich et al. 2000 /
   Collins 2002) over the router's own per-candidate signal features,

@@ -19,8 +19,8 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from .ac import Automaton
 from .bloom import BloomFilter
-from .sketch import (CountMinSketch, HyperLogLog, Reservoir, EWMA,
-                     page_hinkley)
+from .sketch import (CountMinSketch, HyperLogLog, NgramDivergence,
+                     Reservoir, EWMA, page_hinkley)
 
 __all__ = ["scan_stream", "scan_text", "render"]
 
@@ -32,14 +32,23 @@ _STOP = {"the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is",
 def scan_stream(lines: Iterable[str], automaton: Automaton,
                 chunk_size: int = 500, reservoir_k: int = 40,
                 bloom_capacity: int = 200_000,
-                token_top_candidates: Optional[List[str]] = None
+                token_top_candidates: Optional[List[str]] = None,
+                novelty: bool = False, novelty_block_lines: int = 500,
                 ) -> Dict[str, Any]:
-    """One pass over `lines`; the returned summary is JSON-serialisable."""
+    """One pass over `lines`; the returned summary is JSON-serialisable.
+
+    ``novelty=True`` (opt-in, B1) adds a "novelty" section: the windowed
+    KL divergence of the log's token n-gram distribution per block against
+    the running baseline (previous block + the scanner's Count-Min), plus
+    a Page-Hinkley alarm over the KL series. Still one pass, still bounded
+    RAM (two block-sized dicts); the default summary is unchanged."""
     bloom = BloomFilter(capacity=bloom_capacity)
     hll = HyperLogLog(precision=12)
     cms = CountMinSketch(epsilon=0.002, delta=0.001)
     reservoir = Reservoir(k=reservoir_k)
     ewma = EWMA(alpha=0.05)
+    divergence = NgramDivergence(block_lines=novelty_block_lines) if novelty else None
+    novelty_blocks: List[Dict[str, Any]] = []
 
     hits_by_pattern: Dict[int, int] = {}
     lines_total = 0
@@ -52,6 +61,10 @@ def scan_stream(lines: Iterable[str], automaton: Automaton,
     for raw in lines:
         line = raw.rstrip("\n")
         lines_total += 1
+        if divergence is not None:
+            report = divergence.offer(line)
+            if report is not None:
+                novelty_blocks.append(report)
         hits = automaton.scan(line)
         cur_chunk += len(hits)
         for _, pid in hits:
@@ -83,7 +96,7 @@ def scan_stream(lines: Iterable[str], automaton: Automaton,
         for cnt, tok in cms.top_candidates(token_top_candidates, k=12):
             top.append([tok, cnt])
 
-    return {
+    summary = {
         "lines_scanned": lines_total,
         "lines_matching": matching,
         "unique_matching_estimate": round(hll.count()),
@@ -107,6 +120,13 @@ def scan_stream(lines: Iterable[str], automaton: Automaton,
             "ewma": ewma.to_dict(),
         },
     }
+    if divergence is not None:
+        summary["novelty"] = {
+            "blocks": novelty_blocks,
+            "last_vs_cms": divergence.kl_vs_cms(),
+            "alarm": divergence.alarm(),
+        }
+    return summary
 
 
 def scan_text(text: str, automaton: Automaton, **kwargs: Any) -> Dict[str, Any]:

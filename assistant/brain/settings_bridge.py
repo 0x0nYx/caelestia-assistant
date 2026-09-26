@@ -32,8 +32,9 @@ next time (an honestly calibrated number, per calibrate.py's own stated
 purpose), instead of a flat, always-optimistic 0.7.
 """
 from ..settings import applier, planner, presets
+from ..settings import history as settings_history
 from ..settings.presets import PresetError
-from .calibrate import acceptance_rate
+from .calibrate import acceptance_rate, fold_undo_negatives
 from .ledger import Ledger
 from .preset_bandit import NamedBandit
 
@@ -63,10 +64,19 @@ def _ops_for(preset, calls):
     return list(calls or [])
 
 
-def _calibrated_confidence(ledger):
+def _calibrated_confidence(ledger, undo_records=None):
     """The running approval rate for kind="settings", falling back to
-    DEFAULT_CONFIDENCE with no history yet (a flat, uninformative prior)."""
+    DEFAULT_CONFIDENCE with no history yet (a flat, uninformative prior).
+
+    A3: the target file's PII-stripped undo log (if the caller passes the
+    records — undo_records is history.undo_log(target)) is folded in as
+    explicit negative evidence BEFORE the mean is read: a user who
+    reverts changes the assistant applied is teaching the posterior the
+    same lesson a rejected proposal teaches, and the next proposal's
+    default confidence shows it."""
     stats = acceptance_rate(ledger.labeled("settings"))
+    if undo_records:
+        fold_undo_negatives(stats, undo_records, kind="settings")
     settings_stats = stats.get("settings")
     if settings_stats is None:
         return DEFAULT_CONFIDENCE
@@ -97,7 +107,13 @@ def propose(ledger, file_path, preset=None, calls=None, reason=None, confidence=
                 "blocked": blocked, "errors": errors}
 
     if confidence is None:
-        confidence = _calibrated_confidence(ledger)
+        # A3: read the target's undo log (read-only; PII-stripped records
+        # only) and fold it in as explicit negative signal.
+        try:
+            undo_records = settings_history.undo_log(file_path)
+        except settings_history.HistoryError:
+            undo_records = []
+        confidence = _calibrated_confidence(ledger, undo_records)
 
     diff = {"preset": preset, "calls": ops, "file": str(file_path)}
     label = reason or (f"preset '{preset}'" if preset else "settings change")

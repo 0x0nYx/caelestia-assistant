@@ -17,15 +17,15 @@ A shell-side assistant organized as **ten cooperating layers**, each replaceable
 
 | Layer | Package | What it answers | Core machinery |
 | --- | --- | --- | --- |
-| Diagnostics | `assistant/diagnostics/` | "Which known problem is this?" | Deterministic rule engine over signature→fix mappings, every rule citing its source |
+| Diagnostics | `assistant/diagnostics/` | "Which known problem is this?" | Deterministic rule engine over signature→fix mappings, every rule citing its source; reverse lookup joins matched rules to the settings tools addressing their root cause |
 | Retrieval | `assistant/retrieval/` | "What is the closest *real* past resolution?" | BM25 over the repo's own docs and resolved issues |
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
 | Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief — with the personal-PKM tools split out into an opt-in subpackage |
-| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory |
-| Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo, presets |
+| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default) |
+| Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, compositional slot-grammar recovery for paraphrases |
 | Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system | 18-domain meta-router over stdlib engines |
-| Scan | `assistant/scan/` | "Scan this 2 GB journal on a 4 GB laptop" | Aho-Corasick + Bloom + Count-Min + HyperLogLog + reservoir + Page-Hinkley, one pass, bounded RAM |
+| Scan | `assistant/scan/` | "Scan this 2 GB journal on a 4 GB laptop" | Aho-Corasick + Bloom + Count-Min + HyperLogLog + reservoir + Page-Hinkley, one pass, bounded RAM; opt-in KL sketch-divergence novelty detection over every line (including the unmatched ones) |
 | Agent | `assistant/agent/` | "Clean my downloads, then make the shell minimal" | HTN goal decomposition → DAG → simulate → per-node consent → observe & learn |
 
 ### The brain layer (a partial inventory)

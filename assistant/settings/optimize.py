@@ -34,7 +34,8 @@ from .registry import ToolSpec, tool_by_name
 from ..genius.optimize import pareto_frontier
 
 __all__ = ["PROFILES", "score_plan", "recommend", "pareto_profiles",
-           "synthesize", "check_conflicts", "ConstraintError"]
+           "synthesize", "check_conflicts", "ConstraintError",
+           "preference_drift"]
 
 # ---------------------------------------------------------------------------
 # 1. Objective profiles
@@ -476,3 +477,94 @@ def synthesize(profile: str,
             "note": "proposal only — planner validation and the apply gate still apply"}
 
 
+
+
+# ---------------------------------------------------------------------------
+# 5. Config drift vs the preference posterior (B2, issue #120 adjacent)
+# ---------------------------------------------------------------------------
+
+def preference_drift(config, posterior, specs=None, min_evidence=3,
+                     evidence_cap=10, reject_below=0.4):
+    """Distance between a LIVE config and a Beta-Binomial preference
+    posterior (B2). PURE: plain data in, plain data out — no file reads,
+    no writes; the caller (brain side) owns the live file and the model.
+
+    Semantics — "drift" means the config sits in a direction this user's
+    own decision history says they REJECT:
+
+    - every ranged numeric tool (float/int with a range) whose live value
+      differs from the registry default contributes its normalized
+      offset direction (increase/decrease) and magnitude |pos - default|;
+    - the posterior row for (group, direction) with at least
+      ``min_evidence`` decisions votes: a low acceptance mean (below
+      ``reject_below``) is REJECTION of that direction;
+    - a tool drifts when its live direction is rejected, weighted by
+      offset magnitude x rejection depth x evidence weight
+      (min(n, cap)/cap — one decision is one decision, capped at 10);
+    - tools with thin evidence (< ``min_evidence`` decisions) are
+      reported in ``thin`` and never scored (the honest abstain the
+      preference model itself applies).
+
+    Returns {"score": 0..1, "evaluated": k, "flags": [...], "thin": [...]}.
+    """
+    from .registry import TOOL_SPECS as _SPECS
+    if specs is None:
+        specs = _SPECS
+    flags = []
+    thin = []
+    total = 0.0
+    evaluated = 0
+    for spec in specs:
+        if spec.kind not in ("float", "int"):
+            continue
+        if spec.minimum is None or spec.maximum is None:
+            continue
+        # Resolve the live value along the dotted path (read-only walk).
+        node = config
+        missing = False
+        for segment in spec.path.split("."):
+            if isinstance(node, dict) and segment in node:
+                node = node[segment]
+            else:
+                missing = True
+                break
+        if missing or not isinstance(node, (int, float)) or isinstance(node, bool):
+            continue
+        span = float(spec.maximum) - float(spec.minimum)
+        if span <= 0:
+            continue
+        default = spec.default
+        if not isinstance(default, (int, float)) or isinstance(default, bool):
+            continue
+        pos = (float(node) - float(spec.minimum)) / span
+        dpos = (float(default) - float(spec.minimum)) / span
+        offset = pos - dpos
+        if abs(offset) < 1e-9:
+            continue  # at default: no directional claim to disagree with
+        direction = "increase" if offset > 0 else "decrease"
+        magnitude = min(1.0, abs(offset))
+        row = posterior.get((spec.group or spec.path.split(".")[0], direction))
+        evaluated += 1
+        if row is None or row.get("n", 0) < min_evidence:
+            thin.append({"tool": spec.name, "path": spec.path,
+                         "group": spec.group or spec.path.split(".")[0],
+                         "direction": direction,
+                         "n": 0 if row is None else row.get("n", 0)})
+            continue
+        mean = float(row.get("p_accept", 0.5))
+        if mean < reject_below:
+            depth = (reject_below - mean) / reject_below
+            weight = min(row.get("n", 0), evidence_cap) / float(evidence_cap)
+            total += magnitude * depth * weight
+            flags.append({
+                "tool": spec.name, "path": spec.path,
+                "group": spec.group or spec.path.split(".")[0],
+                "direction": direction,
+                "live": node, "default": default,
+                "p_accept": round(mean, 3), "n": row.get("n", 0),
+                "weight": round(magnitude * depth * weight, 4),
+            })
+    flags.sort(key=lambda f: -f["weight"])
+    score = round(min(1.0, total / max(1, evaluated)), 4)
+    return {"score": score, "evaluated": evaluated,
+            "flags": flags, "thin": thin}

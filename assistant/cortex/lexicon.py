@@ -431,3 +431,23 @@ def camel_split(name: str) -> List[str]:
     This is the trick that turns 259 noun-silent tool NAMES into
     addressable vocabulary without inventing any semantics."""
     return [w.lower() for w in re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])", name) if w]
+
+
+def distributional_neighbors(embedder, word: str, k: int = 5) -> List[str]:
+    """A2 — the distributional view of this lexicon: the top-k words the
+    embedder's co-occurrence space places nearest to ``word``, formatted
+    as reviewable ``"word (cosine)"`` rows.
+
+    This is the honest complement to the hand-seeded SYNONYMS table: the
+    seeded lexicon says what a maintainer believes; the distributional
+    view says what the corpus's own co-occurrences imply. It CLAIMS
+    nothing about words absent from the corpus (unknown -> empty list)
+    and adds no semantics to the router by itself — a maintainer reading
+    these rows and promoting a genuine synonym into SYNONYMS is the
+    intended workflow (the reviewed-diff discipline RATIONALE.md §5
+    applies to lexicon changes too).
+
+    ``embedder`` is any PpmiEmbedder/PpmiSvdEmbedder (both expose
+    ``neighbors``); the function is pure given the embedder."""
+    found = embedder.neighbors(word, k=k) if hasattr(embedder, "neighbors") else []
+    return [f"{w} ({score:+.4f})" for w, score in found]

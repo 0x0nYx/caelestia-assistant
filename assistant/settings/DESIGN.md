@@ -425,6 +425,57 @@ the explicit `--apply` gate; that is the CLI equivalent of #120's
 "confirmation for larger changes" (§7c). The preset note states the values are
 conservative defaults, not an upstream-defined look.
 
+### 3.8 Compositional slot grammar — the recovery layer (`slots.py`)
+
+The frozen grammar of §3.3–§3.5 resolves requests whose direction and
+dimension arrive **pre-joined** ("thinner", "faster", "more transparent").
+Natural paraphrase often separates them: "speed up the animations"
+(direction *up* on the speed axis = faster = durations DOWN),
+"increase the transparency" (direction *up* on the transparency NOUN =
+opacity base DOWN). `slots.py` is a compositional layer that extracts
+`{intensifier, target, direction, dimension}` and composes them, so
+paraphrases share one grammar instead of requiring the exact frozen
+phrase.
+
+Composition rules (all deterministic, all pure):
+
+- **trans-noun polarity**: `base_step = sign(word) * polarity(noun)`,
+  where "transparency" carries −1 on the opacity-base axis and "opacity"
+  +1 — one multiplication resolves every verb/noun combination
+  ("increase the transparency" → step −1, "reduce the opacity" → step −1,
+  "increase the opacity" → step +1, "reduce the transparency" → step +1).
+- **anim pre-joining**: "speed up"/"slow down"/"hurry up" arrive as
+  pre-joined cues carrying the documented §2 inversion (up on speed =
+  step DOWN on durations); generic up/down words deliberately DECLINE on
+  the anim axis ("increase the animations" is ambiguous between
+  more-speed and more-duration — the honest answer stays AMBIGUOUS).
+- **bool composition**: activation verbs ("activate"/"deactivate") and
+  comparatives on bool tools map to on/off WITH the §3.5 honest note.
+- **intensifier slot**: "a bit"/"slightly" (light) and "a lot"/
+  "significantly" (strong) are extracted and reported but are
+  **magnitude-neutral** — §3.1's documented determinism rule ("a bit does
+  NOT change the step count") extended to both intensities.
+
+Safety of the frozen surface (the design boundary): `slots.recover()` runs
+ONLY on the §3.3 step-7 paths — when a noun matched but no frozen value
+phrase fit — and never when the frozen grammar produced a verdict.
+Every frozen output is byte-identical; the only observable change is that
+some previously-AMBIGUOUS noun requests now resolve to the same ops their
+canonical phrasings produce. The noun (target) surface is not grown:
+targets are exactly the noun-matched specs the frozen grammar found. The
+layer declines (returns None, frozen AMBIGUOUS stands) on: conflicting
+direction cues, magnitudes (numbers/percents — §3.4 owns those), bool cues
+on numeric tools, and split requests. Known frozen boundary, deliberately
+unrecovered: a preposition that is also a bool word ("put the bar **on**
+the left") hits the §3.3 step-6 split rule before any recovery hook.
+
+Verification: `tests/test_slots.py` — 15+ paraphrase pairs per dimension
+category (size / animation / transparency / bool / position) each assert
+the paraphrase routes identically to its frozen-resolved canonical, plus
+decline pins (bare percent, splits, targetless, dead-ends, conflicts) and
+pinned frozen outputs. The recovery result carries an audit note listing
+the extracted slots (`target=…; direction=…; intensifier=…`).
+
 ---
 
 ## 4. Planner (`planner.py`)
@@ -2089,6 +2140,21 @@ for human review.
   single-slot `.assistant-backup` (one-level `--restore`), the removed
   tmp, and `.assistant-history.json`. The directory-snapshot tests in
   `test_safety.py` assert exactly these four paths and no others.
+- **The PII-stripped undo log (A3):** every undo also appends one record
+  per undone registry op to an `undo_log` key INSIDE the same history
+  file (same `_save` atomic write path — no new write surface; the
+  four-path snapshot assertion above still holds). A record is
+  `{"tool", "magnitude", "direction"}` and NOTHING else — no timestamp,
+  no label, no values, no raw text — so keeping it beyond the 12-entry
+  ring (bounded FIFO at `UNDO_LOG_MAX = 500`) cannot accumulate anything
+  person-identifiable. Numeric baselines use the registry default when
+  the key was absent before the apply; bools record on/off; enums record
+  direction 0 (choice information, not a magnitude). The brain layer
+  folds this log into Beta-Binomial calibration as explicit negative
+  signal (`brain/calibrate.py::fold_undo_negatives`), and the settings
+  bridge's default confidence reads the folded posterior — an undone
+  change teaches the next proposal's confidence the same lesson a
+  rejected proposal teaches.
 
 ## 15. Presets and the confirmation gate (`presets.py`, `cli.py`)
 

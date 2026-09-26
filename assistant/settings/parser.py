@@ -26,6 +26,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from .registry import ToolSpec, TOOL_SPECS, describe, tool_by_name, tool_by_path
+from . import slots as _slots
 
 # ---------------------------------------------------------------------------
 # Grammar (§3.4), compiled once. All matching happens on normalized text
@@ -603,6 +604,15 @@ def parse(text: str) -> Dict[str, Any]:
         if ops:
             return _result("INTENT", ops=ops)
         if noun_specs:
+            # §3.8 — compositional slot-grammar recovery (A1): the frozen
+            # grammar could not assemble a value phrase for these nouns;
+            # the slot grammar gets one deterministic chance to compose
+            # {intensifier, target, direction, dimension} before the honest
+            # AMBIGUOUS verdict stands. Never runs when the frozen grammar
+            # succeeded, so every frozen output is byte-identical.
+            recovered = _slots.recover(normalized, noun_specs)
+            if recovered is not None:
+                return recovered
             # §3.3 step 7 — noun matched, no applicable cue.
             names = ", ".join(spec.name for spec in noun_specs)
             return _result(
@@ -625,6 +635,12 @@ def parse(text: str) -> Dict[str, Any]:
         return _targetless(directions[0])
 
     if noun_specs:
+        # §3.8 recovery, second hook: a noun matched but NO value phrase of
+        # any frozen kind was found (e.g. "thin out the bar") — same one
+        # deterministic slot-grammar chance before the AMBIGUOUS verdict.
+        recovered = _slots.recover(normalized, noun_specs)
+        if recovered is not None:
+            return recovered
         names = ", ".join(spec.name for spec in noun_specs)
         return _result(
             "AMBIGUOUS",

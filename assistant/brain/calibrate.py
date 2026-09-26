@@ -48,6 +48,39 @@ def confidence_calibration(labeled, bins=5):
     return out
 
 
+def fold_undo_negatives(stats, undo_log, weight=1.0, kind="settings"):
+    """A3 — fold the settings layer's PII-stripped undo log into the
+    Beta-Binomial posteriors as EXPLICIT negative signal.
+
+    ``stats`` is an acceptance_rate() result ({kind: {alpha, beta, mean, n}});
+    ``undo_log`` is settings.history.undo_log(target) — records of
+    {"tool", "magnitude", "direction"} and nothing else (the PII-strip
+    rule; magnitude is retained for future weighting experiments and
+    inspectability, not used to scale the evidence — an undo is one
+    negative observation regardless of how big the reverted change was).
+
+    Each record adds ``weight`` to the beta (negative) side of BOTH the
+    kind-level posterior (``kind``, default "settings": a change the user
+    reverted is evidence against settings proposals generally) and a
+    per-tool posterior under ``"tool:<name>"`` (evidence against that
+    specific knob). Means are recomputed; ``n`` counts folded records so
+    the honesty invariant (an effective sample size you can see) holds.
+    Mutates and returns ``stats`` (same dict, callers keep ownership).
+    """
+    for record in undo_log or []:
+        tool = record.get("tool")
+        if not tool:
+            continue
+        for key in (kind, f"tool:{tool}"):
+            entry = stats.setdefault(
+                key, {"alpha": 1.0, "beta": 1.0, "mean": 0.5, "n": 0})
+            entry["beta"] += float(weight)
+            entry["n"] += 1
+            entry["mean"] = round(
+                entry["alpha"] / (entry["alpha"] + entry["beta"]), 3)
+    return stats
+
+
 class DailyBudget:
     """Two arms, "more" and "less" proposals today. Reward = 1 if the user
     engaged (approved or rejected outright) rather than leaving it pending

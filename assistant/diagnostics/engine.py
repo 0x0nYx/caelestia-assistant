@@ -37,6 +37,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from .settings_join import settings_tools_for_rule
+
 RULES_DIR = Path(__file__).resolve().parent / "rules.d"
 
 CONFIDENCE_RANK = {"deterministic": 0, "probable": 1}
@@ -391,6 +393,12 @@ def diagnose(text: str, rules: Optional[List[Dict[str, Any]]] = None, top: int =
             results.append(result)
     ranked = rank_results(results)
 
+    # A4 — reverse lookup: attach the settings tools (if any) that address
+    # each matched rule's root cause, via the citation registry join. A
+    # pure, additive key: rules with no settings surface carry [].
+    for result in ranked:
+        result["settings_tools"] = settings_tools_for_rule(result["rule"])["tools"]
+
     if not ranked:
         return {"verdict": "NO_MATCH", "candidates": [], "top": None}
 
@@ -458,6 +466,12 @@ def render_result(result: Dict[str, Any]) -> str:
                 out.append(f"       undo: {step['undo']}")
     refs = _format_refs(rule)
     out.append(f"  References: {refs}")
+    settings_tools = result.get("settings_tools") or settings_tools_for_rule(rule)["tools"]
+    if settings_tools:
+        listing = ", ".join(
+            f"{entry['tool']} ({entry['path']})" for entry in settings_tools
+        )
+        out.append(f"  Settings tools addressing this root cause: {listing}")
     if rule.get("clarify_probe"):
         out.append(f"  Clarify: {rule['clarify_probe']}")
     return "\n".join(out)

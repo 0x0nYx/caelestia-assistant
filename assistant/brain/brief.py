@@ -40,9 +40,16 @@ def compose(pending: Optional[List[Dict[str, Any]]] = None,
             ghosts: Optional[List[Dict[str, Any]]] = None,
             calibration: Optional[Dict[str, Any]] = None,
             pref_lines: Optional[List[str]] = None,
-            scan_alarm: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+            scan_alarm: Optional[Dict[str, Any]] = None,
+            config_drift: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Assemble the brief from already-computed inputs (plain data in, plain
-    data out). Missing sections render as 'no data' — never invented."""
+    data out). Missing sections render as 'no data' — never invented.
+
+    ``config_drift`` (B2) is OPT-IN by design: the caller computes it
+    (prefs.config_drift over the live shell.json + the learned preference
+    posterior) and passes it; the brief never reads the config file
+    itself, so the section appears only when someone deliberately asked
+    for it."""
     pending = pending or []
     stuck = stuck or []
     ghosts = ghosts or []
@@ -71,6 +78,7 @@ def compose(pending: Optional[List[Dict[str, Any]]] = None,
         "calibration": calibration or {},
         "preferences": pref_lines[:4],
         "stream_alarm": scan_alarm,
+        "config_drift": config_drift or None,
     }
 
 
@@ -123,6 +131,20 @@ def render(brief: Dict[str, Any]) -> str:
     if alarm and alarm.get("change_at") is not None:
         out.append("")
         out.append(f"log stream: rate change detected at chunk {alarm['change_at']}")
+    drift = brief.get("config_drift")
+    if drift:
+        out.append("")
+        if drift.get("flags"):
+            out.append(f"config drift (score {drift.get('score', 0)} over "
+                       f"{drift.get('evaluated', 0)} settings): "
+                       f"{len(drift['flags'])} sit in directions you usually reject")
+            for f in drift["flags"][:3]:
+                out.append(f"  {f['path']}: live {f['live']} vs default "
+                           f"{f['default']} — p_accept {f['p_accept']} "
+                           f"(n={f['n']}) for {f['direction']}")
+        else:
+            out.append(f"config drift: none — {drift.get('evaluated', 0)} "
+                       "settings checked, all aligned with your preferences")
     cal = brief.get("calibration") or {}
     if cal.get("brier") is not None:
         out.append("")

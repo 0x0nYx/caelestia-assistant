@@ -200,9 +200,33 @@ def cmd_brief(args, out):
     from . import brief as brief_mod
     from .ledger import Ledger
     ledger = Ledger(args.ledger)
-    brief = brief_mod.compose(pending=ledger.pending())
+    drift = None
+    if getattr(args, "config_drift", False):
+        drift = _config_drift_payload(args)
+    brief = brief_mod.compose(pending=ledger.pending(), config_drift=drift)
     out.write(brief_mod.render(brief) + "\n")
     return 0
+
+
+def _config_drift_payload(args):
+    """B2 opt-in: read the live shell.json (read-only, the planner's own
+    reader) and score it against the preference posterior learned from
+    the ledger. Returns the drift dict, or a thin 'why not' marker."""
+    from pathlib import Path
+
+    from . import prefs as prefs_mod
+    from .ledger import Ledger
+    from ..settings import cli as settings_cli
+    from ..settings import planner
+    target = getattr(args, "target", None) or settings_cli.default_target()
+    try:
+        current, _notes = planner._read_current(Path(target))
+    except Exception as exc:  # PlannerError: unreadable/invalid JSON
+        return {"evaluated": 0, "flags": [], "thin": [], "score": 0,
+                "error": f"target unreadable ({exc}); drift not computed"}
+    model = prefs_mod.PreferenceModel()
+    model.from_ledger(Ledger(args.ledger).items)
+    return prefs_mod.config_drift(model, current)
 
 
 def cmd_tidy(args, out):
@@ -321,6 +345,12 @@ def build_parser():
     # ---- shell-native second-brain surfaces (brief / tidy / prefs) ----
     br = sub.add_parser("brief", help="one deterministic page connecting "
                                        "ledger, plans, forecasts")
+    br.add_argument("--config-drift", action="store_true",
+                    help="opt-in (B2): score the live shell.json against "
+                         "the preference posterior learned from the ledger")
+    br.add_argument("--target", default=None,
+                    help="shell.json to score for --config-drift "
+                         "(default: the watched global config)")
     br.set_defaults(fn=cmd_brief)
 
     td = sub.add_parser("tidy", help="filesystem survey (read-only) + rollback")

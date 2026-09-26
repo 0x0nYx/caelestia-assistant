@@ -277,3 +277,45 @@ def _verdict(mean: float, n: int) -> str:
     if mean <= 0.35:
         return "usually rejected"
     return "mixed"
+
+
+def config_drift(model: "PreferenceModel", config: Dict[str, Any],
+                hour: Optional[int] = None,
+                specs=None) -> Dict[str, Any]:
+    """B2 — distance between a LIVE config dict and this preference model.
+
+    The adapter half of the drift score: flattens the model's Beta
+    posteriors into the plain {(group, direction): {"p_accept", "n"}}
+    table optimize.preference_drift consumes, and delegates the scoring to
+    the settings layer's own pure function (layering stays
+    one-directional: brain imports settings, never the reverse). PURE
+    given (model, config): no file reads here either — the caller reads
+    the live shell.json with the planner's own read-only helper.
+
+    ``hour=None`` (the daily-brief default) merges the evidence across ALL
+    hour buckets — the overall preference. An explicit hour restricts to
+    that 6-hour bucket (a night-only rejection stays a night-only signal),
+    which is the honest reading of "you usually reject X at this hour".
+    """
+    from ..settings.optimize import preference_drift
+
+    merged: Dict[Tuple[str, str], List[float]] = {}
+    bucket = hour_bucket(hour)
+    for key, (a, b) in model.table.items():
+        parts = key.split("|")
+        if len(parts) != 3:
+            continue
+        group, direction, key_bucket = parts
+        if hour is not None and int(key_bucket) != bucket:
+            continue
+        cell = merged.setdefault((group, direction), [0.0, 0.0])
+        cell[0] += a - _PRIOR_ALPHA  # evidence mass only (prior removed)
+        cell[1] += b - _PRIOR_BETA
+    posterior: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    for (group, direction), (approves, rejects) in merged.items():
+        alpha = _PRIOR_ALPHA + approves
+        beta = _PRIOR_BETA + rejects
+        posterior[(group, direction)] = {
+            "p_accept": round(alpha / (alpha + beta), 3),
+            "n": int(approves + rejects)}
+    return preference_drift(config, posterior, specs=specs)

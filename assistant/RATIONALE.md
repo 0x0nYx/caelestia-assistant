@@ -901,6 +901,22 @@ does NOT pretend they resolve; no existential import is assumed
 (modern reading: "no A are B" does not entail "some A are not B" —
 pinned by test). Deterministic, pure, no I/O.
 
+**2.5 commit-risk score for devflow.** `devflow/risk.py` (CLI:
+`python3 -m assistant.devflow risk --source FILE < log.txt`) implements
+McCabe's cyclomatic complexity per function from the stdlib `ast`
+(1 + decision points, nested functions owning their own decisions)
+multiplied by log2(1 + recency-decayed churn) from `git log --numstat`
+text — the file rows reuse `diffstat.parse_numstat`, the ONE numstat
+parser, and there is NO subprocess anywhere: the caller pipes the text
+exactly as diffstat's input contract already established. Honesty
+accounting: churn decays by commit recency with a fixed, stated
+half-life (git's own newest-first order is the recency signal — no
+timestamp parsing, no clock reads); the tier thresholds are stated
+constants pinned by test; an unparsable source REFUSES the complexity
+half (risk stays None, churn still reported) rather than scoring
+garbage; the whole thing is a report for the human's review — nothing
+gates, nothing blocks, nothing executes.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

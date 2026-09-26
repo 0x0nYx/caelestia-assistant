@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Commit-risk score: `python3 -m assistant.devflow risk --source F <
+  log.txt` — McCabe cyclomatic complexity (McCabe 1976, stdlib ast) x
+  recency-decayed churn from `git log --numstat` text (reuses the
+  diffstat parser; no subprocess), tiered low/medium/high at stated
+  thresholds; a report, never a gate.
 - Resolution syllogism checker: `genius/logic.py::syllogism_check`
   decides 'is this argument valid' for the categorical fragment by
   refuting premises + negated conclusion with binary resolution

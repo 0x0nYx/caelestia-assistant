@@ -746,6 +746,34 @@ final WORKLOG summary entry lists every sub-item outcome.
   signer outranks disjoint one), empty-history honesty, the
   never-auto-skip invariant, event-log bound.
 
+### Phase 3.2 — backlink suggestion blend — SHIPPED
+
+- Grep-first result: linkrec.py was Adamic-Adar + minhash shingle-
+  Jaccard only; textmine.py had TF-IDF keywords but no public
+  vector/cosine seam. Import direction confirmed against
+  brain/personal/README.md's shared-utility list (textmine.py listed
+  for root imports via `..`).
+- Extended the SHARED engine first: `brain/textmine.py` gains public
+  `tfidf_vectors(texts)` + `cosine(a, b)` — the same TF-IDF family its
+  keywords() uses (Salton & Buckley 1988 weighting), whole-corpus df,
+  deterministic.
+- Extended `brain/personal/linkrec.py` IN PLACE:
+  suggest_links(graph, notes, top, min_jaccard, tfidf_weight=0.5)
+  now blends the two signals on one scale — score = (1-w)*aa_norm +
+  w*cosine, where aa_norm = aa/(aa+1) is the same saturating transform
+  fusion.py/units.py use for unbounded scores. The `via` label names
+  the actual weighted contributions ("combined" only when BOTH
+  contribute; w=0 reproduces the graph-only ranking; the minhash
+  shingle-Jaccard fallback is retained untouched for the cold start).
+  Existing via labels/behavior preserved; pairs carry their aa/cos
+  components when combined.
+- Tests: `test_personal_modules.py` LinkRecBlendTests (4 cases:
+  combined via + component keys, weight-exactness at w=1 and w=0,
+  cold-start TF-IDF suggestion and cross-topic ranking, empty notes)
+  plus a tfidf_vectors/cosine case in brain/tests/test_brain_v2.py
+  (ordering, bounds, empty-vocabulary honesty, determinism).
+
+
 ### Phase 3.1 — habit/completion correlation mining — SHIPPED
 
 - Grep-first result: NO habit log exists anywhere in the repo (no

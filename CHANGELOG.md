@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Backlink suggestion blend (`brain/personal/linkrec.py`): the
+  Adamic-Adar graph signal combined with TF-IDF cosine similarity from
+  the shared textmine engine (new public `tfidf_vectors`/`cosine`
+  seam) on one saturated scale, with honest via labels and the
+  minhash-Jaccard cold-start fallback retained.
 - Habit/completion correlation mining
   (`brain/personal/correlate.py`): point-biserial (Tate 1954) and
   Yates-corrected chi-square tests between caller-supplied habit

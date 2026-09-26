@@ -22,6 +22,29 @@ class TextMineTests(unittest.TestCase):
         kws = textmine.keywords("kubernetes cluster kustomize overlays", corpus, top=3)
         self.assertTrue(any("kustomize" in k for k in kws))
 
+    def test_tfidf_vectors_and_cosine(self):
+        # phase 3.2 seam: whole-corpus TF-IDF vectors + cosine similarity
+        vecs = textmine.tfidf_vectors([
+            "sourdough starter flour water recipe",
+            "sourdough starter feeding flour schedule",
+            "quarterly budget spreadsheet totals",
+        ])
+        self.assertEqual(len(vecs), 3)
+        similar = textmine.cosine(vecs[0], vecs[1])
+        unlike = textmine.cosine(vecs[0], vecs[2])
+        self.assertGreater(similar, unlike)
+        self.assertGreater(similar, 0.0)
+        self.assertLessEqual(similar, 1.0 + 1e-9)
+        # empty vocabulary is not a similarity
+        self.assertEqual(textmine.cosine({}, vecs[1]), 0.0)
+        # determinism: same corpus, same vectors
+        again = textmine.tfidf_vectors([
+            "sourdough starter flour water recipe",
+            "sourdough starter feeding flour schedule",
+            "quarterly budget spreadsheet totals",
+        ])
+        self.assertEqual(vecs, again)
+
     def test_summarize_shorter_than_target_returns_everything(self):
         out = textmine.summarize("One short sentence only.", sentences_out=3)
         self.assertEqual(out, ["One short sentence only."])

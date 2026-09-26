@@ -173,6 +173,61 @@ class LinkRecTests(unittest.TestCase):
         self.assertNotIn({"a", "b"}, [{s["a"], s["b"]} for s in suggestions])
 
 
+class LinkRecBlendTests(unittest.TestCase):
+    """Phase 3.2: the Adamic-Adar recommender combined with TF-IDF
+    cosine from the shared textmine engine (the personal README's
+    stated shared-utility import direction)."""
+
+    def test_combined_via_when_both_signals_fire(self):
+        g = Graph()
+        g.add("a", {"hub"})
+        g.add("b", {"hub"})
+        notes = {"a": "sourdough starter recipe flour water",
+                 "b": "sourdough starter feeding flour ratios"}
+        suggestions = linkrec.suggest_links(g, notes, top=5)
+        pair = next(s for s in suggestions if {s["a"], s["b"]} == {"a", "b"})
+        self.assertEqual(pair["via"], "combined")
+        self.assertIn("aa", pair)
+        self.assertIn("cos", pair)
+        # the blend respects the weight: w=1 must equal the pure cosine,
+        # w=0 must equal the pure saturated Adamic-Adar
+        pure_cos = linkrec.suggest_links(g, notes, top=5, tfidf_weight=1.0)
+        pc = next(s for s in pure_cos if {s["a"], s["b"]} == {"a", "b"})
+        self.assertAlmostEqual(pc["score"], round(pair["cos"], 3), places=3)
+
+    def test_tfidf_similar_pair_suggested_without_graph(self):
+        g = Graph()  # cold start: no links at all
+        base = "recipe for sourdough bread with flour and water and a long proofing time"
+        notes = {"x": base, "y": base + " plus a pinch of salt at the end",
+                 "z": "quarterly budget spreadsheet numbers and totals"}
+        suggestions = linkrec.suggest_links(g, notes, top=5, min_jaccard=0.1)
+        x_y = next(s for s in suggestions if {s["a"], s["b"]} == {"x", "y"})
+        self.assertEqual(x_y["via"], "text_similarity")
+        # TF-IDF must rank the sourdough pair above the budget pair
+        x_z = [s for s in suggestions if {s["a"], s["b"]} == {"x", "z"}]
+        if x_z:
+            self.assertGreater(x_y["score"], x_z[0]["score"])
+
+    def test_weight_zero_reproduces_graph_only_ranking(self):
+        g = Graph()
+        g.add("a", {"hub"})
+        g.add("b", {"hub"})
+        notes = {"a": "alpha beta gamma delta", "b": "alpha beta epsilon zeta"}
+        suggestions = linkrec.suggest_links(g, notes, tfidf_weight=0.0)
+        pair = next(s for s in suggestions if {s["a"], s["b"]} == {"a", "b"})
+        self.assertEqual(pair["via"], "shared_neighbours")
+        # aa_norm for a single shared neighbour of degree 2:
+        aa = linkrec.adamic_adar(g, "a", "b")
+        self.assertAlmostEqual(pair["score"],
+                               round((aa / (aa + 1.0)), 3), places=3)
+
+    def test_empty_notes_never_suggest(self):
+        g = Graph()
+        notes = {"a": "", "b": ""}
+        suggestions = linkrec.suggest_links(g, notes)
+        self.assertEqual(suggestions, [])
+
+
 class GhostTests(unittest.TestCase):
     def test_finds_unchecked_box_and_action_line(self):
         notes = {"todo.md": "- [ ] ship the release\n- buy milk"}

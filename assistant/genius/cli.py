@@ -261,7 +261,11 @@ def cmd_data(args, out) -> int:
         elif args.csv:
             text = Path(args.csv).read_text(encoding="utf-8", errors="replace")
             table = data.parse_table(text, delimiter=args.delimiter)
-            if args.profile:
+            if args.expr:
+                # exponential-build 2.2: named-column expression evaluator
+                from . import csvquery
+                _print(csvquery.evaluate(table, args.expr), args.json)
+            elif args.profile:
                 _print(data.profile_table(table), args.json)
             elif args.groupby:
                 key, value, agg = (args.groupby.split(":") + ["mean"])[:3]
@@ -855,6 +859,12 @@ def build_parser() -> argparse.ArgumentParser:
     q = sp("data", cmd_data, help="tabular + time-series analysis")
     q.add_argument("--csv")
     q.add_argument("--delimiter", default=",")
+    q.add_argument("--expr", default=None,
+                   help="evaluate a named-column expression over --csv "
+                        "(whitelisted syntax: columns, numbers, + - * / "
+                        "// % **, comparisons, and/or/not, aggregates "
+                        "count/sum/min/max/mean/median/stdev/variance/"
+                        "quantile/pearson)")
     q.add_argument("--series")
     q.add_argument("--profile", action="store_true")
     q.add_argument("--groupby", help="key:value:agg")

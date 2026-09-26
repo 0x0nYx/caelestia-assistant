@@ -849,6 +849,25 @@ the user copies themselves (shell-quoted, `-n` so it cannot clobber);
 the module is pure string algebra — no I/O, no subprocess, no clock,
 no RNG, deterministic end to end and pinned by test.
 
+**2.2 stdlib CSV expression domain.** `genius/csvquery.py` (exposed
+read-only as `genius data --csv ... --expr ...`) is a named-column
+expression evaluator built entirely on existing primitives:
+`data.parse_table` (the csv-module parser the data domain already had),
+`stats.py` (describe/quantile/pearson for the aggregates), and `ast`
+as the SAFETY mechanism — the expression is walked over an explicit
+node whitelist and `eval` is never called; attribute access,
+subscripts, lambdas, string constants and unknown function names are
+rejected by name before anything runs. Honesty accounting: a missing
+or non-numeric cell makes the surrounding row value None (Kleene
+propagation through and/or/not) and lands in a reported
+`rows_unavailable` count — never coerced to 0 or False; division by
+zero is unavailable, not infinite; `quantile`'s q outside [0, 1] is
+rejected, never clamped; an unknown column is an error that lists what
+exists; `pearson` pairs rows positionally and refuses to claim a
+correlation from fewer than 3 aligned pairs. No I/O in the evaluator —
+the caller owns the table text — and the CLI path reads the user's
+file and prints; it writes nothing.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

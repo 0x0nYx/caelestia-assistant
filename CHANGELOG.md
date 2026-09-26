@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Stdlib CSV expression domain: `genius data --csv ... --expr ...`
+  evaluates named-column expressions (arithmetic, comparisons, Kleene
+  and/or/not, stats.py aggregates) over a user-supplied CSV/TSV via an
+  ast node whitelist — eval never called, unavailable cells never
+  coerced, out-of-range quantile rejected not clamped.
 - Tiny inductive program synthesis: `genius synth` (Gulwani 2011,
   FlashFill-style) induces a string transformation from 2-3
   before/after examples over a tiny explainable DSL — every example

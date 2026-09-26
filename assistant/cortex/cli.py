@@ -627,6 +627,18 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     gaps_p.add_argument("--purity", type=float, default=0.6,
                         help="minimum modal-shape coverage (default 0.6, the "
                              "workspace.py floor)")
+    lex_p = sub.add_parser("lexicon", help="federated, opt-in, signed "
+                                            "lexicon-diff sharing (phase 2.6: "
+                                            "export/import/forget; no network, "
+                                            "no auto-merge — verify signatures "
+                                            "with YOUR external tool)")
+    lex_p.add_argument("action", choices=["export", "import", "forget",
+                                           "list"],
+                       help="export: print the reviewable diff; import: apply a "
+                            "diff from stdin as supervised pairs; forget: drop "
+                            "one imported set by id; list: imported sets")
+    lex_p.add_argument("diff_id", nargs="?", default="",
+                       help="forget: the diff id to drop (see list)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -650,6 +662,66 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         brain_state.save(state)
         print(f"memory decay half-life set to {args.days} days "
               "(affects recall weighting from now on; history untouched)")
+        return 0
+
+    if args.cmd == "lexicon":
+        from .. import capabilities
+        if not capabilities.enabled("lexicon_sharing"):
+            print("error: lexicon_sharing is disabled in the capability "
+                  "manifest (edit capabilities.json to enable; it cannot "
+                  "be enabled by a request)", file=sys.stderr)
+            return 1
+        from . import lexicon_diff
+        if args.action == "export":
+            rows = lexicon_diff.export_rows(state)
+            if not rows:
+                print("nothing learned to share yet (the learner's example "
+                      "log is empty)")
+                return 0
+            sys.stdout.write(lexicon_diff.render(
+                rows, date=datetime.now().strftime("%Y-%m-%d")))
+            print("# export is read-only: sign it with YOUR external tool "
+                  "(minisign/sq/gpg) before sharing", file=sys.stderr)
+            return 0
+        if args.action == "import":
+            text = sys.stdin.read()
+            report = lexicon_diff.import_diff(state, text)
+            if "error" in report:
+                print(f"error: {report['error']}", file=sys.stderr)
+                for warn in report.get("warnings", []):
+                    print(f"  warning: {warn}", file=sys.stderr)
+                return 1
+            brain_state.save(state)
+            print(f"imported diff {report['diff_id']}: "
+                  f"{report['imported']} pair(s)")
+            print("  tools this diff boosts (review them):")
+            for tool in report["boosted_tools"]:
+                print(f"    - {tool}")
+            for warn in report.get("warnings", []):
+                print(f"  warning: {warn}")
+            print(f"  {report['note']}")
+            print(f"  {report['verify']}")
+            print(f"  rollback: {report['rollback']}")
+            return 0
+        if args.action == "forget":
+            report = lexicon_diff.forget(state, args.diff_id)
+            if "error" in report:
+                print(f"error: {report['error']}", file=sys.stderr)
+                return 1
+            brain_state.save(state)
+            print(f"forgot {report['forgot']} "
+                  f"({report['rows_dropped']} row(s)); {report['note']}")
+            return 0
+        # list
+        ids = lexicon_diff.imported_ids(state)
+        if not ids:
+            print("no imported lexicon diffs")
+            return 0
+        imports = state.get(lexicon_diff.IMPORTS_KEY) or {}
+        for did in ids:
+            entry = imports.get(did) or {}
+            print(f"  {did}  {entry.get('n', '?')} pair(s)")
+        print("forget with: cortex lexicon forget <id>")
         return 0
 
     if args.cmd == "report":

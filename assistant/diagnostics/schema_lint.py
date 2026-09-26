@@ -161,6 +161,11 @@ def check_import_policy() -> List[str]:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     root_mod = alias.name.split(".")[0]
+                    if root_mod == "assistant":
+                        continue  # intra-package import (absolute form); the
+                        # target module is scanned by this same walk
+                    if root_mod == "__future__":
+                        continue  # compiler directive, not a capability
                     if root_mod in quarantined:
                         continue  # this module's documented quarantine
                     if root_mod not in allowed and alias.name not in allowed:

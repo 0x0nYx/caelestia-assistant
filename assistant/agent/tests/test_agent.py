@@ -432,7 +432,8 @@ class TestCapabilityManifest(unittest.TestCase):
 
         # read-only, zero-risk: on by default
         for name in ("fsbrain", "config_hygiene", "log_triage",
-                     "screenshot_diff", "notification_triage"):
+                     "screenshot_diff", "notification_triage",
+                     "lexicon_sharing"):
             self.assertTrue(capabilities.DEFAULTS[name], name)
         # anything that shells out or extends the import surface: off
         for name in ("package_audit", "dbus_surface",

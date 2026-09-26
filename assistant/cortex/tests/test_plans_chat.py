@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -50,12 +51,18 @@ class ChatPlanCacheTests(unittest.TestCase):
         self.target = _write_target(self.dir)
 
     def _chat(self, script: str) -> str:
+        # brain-state isolation: every scripted session writes its
+        # learned state to a temp file, never the real user path
+        brain_path = self.dir / "brain-state.json"
         stdin = io.StringIO(script)
         original_stdin, sys.stdin = sys.stdin, stdin
         try:
             buffer = io.StringIO()
             with redirect_stdout(buffer):
-                cmd_chat(["--file", str(self.target), "--no-learn"])
+                with unittest.mock.patch.dict(
+                        os.environ,
+                        {"CAELESTIA_BRAIN_STATE": str(brain_path)}):
+                    cmd_chat(["--file", str(self.target), "--no-learn"])
         finally:
             sys.stdin = original_stdin
         return buffer.getvalue()

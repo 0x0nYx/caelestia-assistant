@@ -286,3 +286,47 @@ integration stays behind CAELESTIA_ASSIST_DBUS_TESTS=1, never in CI).
 Suite: 1269 green; selfcheck + import policy clean. RATIONALE §16.
 Remaining: 2.6 (registry adapter + lexicon-diff + capability
 registration), then Phases 3-4.
+
+### 2.6 (this commit) — Phase 2 COMPLETE
+
+**Registry-generation adapter interface SHIPPED** —
+`settings/gen_adapter.py`: the generation contract formalized.
+canonical_bytes (the ONE serialization — every producer and comparison
+goes through it, byte-identity is a pipeline property not a per-caller
+convention); ADAPTERS registration table (pinned to the shipped
+cpp-headers walker); verify_output_schema (structural check third-
+party output must satisfy); verify() — the drift guard as a read-only
+function (build, render, compare, first-diff-lines report, never
+writes); CLI `python3 -m assistant.settings gen_adapter [--verify]`.
+Committed tools.json verifies byte-identical through this seam (live).
+
+**Signed lexicon-diff sharing SHIPPED** — `cortex/lexicon_diff.py` +
+`cortex lexicon export|import|forget|list`: plain-text reviewable
+diffs (newest 200, PII-stripped: no timestamps/paths/values), signing
+OUTSIDE the assistant (minisign/sq/GPG over the canonical text — no
+crypto code, no network, nothing can transmit). Import: caps + length
+bounds + unknown-tool/unparseable/duplicate/over-cap rows as warned
+no-ops (injection fuzz pinned), boosted-tools report, content-
+addressed diff ids (sha256[:12]), one-command rollback (forget).
+Landing: supervised pairs in A2's embedder seam (the shared singleton
+reads persisted pairs at its lazy first build; absent import keeps
+the corpus-only build byte-for-byte — the fingerprint test pins it)
++ review-bucket candidates for the learner's batch flow. Never touches
+SYNONYMS. CLI round trip verified live (chat session -> export ->
+import -> list -> forget).
+
+**Capability registration SHIPPED** — `lexicon_sharing: True` (CLI-
+only, offline, no network, explicit user command with rollback) in
+the manifest, gated in the CLI; defaults-posture test updated.
+
+Lint gap closed while building: check_import_policy's ast.Import
+branch treated the ABSOLUTE intra-package form (import assistant.x.y)
+as forbidden while allowing the from-form — both skip the assistant
+root now (the target module is scanned by the same walk). Brain state
+gained the CAELESTIA_BRAIN_STATE path override (same pattern as the
+capability manifest) — tests/sandboxes never touch user runtime
+state; a test-isolation leak in my own earlier chat tests (writing
+the real sandbox state path) was found and fixed with it.
+
+28 tests -> 1297 green; selfcheck + bash harness green. RATIONALE §17.
+Phases 3 (maintenance audit) and 4 (version reset) next.

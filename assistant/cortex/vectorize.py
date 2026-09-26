@@ -310,11 +310,31 @@ def index() -> TfidfIndex:
 
 
 def embedder() -> PpmiEmbedder:
-    """The shared PPMI embedder (fixed seed)."""
+    """The shared PPMI embedder (fixed seed).
+
+    Lexicon-diff wiring (phase 2.6): if the brain state carries IMPORTED
+    lexicon pairs (opt-in `cortex lexicon import`), the FIRST build
+    includes them as supervision (A2's ``labeled_pairs`` seam); an
+    absent import keeps the corpus-only build byte-for-byte — the
+    A2-measured default the fingerprint test pins. One JSON read, once
+    per process, lazily (no brain-state dependency at import time).
+    """
     global _EMBEDDER
     if _EMBEDDER is None:
-        _EMBEDDER = PpmiEmbedder()
+        pairs = _persisted_lexicon_pairs()
+        _EMBEDDER = PpmiEmbedder(labeled_pairs=pairs) if pairs \
+            else PpmiEmbedder()
     return _EMBEDDER
+
+
+def _persisted_lexicon_pairs():
+    """Imported (text, surface) pairs from the brain state, or []."""
+    try:
+        from ..brain import state as brain_state
+        from . import lexicon_diff
+        return lexicon_diff.persisted_pairs(brain_state.load())
+    except Exception:
+        return []  # the embedder must never fail on state trouble
 
 
 # ---------------------------------------------------------------------------

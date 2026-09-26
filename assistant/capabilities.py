@@ -39,6 +39,9 @@ DEFAULTS: Dict[str, bool] = {
     "log_triage": True,           # sysintel template mining -> issue drafts
     "screenshot_diff": True,      # pixel-region hashing between two files
     "notification_triage": True,  # PURE classification of event records
+    "lexicon_sharing": True,      # cortex lexicon export/import/forget (CLI,
+                                  # offline, no network; import is an explicit
+                                  # user command with rollback — phase 2.6)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

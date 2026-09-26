@@ -653,6 +653,66 @@ bounded one-write undo; the belt-and-braces AST scans in
 settings/tests/test_safety.py learned the quarantine so every OTHER
 module still fails on `subprocess`.
 
+## 17. Lexicon-diff sharing and the generation adapter (phase 2.6)
+
+- **The lexicon diff** (`cortex/lexicon_diff.py` + `cortex lexicon
+  export|import|forget|list`): a plain-text, reviewable list of
+  `phrase -> tool` mappings a user's cortex learned — capped at the
+  newest 200, PII-stripped to the undo log's standard (no timestamps,
+  no file paths, no values; phrases are the only content). "Federated"
+  means the artifact travels the channels the community already uses
+  (issues, matrix, fork PRs) — NO server, NO network code, NO crypto
+  code in the assistant. "Signed" happens OUTSIDE (minisign/sq/GPG
+  over the canonical text): the assistant states the content, the
+  human owns the trust in the identity.
+- **Import safety** (the proposal's mitigations, pinned by test):
+  import caps (200), per-phrase length cap (120, the learner's own
+  bound), unknown tools / unparseable lines / duplicates /
+  over-cap rows import as no-ops with WARNINGS, never exceptions
+  (the injection-fuzz contract); the import report lists every tool
+  the diff boosts; rollback is one command (`forget <diff-id>`,
+  content-addressed by sha256 of the canonical rows).
+- **Where imports land**: as SUPERVISED PAIRS in A2's embedder seam
+  (``PpmiEmbedder(labeled_pairs=...)`` — the shared singleton reads
+  the persisted pairs at its lazy first build; an ABSENT import keeps
+  the corpus-only build byte-for-byte, which is why the fingerprint
+  test still pins the no-pairs build) and as REVIEW-BUCKET candidates
+  for the learner's batch flow — never into the hand-seeded SYNONYMS
+  (that table stays a reviewed diff).
+- **The generation adapter interface**
+  (`settings/gen_adapter.py` + `python3 -m assistant.settings
+  gen_adapter [--verify]`): the registry-generation contract
+  formalized — ONE canonical serialization (``canonical_bytes``:
+  every producer and every comparison goes through the same
+  rendering, so byte-identity is a property of the pipeline, not a
+  per-caller convention); a REGISTERED adapter table (name -> build
+  callable, pinned to the shipped ``cpp-headers`` walker); a
+  structural SCHEMA check third-party output must satisfy; and
+  ``verify`` — the drift guard as a read-only function (build, render,
+  compare, report the first differing lines; never writes). The
+  committed tools.json verifies byte-identical through this seam
+  today.
+- **The capability manifest** grows `lexicon_sharing` (ON by default:
+  CLI-only, offline, no network, import is an explicit user command
+  with rollback) — a community deployment can turn sharing off
+  entirely with one file edit, the same posture as every other
+  capability.
+- Two lint gaps closed while building: the import-policy AST walk
+  treated the absolute form of intra-package imports
+  (`import assistant.x.y`) as forbidden while allowing the `from`
+  form — now both forms skip the assistant root (the target module is
+  scanned by the same walk); and the brain state gained the
+  `CAELESTIA_BRAIN_STATE` path override (the same override pattern as
+  the capability manifest) so tests and sandboxes never touch the
+  user's runtime state.
+
+Safety accounting: no network surface (nothing in assistant/ can
+transmit — the user moves the text themselves); imported phrases are
+router supervision, never instructions (a malicious diff can at worst
+skew routing toward wrong tools, bounded by the AMBIGUOUS/consent
+gates); generation is a build-time developer act — the runtime
+registry loader is untouched and never executes generator code.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

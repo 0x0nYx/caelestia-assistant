@@ -375,3 +375,20 @@ known-gaps gained the live-notification-observation entry.
 CHANGELOG rewrite is Phase 4 (the v0.1 collapse).
 
 Suite 1297 green; selfcheck + bash harness green.
+
+### Phase 4 — version reset to 0.1 (this commit)
+
+CHANGELOG collapsed into a single "[0.1.0] — 2026-09-26 — initial
+baseline" entry: the coherent system description (ten layers,
+conversational surfaces, safety contract, 1297 tests green) — no
+dev-process round/tier/phase milestones, no per-release history (the
+git log IS the history; the changelog describes the release).
+Version strings reset: pyproject.toml 0.7.0 -> 0.1.0,
+assistant/__init__.py 0.3.0 -> 0.1.0, genius/__init__.py 1.0.0 ->
+0.1.0. Git history NOT rewritten (verified: log + reflog show only
+the per-phase commits, no rebase/amend); user runtime state NOT
+touched (ledger, undo history, brain state, weights all live under
+$HOME, none tracked in the repo — confirmed nothing in-tree was
+modified by the reset).
+
+Suite 1297 green; selfcheck green.

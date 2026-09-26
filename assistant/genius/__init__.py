@@ -4,4 +4,4 @@
 into the caelestia-assistant safety spine (inert suggestions, ledger
 proposals, honest verdicts). See genius/README.md for the full map.
 """
-__version__ = "1.0.0"
+__version__ = "0.1.0"

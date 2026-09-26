@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "caelestia-assistant"
-version = "0.7.0"
+version = "0.1.0"
 description = "Offline-first, no-LLM intelligence core for caelestia-kde — deterministic diagnostics, learned routing, natural-language settings (issue #120), stream scanning, and a consent-gated agent, in Python stdlib only. Also ships the optional in-shell AI sidebar (shell/), an opt-in, user-keyed cloud chat tier used strictly as a fallback for requests outside the local ontology — every state-changing tool call it can trigger goes through a validated allow-list, preview-and-confirm gate."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Sidebar units tool: `caelestia_genius_units` (bridge op `genius_units`) — dimension-checked conversion and arithmetic on-device; mismatched dimensions rejected, never coerced.
 - Sidebar graphs tool: `caelestia_genius_graphs` joins the sidebar registry (bridge op `genius_graphs`) — Dijkstra/MST/Hungarian assignment over JSON inputs, read-only; A* stays CLI-only (its heuristic is a function, not data).
 - Disk-backed bounded-memory search index: `retrieval cli disk-index
   ROOT --out DIR --ceiling MB` + `disk-search` — an external-merge-

@@ -117,6 +117,14 @@ GENIUS_TOOLS = (
      {"method": "dijkstra", "graph": {"a": {"b": 2.0}}, "source": "a"},
      (), ("method", "graph", "source", "target", "nodes", "edges",
           "cost")),
+    ("caelestia_genius_units",
+     "Converts units and does dimension-checked arithmetic on-device"
+     " \u2014 mismatched dimensions are rejected, never coerced (SI"
+     " prefixes, compound units, affine temperature conversion).",
+     "text (string, required \u2014 e.g. " + _q("convert 5 m to cm") + ", "
+     + _q("3 km in m") + " or " + _q("3 km + 200 m") + ")",
+     {"text": "convert 5 m to cm"},
+     ("text",), ()),
 )
 
 OP_OF = {
@@ -126,6 +134,7 @@ OP_OF = {
     "caelestia_genius_decide": "genius_decide",
     "caelestia_genius_palette": "genius_palette",
     "caelestia_genius_graphs": "genius_graphs",
+    "caelestia_genius_units": "genius_units",
 }
 
 # q["key"]  /  q.get("key"  — as regex, quotes built from DQ

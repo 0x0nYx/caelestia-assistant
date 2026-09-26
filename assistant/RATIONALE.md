@@ -1042,6 +1042,14 @@ missing cost matrix is a refusal). A* is deliberately NOT exposed: its
 heuristic is a function, not data, and the bridge cannot receive code
 — the CLI keeps it. Read-only compute, nothing executes.
 
+**5.2 units.** `caelestia_genius_units` (bridge op `genius_units` ->
+`genius/units.py::evaluate`, the phase-2.4 dimensional algebra already
+shipped and pinned): conversion and dimension-checked arithmetic
+on-device, mismatched dimensions REJECTED never coerced. Read-only
+compute; the registry entry, dispatch handler and async-count wiring
+are byte-pinned by the parity suite, and the op joins the
+read-only-genius-ops allow-list the integration suite enforces.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

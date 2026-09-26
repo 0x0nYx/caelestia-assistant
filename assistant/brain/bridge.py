@@ -76,6 +76,8 @@ OPS = {
         method=str(q.get("method", "dijkstra")), graph=q.get("graph"),
         source=q.get("source"), target=q.get("target"), nodes=q.get("nodes"),
         edges=q.get("edges"), cost=q.get("cost")),
+    "genius_units": lambda q, s, l: _genius_safe(q, "units.evaluate",
+                                                 q["text"]),
     "genius_plan": lambda q, s, l: _genius_safe(q, "tasks.decompose", q["goal"]),
     "genius_sentiment": lambda q, s, l: _genius_safe(q, "language.sentiment", q["text"]),
     "genius_summarize": lambda q, s, l: _genius_safe(
@@ -184,7 +186,7 @@ def _genius_safe(q, dotted, *args, **kwargs):
     run — the bridge cannot be pointed at arbitrary code.
     """
     from ..genius import (creative, decision, language, logic, mathengine,  # noqa: F401
-                          stats, tasks)
+                          stats, tasks, units)
     allowed = {
         "mathengine.expression_info": mathengine.expression_info,
         "stats.describe": stats.describe,
@@ -194,6 +196,7 @@ def _genius_safe(q, dotted, *args, **kwargs):
         "tasks.decompose": tasks.decompose,
         "language.sentiment": language.sentiment,
         "language.summarize_focused": language.summarize_focused,
+        "units.evaluate": units.evaluate,
     }
     fn = allowed.get(dotted)
     if fn is None:

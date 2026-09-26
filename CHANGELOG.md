@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Reputation-weighted lexicon trust (`cortex/lexicon_diff.py`): an
+  EigenTrust-style advisory score (Kamvar et al. 2003) over each
+  signer's keep/rollback history and boosted-tool overlap, shown at
+  import time — strictly advisory: the explicit per-diff review
+  requirement never auto-skips.
 - Structured slot tagger (`cortex/slot_tagger.py`): an averaged
   structured perceptron (Collins 2002) layered ON TOP of the
   compositional slot grammar, trained only from local approved history

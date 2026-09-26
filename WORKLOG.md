@@ -709,3 +709,39 @@ final WORKLOG summary entry lists every sub-item outcome.
   feature wiring, bounded confidence, exact persistence round-trip,
   rejection paths, and all three fallback arms of the gate plus the
   covered path.
+
+### Phase 2.3 — reputation-weighted lexicon trust — SHIPPED
+
+- Grep-first result: lexicon_diff.py had import/forget but NO signer
+  metadata and NO rollback history — trust could not exist yet.
+  Extended in place; the module's own review/import semantics are
+  untouched.
+- Extended `assistant/cortex/lexicon_diff.py`:
+  * `import_diff(state, text, signer=None)` — optional signer
+    (the identity the user verified with THEIR external tool) recorded
+    on the import entry and as a bounded (500) local event; the report
+    gains an advisory `signer_trust` line;
+  * `forget()` records a ROLLBACK event against the entry's signer —
+    the one negative signal a signer can earn here;
+  * `signer_trust(state)` — EigenTrust-style power iteration
+    (Kamvar, Schlosser & Garcia-Molina 2003, WWW): pretrust = the
+    user's own Beta(1,1)-smoothed keep rate per signer; propagation
+    edges = Jaccard overlap of boosted tool sets (signers whose diffs
+    touch the same tools are correlated), blended a=0.15 toward direct
+    evidence, iterated to a deterministic fixed point. No events ->
+    {} — no invented opinions.
+  * `render_advisory()` — every rendering carries "ADVISORY ONLY,
+    review is never auto-skipped".
+- ADVISORY ONLY (pinned by test): a heavily-trusted signer's import
+  lands supervised pairs + review candidates + the verify/review
+  wording EXACTLY like anyone else's; no trust level auto-decides or
+  auto-skips the explicit review. Imports without --signer record no
+  trust state (backward compatible).
+- CLI: `cortex lexicon trust` (read-only advisory view) and
+  `--signer NAME` on import; the advisory line prints in the import
+  report.
+- Tests: `test_lexicon_diff.py` extended with 7 cases (35 total in
+  file): no-signer backward compat, event+advisory recording,
+  rollback negative signal, tool-overlap propagation (correlated
+  signer outranks disjoint one), empty-history honesty, the
+  never-auto-skip invariant, event-log bound.

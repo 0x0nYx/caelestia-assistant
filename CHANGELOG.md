@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Resolution syllogism checker: `genius/logic.py::syllogism_check`
+  decides 'is this argument valid' for the categorical fragment by
+  refuting premises + negated conclusion with binary resolution
+  (Robinson 1965) — empty clause = valid, saturation = invalid, both
+  with derivation evidence; the meta logic domain routes
+  therefore-shaped arguments when every clause parses.
 - NCD file/folder resemblance: `genius fsbrain resemble FILE
   --folders D1,D2,...` answers "which folder does this file most
   resemble" via the existing NCD primitive (Li et al. 2004) — read-

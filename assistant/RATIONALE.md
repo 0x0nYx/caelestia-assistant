@@ -883,6 +883,24 @@ documented cap with the truncation reported; the whole ranking is
 returned (best + all distances), ties broken by folder name — the
 answer is a report, and nothing is moved, written, or executed.
 
+**2.4 resolution syllogism checker.** `logic.py` gains
+`syllogism_check` (plus a meta.py hook: "therefore"-shaped arguments
+route to it only when EVERY clause parses — anything else falls
+through to the propositional path unchanged): premises + NEGATED
+conclusion are refuted by binary resolution (Robinson 1965; Horn
+1951 — every clause in this fragment is Horn, so no factoring is
+needed and saturation is decidable). Honesty accounting: the empty
+clause proves VALID, saturation without it proves INVALID (the
+saturated set is satisfiable — the premises can hold while the
+conclusion fails), both stated with the derivation evidence, never a
+bare verdict; statements outside the well-formed fragment are honest
+LogicErrors listing the accepted forms; the one normalization is a
+deterministic, documented regular-plural rule (cats/cat) — irregular
+forms like men/man stay distinct, and the test pins that the checker
+does NOT pretend they resolve; no existential import is assumed
+(modern reading: "no A are B" does not entail "some A are not B" —
+pinned by test). Deterministic, pure, no I/O.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

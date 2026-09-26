@@ -896,3 +896,75 @@ final WORKLOG summary entry lists every sub-item outcome.
   temperature, mismatch rejections, arithmetic composition, meta
   wiring (own domain, interception, honest mismatch errors,
   percent-path untouched), determinism.
+
+---
+
+## Session 2 FINAL — Definition of Done + sub-item outcomes
+
+Every Phase 0-4 sub-item SHIPPED (tested, committed, logged); none
+skipped; no STOP condition hit (the one non-reproducing flake during
+1.2 is documented in its own section, with three consecutive green
+full-suite runs after it).
+
+| Sub-item | Outcome | Commit |
+| --- | --- | --- |
+| 0.0 baseline | SHIPPED (1297 tests OK skipped=12; selfcheck OK; gen_adapter byte-identity OK) | abc8701 |
+| 1.1 unified inbox | SHIPPED (cortex/inbox.py + dispatch.propose_gap_cluster + hub verb; 25 tests) | 1db52dc |
+| 1.2 unified why | SHIPPED (cortex/explain_unified.py + hub verb; 17 tests) | 5e16a23 |
+| 1.3 evidence fusion | SHIPPED (diagnostics/fusion.py; 11 tests) | 8b71d35 |
+| 2.1 cadence throttle | SHIPPED (dreamtime.CadenceController; 15 tests) | b49713d |
+| 2.2 slot tagger | SHIPPED (cortex/slot_tagger.py, conformal-gated; 14 tests) | 0165689 |
+| 2.3 lexicon trust | SHIPPED (lexicon_diff EigenTrust-style advisory; 7 tests) | 9737e98 |
+| 2.4 units algebra | SHIPPED (genius/units.py + meta dispatch wiring; 22 tests) | 11f589b |
+| 3.1 correlate | SHIPPED (personal/correlate.py; 10 tests) | 0b6c78a |
+| 3.2 linkrec blend | SHIPPED (linkrec + textmine tfidf/cosine seam; 5 tests) | 210125e |
+| 3.3 selfcal | SHIPPED (personal/selfcal.py; 10 tests) | 38340c8 |
+| 4.1 UPSTREAM_CASE | SHIPPED (docs/UPSTREAM_CASE.md, ISS-120 verbatim quotes) | 558d2bd |
+| 4.2 LICENSING_OPEN_QUESTION | SHIPPED (docs/, explicitly unresolved) | 7cab679 |
+| 4.3 PR_SURFACE_PLAN | SHIPPED (docs/, proposed-not-executed) | 4cb2c27 |
+| final summary | SHIPPED (this entry) | (this commit) |
+
+**Final verification (against this commit):**
+- python3 -m unittest discover -s . -p "test_*.py" -> 1433 tests OK
+  (skipped=12); baseline was 1297, delta +136 across 9 test files.
+- python3 -m assistant.hub selfcheck -> OK.
+- python3 -m assistant.settings.gen_adapter --verify --repo-root
+  <caelestia checkout> -> OK, tools.json byte-identical.
+
+**Invariant check (the eight, each verified at HEAD):**
+1. Stdlib-only / import allow-list: HELD — ALLOWED_IMPORTS.txt
+   byte-identical to main (zero diff); no new stdlib module needed.
+2. No subprocess/socket/os.system: HELD — the only new os use is
+   os.cpu_count() (a pure read, not in FORBIDDEN_OS_ATTRS); telemetry
+   stays /proc+/sys read-only with injectable sources.
+3. Write paths enumerated: HELD — the five existing paths only. The
+   inbox dispatches plan applies through settings/applier.py (dry-run
+   by default, --write explicit); the plan payload file is the
+   caller-owned session learned-state; nothing else writes.
+4. No training/fine-tuning; named classical algorithms with
+   citations: HELD — structured perceptron (Collins 2002), EigenTrust
+   (Kamvar et al. 2003), weighted Bayes opinion pool (Genest & Zidek
+   1986), PI control (Astrom & Hagglund 1995), point-biserial (Tate
+   1954), chi-square/Yates (Pearson 1900/Yates 1934), Brier (1950),
+   Adamic-Adar/TF-IDF (Salton & Buckley 1988), SI algebra (BIPM
+   Brochure 9th ed. 2019) — all cited in module docstrings.
+5. No resident daemon: HELD — all new code is library functions +
+   one-shot CLI surfaces.
+6. Honest verdicts: HELD — gap clusters never auto-proposed (approve
+   files a ledger proposal); plan applies are dry-run without
+   --write; unproposed gap rejects write nothing; lexicon trust is
+   ADVISORY ONLY with review never auto-skipped (pinned by test);
+   fusion abstains instead of inventing votes; thin evidence labeled
+   thin; mismatched dimensions rejected, never coerced.
+7. Protected files untouched: HELD — LICENSE, README license section,
+   CHANGELOG licensing line/0.1.0 section, ISS-120.md content: zero
+   diff. CHANGELOG gained only [Unreleased] bullets.
+8. Scope discipline: HELD — all of Phase 3 stayed inside
+   brain/personal/; no phases beyond the operating prompt were
+   invented; no additional phases, no scope creep.
+
+**Branch state:** 15 commits on agent/exponential-build ahead of
+main; working tree clean; main untouched; not merged (left as the
+human's gate). The PAT used for pushing should be revoked now that
+the push is complete, as the operator stated.
+

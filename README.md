@@ -22,15 +22,15 @@ A shell-side assistant organized as **ten cooperating layers**, each replaceable
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
 | Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief — with the personal-PKM tools split out into an opt-in subpackage |
-| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default) |
+| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default); a CART readability tree (Breiman et al. 1984) reports its agreement with the fitted logistic model before any promotion decision |
 | Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, compositional slot-grammar recovery for paraphrases |
 | Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system | 18-domain meta-router over stdlib engines |
-| Scan | `assistant/scan/` | "Scan this 2 GB journal on a 4 GB laptop" | Aho-Corasick + Bloom + Count-Min + HyperLogLog + reservoir + Page-Hinkley, one pass, bounded RAM; opt-in KL sketch-divergence novelty detection over every line (including the unmatched ones) |
+| Scan | `assistant/scan/` | "Scan this 2 GB journal on a 4 GB laptop" | Aho-Corasick + Bloom + Count-Min + HyperLogLog + reservoir + Page-Hinkley + SimHash near-dup fingerprints, one pass, bounded RAM; opt-in KL sketch-divergence novelty detection over every line (including the unmatched ones) |
 | Agent | `assistant/agent/` | "Clean my downloads, then make the shell minimal" | HTN goal decomposition → DAG → simulate → per-node consent → observe & learn |
 
 ### The brain layer (a partial inventory)
 
-Multinomial Naive Bayes · MinHash+LSH near-duplicate detection · PageRank / label-propagation link graphs · Adamic-Adar link recommendation · logistic priority scoring · Bayesian log-normal duration estimates · 0/1 knapsack day-planning + Critical Path Method · Kaplan-Meier "this task will never finish" survival analysis · Holt trend + Kalman smoothing forecasts · FSRS-inspired spaced repetition · Thompson-sampling reminder bandits · z-score/entropy anomaly flags · SymSpell typo correction · TF-IDF + TextRank summarization · Brier-score confidence calibration · Beta-Binomial preference posteriors with exact credible intervals · journaled filesystem organization (crc32 dedup, collision-safe moves, rollback) · a deterministic daily brief.
+Multinomial Naive Bayes · MinHash+LSH near-duplicate detection · SimHash stream fingerprints · Isolation Forest multivariate anomaly flags · Needleman-Wunsch tidy-imitation alignment · PageRank / label-propagation link graphs · Adamic-Adar link recommendation · logistic priority scoring · Bayesian log-normal duration estimates · 0/1 knapsack day-planning + Critical Path Method · Kaplan-Meier "this task will never finish" survival analysis · Holt trend + Kalman smoothing forecasts · FSRS-inspired spaced repetition · Thompson-sampling reminder bandits · z-score/entropy anomaly flags · SymSpell typo correction · TF-IDF + TextRank summarization · Brier-score confidence calibration · Beta-Binomial preference posteriors with exact credible intervals · journaled filesystem organization (crc32 dedup, collision-safe moves, rollback) · a deterministic daily brief.
 
 **Scope split:** the personal-knowledge-management engines in that list (vault
 organization, wiki-link graphs, spaced repetition, task survival, decision
@@ -107,6 +107,9 @@ caelestia-assist scan ~/.local/state/caelestia-shell.log
 # Natural-language settings (issue #120) — dry-run by default
 caelestia-assist settings "make my bar thinner"
 caelestia-assist settings "make everything minimal" --apply
+
+# Misspelled a tool name? Bounded edit distance finds it
+caelestia-assist settings --tool setBarPositin   # -> did you mean setBarPosition?
 
 # Optimization profiles (issue #120 phase 3)
 caelestia-assist genius optimize pareto --help

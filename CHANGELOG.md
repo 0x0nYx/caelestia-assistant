@@ -28,6 +28,54 @@ All notable changes to this project are documented here. The format follows
   (kind `ontology_gap`, never auto-applied). `learn_feedback` now also
   persists the conformal calibrator's history (state key `conformal`),
   which previously lived only inside a single bridge call. 25 tests.
+- **Lightweight-algorithm modules (§6, five classical additions, each
+  independently tested with its complexity/cost stated where it
+  matters):**
+  - `assistant/scan/simhash.py` — SimHash near-duplicate fingerprints
+    (Charikar 2002; Manku/Jain/Das Sarma 2007, WWW): 64-bit fingerprint,
+    Hamming ≤ 3, one machine word per text, journal-style digit masking
+    for volatile fields (measured honestly: raw short lines differ by
+    ~15 bits under a two-token change — masked skeletons collide at 0).
+    Image pHash DEFERRED with a measured reason: ~0.02 s per 1080p PNG
+    on this machine, but no JPEG decoder exists under the stdlib-only
+    policy, so coverage would be partial-and-silent. 14 tests.
+  - `assistant/settings/registry.py::suggest_tools` — bounded
+    edit-distance tool-name search over the 277-tool registry via the
+    bit-parallel Levenshtein automaton (Wu & Manber 1992, full-string
+    variant: O(k·n) word ops per candidate, k=2 by default), fuzzed
+    against a reference DP on 4,500 randomized pairs; `settings --tool
+    setBarPositin` now answers "did you mean setBarPosition (distance 1)".
+    Extends the name-side gap — the router's query-side typo correction
+    (lexicon.levenshtein, distance ≤ 2) is untouched. 14 tests.
+  - `assistant/cortex/tree.py` — a CART decision tree (Breiman et al.
+    1984: binary partitioning, Gini, midpoint thresholds, depth 3,
+    min-leaf 5) beside the logistic router, same five features, same
+    accept/reject target, readable rules instead of a weight vector.
+    Agreement with the fitted logistic model on a 102-example router
+    corpus (deterministic 2/3–1/3 split): 0.662 train / 0.853 held-out,
+    with the tree's held-out accuracy (0.647) slightly ABOVE the
+    logistic's (0.559). Complement, not replacement — nothing in the
+    pipeline routes through it yet; the numbers are the promotion
+    decision's input. 14 tests.
+  - `assistant/brain/anomaly.py::IsolationForest` (Liu, Ting & Zhou
+    2008: 100 iTrees, ψ=256, s = 2^(−E(h)/c(n)), seeded) — the
+    multivariate single-event detector the univariate/time-series ones
+    (zscore, Page-Hinkley, CUSUM) structurally cannot be, with feature
+    adapters for settings-change sequences (circular hour, op count,
+    inter-change gap — the 3 a.m. six-group spree case) and tidy run
+    shapes. Non-redundancy verified ON FIXTURES: PH fires on gradual
+    drift where the forest stays quiet; the forest fires on one joint
+    event where every per-dimension z stays < 6. 11 tests.
+  - `assistant/brain/align.py` — Needleman-Wunsch (1970) global
+    alignment of tidy's proposed moves against caller-supplied actual
+    moves; aligned same-source pairs with different destinations are the
+    divergence signal, gated by the same minimum-consistency floor
+    (3) as every other suggestion surface, surfacing as `tidy_rule`
+    LEDGER PROPOSALS. The module imports nothing but `typing` — it is
+    filesystem-pure by construction, so tidy's never-delete/journaled/
+    rollback-able discipline is inherited, not re-implemented; all test
+    fixtures are synthetic (no real user filesystem data, per the
+    dry-run-first rule). 19 tests.
 - **Command execution gate for the AI sidebar (T2, prompt-injection
   closure).** A new `shell/services/CommandGate.qml` singleton gives the
   sidebar's other state-changing tools — `caelestia_command`, `open_app`,

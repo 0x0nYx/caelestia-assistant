@@ -21,6 +21,7 @@ caller-provided line iterable, or needs the whole file in memory.
 """
 from .ac import Automaton
 from .bloom import BloomFilter
+from .simhash import NearDupTracker, hamming, near_duplicate, simhash
 from .sketch import (CountMinSketch, HyperLogLog, Reservoir, EWMA,
                      page_hinkley)
 from .scanner import scan_stream, scan_text, render
@@ -28,4 +29,5 @@ from .scanner import scan_stream, scan_text, render
 __all__ = [
     "Automaton", "BloomFilter", "CountMinSketch", "HyperLogLog", "Reservoir",
     "EWMA", "page_hinkley", "scan_stream", "scan_text", "render",
+    "simhash", "hamming", "near_duplicate", "NearDupTracker",
 ]

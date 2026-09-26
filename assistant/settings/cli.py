@@ -733,6 +733,11 @@ def main(argv: Optional[List[str]] = None) -> int:
                 f"error: unknown tool {args.tool!r}; run --list-tools to see every tool",
                 file=sys.stderr,
             )
+            near = registry.suggest_tools(args.tool, max_distance=2)
+            if near:
+                shown = ", ".join(f"{name} (distance {dist})"
+                                  for name, dist in near[:3])
+                print(f"did you mean: {shown}", file=sys.stderr)
             return 1
         print("\n".join(_tool_card(spec)))
         return 0

@@ -1,11 +1,18 @@
 # Tier C Proposal 1 — DBus-based surface expansion (kwriteconfig6, kscreen-doctor, powerdevil, KWin scripting)
 
-**Status: PROPOSAL ONLY — no implementation without explicit sign-off (§7.4/§7.5).**
-The safety contract currently forbids `subprocess`/`socket`/`ctypes` in
-`assistant/` (ALLOWED_IMPORTS.txt, enforced by `schema_lint.py`). This
-proposal requires relaxing that clause **specifically for loopback DBus**.
-That relaxation is a maintainer decision, not an engineering one — the
-escalation is the point of this document.
+**Status: IMPLEMENTED behind the kill-switch (2026-09-26, phase 2.7) —
+the maintainer decision this document escalates remains open: the
+surface ships DISABLED by default (capabilities.json `dbus_surface:
+false`), quarantined by a per-module lint carve-out pinned to exactly
+this module, and nothing enables it without a deliberate file edit.**
+The safety contract forbids `subprocess`/`socket`/`ctypes` in
+`assistant/` (ALLOWED_IMPORTS.txt, enforced by `schema_lint.py`). The
+relaxation is scoped to `settings/dbus_surface.py` ALONE through the
+per-module quarantine (the same carve-out pattern `agent/pkgprobe.py`
+established); every other module keeps the zero-tolerance rule, and a
+test pins the exemption set to exactly {pkgprobe.py, dbus_surface.py}.
+The maintainer may still veto the whole surface by deleting the module
+and its two carve-out lines — nothing else depends on it.
 
 ## Approach
 

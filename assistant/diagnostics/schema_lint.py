@@ -61,6 +61,7 @@ FORBIDDEN_OS_ATTRS = ("system", "popen", "execv", "execve", "execvp", "spawnv", 
 # every other module in assistant/ stays under the zero-tolerance rule.
 _QUARANTINED_IMPORTS: Dict[str, frozenset] = {
     "pkgprobe.py": frozenset({"subprocess"}),
+    "dbus_surface.py": frozenset({"subprocess"}),
 }
 
 

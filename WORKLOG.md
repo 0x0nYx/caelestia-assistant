@@ -255,3 +255,34 @@ engine validate_plan node (consent cards show consequences).
 54 new tests -> 1243 green; selfcheck + bash harness green.
 Remaining: 2.7-dbus (dbus_surface.py per proposal), then 2.6 (registry
 adapter + lexicon-diff + capability registration), then Phases 3-4.
+
+### 2.7-dbus (this commit)
+
+**SHIPPED** — `settings/dbus_surface.py`: the quarantined DBus surface
+per proposals/2026-09-26-c-dbus-surface.md. Five-command catalog
+(kwriteconfig6 x2, kscreen-doctor mode-from-observed-topology,
+powerprofilesctl set-observed-profile, one IRREVERSIBLE dbus-send KWin
+script unload), fixed argument arrays only, values from typed slots or
+machine-derived from the read probes, per-command undo records
+(kwrite: kreadconfig6 old value, type-coerced to round-trip
+validation; kscreen: observed prior mode pair; power: prior active
+profile; KWin: none, gated behind confirm_irreversible=True), one
+inverse write per undo record. Kill-switch: capability dbus_surface
+defaults OFF (file edit only). No NL request and no CLI write route
+reaches it — plan_write (dry-run render, works while disabled) ->
+consent -> run_write is the spine.
+
+Quarantine: _QUARANTINED_IMPORTS grew to {pkgprobe.py,
+dbus_surface.py} (schema_lint), pinned by tests in three suites
+(agent, settings/safety, dbus's own). The belt-and-braces AST scans in
+settings/tests/test_safety.py learned the quarantine so every other
+module still fails on subprocess. Proposal status line updated to
+IMPLEMENTED-behind-kill-switch (maintainer veto stays possible:
+delete module + 2 carve-out lines). `import time` rejected by the
+allow-list mid-build -> datetime.isoformat() timestamps (the tripwire
+working as designed). 26 tests (fake subprocess.run; real-session
+integration stays behind CAELESTIA_ASSIST_DBUS_TESTS=1, never in CI).
+
+Suite: 1269 green; selfcheck + import policy clean. RATIONALE §16.
+Remaining: 2.6 (registry adapter + lexicon-diff + capability
+registration), then Phases 3-4.

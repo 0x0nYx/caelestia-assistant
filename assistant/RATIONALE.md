@@ -593,6 +593,66 @@ backup + bounded undo on apply). A latent chat-exit crash
 work and fixed by coercion at the boundary; a regression test pins
 the clean exit.
 
+## 16. The DBus surface (phase 2.7's DBus half, quarantined)
+
+`settings/dbus_surface.py` implements the proposal
+(proposals/2026-09-26-c-dbus-surface.md) with the quarantine the
+proposal itself demands: the second (and only other) module permitted
+to import `subprocess`, through the per-module carve-out
+`_QUARANTINED_IMPORTS` in `diagnostics/schema_lint.py` — pinned to
+exactly {pkgprobe.py, dbus_surface.py} by tests in three suites. Every
+other module keeps the zero-tolerance rule. The maintainer decision
+the proposal escalates stays honest: the surface ships DISABLED
+(capabilities.json `dbus_surface: false`), enabled only by a file
+edit, never by a request.
+
+- **The catalog**: five fixed commands — kwriteconfig6 (Night Color
+  master switch; the lock-screen timeout, the target repo's own
+  CONTRIBUTING precedent), kscreen-doctor (mode change from the
+  OBSERVED topology), powerprofilesctl (set one of the OBSERVED
+  profiles), and one irreversible dbus-send KWin script unload. IDs,
+  binaries, risk classes, and reversibility are pinned by test; adding
+  one is a reviewable diff.
+- **Fixed argument arrays**: every spawn is
+  `subprocess.run([binary, *fixed_args])` — never `shell=True`, never
+  free-text interpolation. Values fill typed slots (bool/int with
+  catalog bounds) or are machine-derived from a prior READ (the
+  kscreen pair {output, mode} must come from the parsed topology; the
+  power profile from the parsed table).
+- **Risk discipline**: nothing above STATE_CHANGING is cataloged; the
+  execution path guards against PRIVILEGED/DESTRUCTIVE anyway (a
+  future edit cannot silently bypass review — the pinning test fails
+  first).
+- **Undo where the tool supports it**: kwriteconfig6 writes read the
+  previous value first (kreadconfig6, same fixed shape, coerced back
+  to the slot's type so the record round-trips validation); kscreen
+  writes capture the observed prior mode for the same output; power
+  profile sets capture the prior active profile. `apply_undo` performs
+  exactly one inverse write per record — bounded, never a replay
+  loop. The KWin script unload is cataloged IRREVERSIBLE, produces no
+  undo record, and refuses to run without an explicit
+  `confirm_irreversible=True` (the proposal's second confirmation).
+- **Library surface, not conversational**: no NL request reaches it
+  and no CLI route applies a write — the caller renders
+  `plan_write` (the dry-run artifact works even while disabled), shows
+  it, obtains consent, then calls `run_write`. The read probes
+  (`read_kscreen_outputs`, `read_power_profiles`) parse the tools'
+  own output into machine-derivable values.
+- **Tests**: 26 unit tests against a FAKE spawn (recorded calls, no
+  process): argv shapes, the kill-switch (nothing spawns while
+  disabled — reads AND writes), value validation and catalog bounds,
+  undo round-trips, the irreversibility gate, lint parity. The real
+  KDE-session integration test stays behind
+  `CAELESTIA_ASSIST_DBUS_TESTS=1`, never set in CI — the proposal's
+  own gate.
+
+Safety accounting: OFF by default (capability kill-switch, file edit
+only); quarantined import (second of exactly two modules, pinned);
+fixed arrays; observed-only values; no DESTRUCTIVE commands cataloged;
+bounded one-write undo; the belt-and-braces AST scans in
+settings/tests/test_safety.py learned the quarantine so every OTHER
+module still fails on `subprocess`.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

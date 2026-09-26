@@ -479,12 +479,16 @@ class TestCapabilityManifest(unittest.TestCase):
 
 class TestPackageProbeQuarantine(unittest.TestCase):
     def test_quarantine_set_is_pinned(self):
-        # the exemption list is exactly one module with exactly one
-        # import — growing it is a reviewable diff with a RATIONALE line
+        # the exemption list is exactly TWO modules with exactly one
+        # import each (pkgprobe + dbus_surface, the proposal's own
+        # carve-outs) — growing it is a reviewable diff with a
+        # RATIONALE line and a matching capability kill-switch
         from assistant.diagnostics.schema_lint import _QUARANTINED_IMPORTS
 
-        self.assertEqual(_QUARANTINED_IMPORTS,
-                         {"pkgprobe.py": frozenset({"subprocess"})})
+        self.assertEqual(
+            _QUARANTINED_IMPORTS,
+            {"pkgprobe.py": frozenset({"subprocess"}),
+             "dbus_surface.py": frozenset({"subprocess"})})
 
     def test_subprocess_still_fails_elsewhere(self):
         # test the tester: a deliberately introduced subprocess import

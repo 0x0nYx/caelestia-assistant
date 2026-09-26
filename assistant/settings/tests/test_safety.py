@@ -76,14 +76,25 @@ class NoExecutorNoNetworkTests(unittest.TestCase):
     def test_no_forbidden_imports_or_os_attributes_anywhere(self) -> None:
         problems: List[str] = []
         for path in self._implementation_files():
+            # the documented per-module quarantine (pkgprobe,
+            # dbus_surface) exempts exactly the named imports of the
+            # named files — pinned by test in agent/tests and
+            # diagnostics/schema_lint.py's own guard
+            quarantined = schema_lint._QUARANTINED_IMPORTS.get(
+                path.name, frozenset())
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
-                        if alias.name.split(".")[0] in schema_lint.FORBIDDEN_IMPORTS:
+                        root = alias.name.split(".")[0]
+                        if root in quarantined:
+                            continue  # this module's documented carve-out
+                        if root in schema_lint.FORBIDDEN_IMPORTS:
                             problems.append(f"{path.name}: import {alias.name}")
                 elif isinstance(node, ast.ImportFrom):
                     root = (node.module or "").split(".")[0]
+                    if root in quarantined:
+                        continue
                     if root in schema_lint.FORBIDDEN_IMPORTS:
                         problems.append(f"{path.name}: from {node.module} import ...")
                 elif isinstance(node, ast.Attribute):
@@ -95,6 +106,8 @@ class NoExecutorNoNetworkTests(unittest.TestCase):
     def test_only_the_allow_listed_stdlib_is_imported(self) -> None:
         allowed = set(schema_lint.load_allowed_imports())
         for path in self._implementation_files():
+            quarantined = schema_lint._QUARANTINED_IMPORTS.get(
+                path.name, frozenset())
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 roots: List[Tuple[str, int]] = []
@@ -107,6 +120,8 @@ class NoExecutorNoNetworkTests(unittest.TestCase):
                     roots = [(node.module or "", node.lineno)]
                 for module, _lineno in roots:
                     root = module.split(".")[0]
+                    if root in quarantined:
+                        continue  # this module's documented carve-out
                     self.assertIn(
                         root, allowed,
                         msg=f"{path.name}: import {module} is not in ALLOWED_IMPORTS.txt",

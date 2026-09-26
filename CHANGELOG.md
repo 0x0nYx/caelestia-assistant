@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Attention-aware timing: `brain/timing.py` ranks WHEN (never WHAT) a
+  proposal should surface — Thompson sampling over time buckets seeded
+  from the pooled prior (3.1), weighted by the rhythm engine's
+  activity z-scores and historical decision latency, with Holt-trend
+  deferral advice; nothing surfaces automatically.
 - Regret audit: `brain/regret.py` — every Beta bandit's cumulative
   reward is now compared against the best-fixed-arm-in-hindsight
   baseline in the periodic reports (`cortex report`, `brain

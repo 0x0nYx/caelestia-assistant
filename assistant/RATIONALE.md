@@ -994,6 +994,23 @@ ABSTAINS rather than reporting a meaningless zero; both input shapes
 work (aggregate posteriors and explicit per-round draw logs);
 deterministic, pure, nothing acts on the number.
 
+**3.4 attention-aware suggestion timing.** `brain/timing.py` composes
+the existing engines — the Thompson-sampling bandit family (HourBandit's
+algorithm via NamedBandit's named arms, now over TIME BUCKETS instead
+of prompt content), the rhythm engine's activity z-scores, Holt's
+acceptance-rate trend, and historical surface-to-decision latency per
+bucket — to rank WHEN a proposal should surface. It is also the
+promised consumer of 3.1: the timing arms are seeded from the POOLED
+statistics of the user's existing proposal posteriors (pooling itself
+states when there is nothing to borrow and stays flat). Honesty
+accounting: the output ranks buckets and may ADVISE deferring on a
+falling Holt forecast — reported, never enforced; the note on every
+result says it biases WHEN, not WHAT, and that proposals still go
+through the ledger's approve/reject flow; nothing surfaces
+automatically; deterministic under a seeded rng (the one stochastic
+step, Thompson sampling, is the same one every other bandit uses);
+bad inputs (hour outside [0, 24)) are refused.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

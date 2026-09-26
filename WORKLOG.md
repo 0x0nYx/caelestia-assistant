@@ -1085,7 +1085,8 @@ Agent: ANI engineering agent
    (clean tree, unchanged remote, never pushed); no PR opened anywhere;
    the licensing question remains explicitly open.
 
-**Branch state:** 20 commits on `agent/exponential-build-2` ahead of
-main; working tree clean; main untouched; not merged (left as the
-human's gate). The PAT used for pushing should be revoked now that the
+**Branch state:** 22 commits on `agent/exponential-build-2` ahead of
+main (21 sub-item commits — 6.1/6.2 share one — plus the 3593e31
+allow-list fix and this summary); working tree clean; main untouched;
+not merged (left as the human's gate). The PAT used for pushing should be revoked now that the
 push is complete, as the operator stated.

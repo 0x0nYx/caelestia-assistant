@@ -64,7 +64,7 @@ from .session import SessionState
 from .vectorize import tokenize
 
 __all__ = ["GAPS_KEY", "MAX_GAPS", "query_shape", "log_gap", "dispatch",
-           "cluster_gaps", "propose_gap_clusters"]
+           "cluster_gaps", "propose_gap_cluster", "propose_gap_clusters"]
 
 # The gap bucket: same discipline as cortex_review (bounded, newest-first,
 # deduped by shape). Gaps are lower-frequency events than review candidates,
@@ -397,6 +397,41 @@ def cluster_gaps(state: Dict[str, Any], *, k: Optional[int] = None,
             "rejected_clusters": rejected}
 
 
+def _propose_candidate(candidate: Dict[str, Any], ledger) -> Optional[int]:
+    """File ONE qualifying cluster as a ledger proposal (kind
+    ``ontology_gap``), or None when a pending duplicate exists. The
+    single proposal step both surfacing functions share."""
+    target = f"gap-cluster:{candidate['label']}"
+    if target in {p.get("target") for p in ledger.pending()}:
+        return None
+    why = (f"{candidate['support']} request(s) shaped like "
+           f"\"{candidate['label']}\" fell through to the cloud tier "
+           f"(category {candidate['category']}, purity "
+           f"{candidate['purity']}, {candidate['shapes']} distinct "
+           f"phrasing(s)) — want a local tool for this?")
+    return ledger.propose("ontology_gap", target,
+                          {"cluster": candidate}, why,
+                          candidate["purity"])
+
+
+def propose_gap_cluster(state: Dict[str, Any], ledger, label: str,
+                        **kwargs: Any) -> Dict[str, Any]:
+    """Surface ONE gap cluster (by its modal-shape label) as a ledger
+    proposal — the single-cluster entry point the unified inbox
+    (cortex/inbox.py) dispatches ``approve`` through. Same floors, same
+    proposal shape, same never-auto-absorb rule as
+    ``propose_gap_clusters``; a cluster already pending is skipped, not
+    stacked. Returns ``{"proposed": pid|None, "candidate": dict|None}`` —
+    ``candidate`` None means no qualifying cluster carries that label
+    right now."""
+    summary = cluster_gaps(state, **kwargs)
+    for candidate in summary["candidates"]:
+        if candidate["label"] == label:
+            pid = _propose_candidate(candidate, ledger)
+            return {"proposed": pid, "candidate": candidate}
+    return {"proposed": None, "candidate": None}
+
+
 def propose_gap_clusters(state: Dict[str, Any], ledger,
                          **kwargs: Any) -> Dict[str, Any]:
     """Turn qualifying gap clusters into LEDGER PROPOSALS (kind
@@ -405,18 +440,9 @@ def propose_gap_clusters(state: Dict[str, Any], ledger,
     proposal. One live proposal per cluster target (a pending duplicate is
     skipped, not stacked)."""
     summary = cluster_gaps(state, **kwargs)
-    pending = {p.get("target") for p in ledger.pending()}
     pids: List[int] = []
     for candidate in summary["candidates"]:
-        target = f"gap-cluster:{candidate['label']}"
-        if target in pending:
-            continue
-        why = (f"{candidate['support']} request(s) shaped like "
-               f"\"{candidate['label']}\" fell through to the cloud tier "
-               f"(category {candidate['category']}, purity "
-               f"{candidate['purity']}, {candidate['shapes']} distinct "
-               f"phrasing(s)) — want a local tool for this?")
-        pids.append(ledger.propose("ontology_gap", target,
-                                   {"cluster": candidate}, why,
-                                   candidate["purity"]))
+        pid = _propose_candidate(candidate, ledger)
+        if pid is not None:
+            pids.append(pid)
     return {"proposals": pids, "summary": summary}

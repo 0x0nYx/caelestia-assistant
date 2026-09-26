@@ -433,5 +433,113 @@ class GenAdapterTests(unittest.TestCase):
         self.assertEqual(committed.read_bytes(), before)
 
 
+class SignerTrustTests(unittest.TestCase):
+    """Phase 2.3: EigenTrust-style advisory trust over signer rollback
+    history (Kamvar, Schlosser & Garcia-Molina 2003). The invariant under
+    test: the score is ADVISORY — it never auto-decides or auto-skips
+    the explicit-review requirement for any diff."""
+
+    DIFF_A = ("CAELESTIA LEXICON DIFF v1  (2026-09-26)\n"
+              "+frosted glass -> setBlurEnabled  (n=4, p=0.86)\n")
+    DIFF_B = ("CAELESTIA LEXICON DIFF v1  (2026-09-26)\n"
+              "+make the bar slim -> setBarScale  (n=2, p=0.79)\n")
+
+    def test_import_without_signer_records_no_trust_state(self) -> None:
+        state: dict = {}
+        lexicon_diff.import_diff(state, self.DIFF_A)
+        self.assertNotIn(lexicon_diff.TRUST_KEY, state)
+        self.assertNotIn("signer_trust", lexicon_diff.import_diff(
+            dict(state), self.DIFF_A))
+
+    def test_import_with_signer_records_event_and_advisory(self) -> None:
+        state: dict = {}
+        report = lexicon_diff.import_diff(state, self.DIFF_A,
+                                          signer="alice")
+        self.assertIn("signer_trust", report)
+        self.assertIn("ADVISORY ONLY", report["signer_trust"])
+        self.assertIn("review is never auto-skipped",
+                      report["signer_trust"])
+        events = state[lexicon_diff.TRUST_KEY]["events"]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["signer"], "alice")
+        self.assertEqual(events[0]["action"], "imported")
+        # the entry itself carries the signer for rollback attribution
+        did = report["diff_id"]
+        self.assertEqual(state[lexicon_diff.IMPORTS_KEY][did]["signer"],
+                         "alice")
+
+    def test_rollback_earns_the_negative_signal(self) -> None:
+        state: dict = {}
+        kept = lexicon_diff.import_diff(state, self.DIFF_A, signer="alice")
+        bad = lexicon_diff.import_diff(state, self.DIFF_B, signer="mallory")
+        lexicon_diff.forget(state, bad["diff_id"])
+        scores = lexicon_diff.signer_trust(state)
+        # mallory's history: one import, then its rollback — both events
+        # stay in the bounded log (an import that was later undone is
+        # not erased from history, it is counted as what it was)
+        self.assertEqual(scores["mallory"]["kept"], 1)
+        self.assertEqual(scores["mallory"]["rolled_back"], 1)
+        self.assertEqual(scores["alice"]["kept"], 1)
+        self.assertEqual(scores["alice"]["rolled_back"], 0)
+        self.assertGreater(scores["alice"]["trust"],
+                           scores["mallory"]["trust"])
+
+    def test_trust_propagates_through_tool_overlap(self) -> None:
+        # carol's kept diff boosts the SAME tool as alice's: part of
+        # alice's standing propagates to carol via the Jaccard edge, so
+        # carol outranks dave, whose diffs touch disjoint tools
+        state: dict = {"lexicon_trust": {"events": [
+            {"signer": "alice", "action": "imported",
+             "tools": ["setBlurEnabled"], "at": "2026-09-26T10:00:00"},
+            {"signer": "carol", "action": "imported",
+             "tools": ["setBlurEnabled"], "at": "2026-09-26T10:01:00"},
+            {"signer": "dave", "action": "imported",
+             "tools": ["setBarScale"], "at": "2026-09-26T10:02:00"},
+        ]}}
+        scores = lexicon_diff.signer_trust(state)
+        self.assertGreater(scores["carol"]["trust"],
+                           scores["dave"]["trust"])
+        # determinism: same state, same numbers
+        self.assertEqual(scores, lexicon_diff.signer_trust(state))
+
+    def test_empty_history_yields_no_invented_opinions(self) -> None:
+        self.assertEqual(lexicon_diff.signer_trust({}), {})
+        self.assertIn("flat prior",
+                      lexicon_diff.render_advisory({}))
+
+    def test_advisory_never_auto_skips_review(self) -> None:
+        # THE invariant: a heavily-trusted signer's import behaves
+        # EXACTLY like anyone else's — supervised pairs + review
+        # candidates + the verify/review wording, nothing skipped
+        state: dict = {"lexicon_trust": {"events": [
+            {"signer": "alice", "action": "imported",
+             "tools": ["setBlurEnabled"], "at": "t"},
+            {"signer": "alice", "action": "imported",
+             "tools": ["setBlurEnabled"], "at": "t"},
+            {"signer": "alice", "action": "imported",
+             "tools": ["setBlurEnabled"], "at": "t"},
+        ]}}
+        report = lexicon_diff.import_diff(state, self.DIFF_A, signer="alice")
+        self.assertNotIn("error", report)
+        pairs = lexicon_diff.persisted_pairs(state)
+        self.assertIn(("frosted glass", "setBlurEnabled"), pairs)
+        review = state.get("cortex_review", [])
+        self.assertTrue(any(c.get("text") == "frosted glass"
+                            for c in review),
+                        "review candidates must still land")
+        self.assertIn("review", report["signer_trust"])
+        self.assertIn("review is never auto-skipped",
+                      report["signer_trust"])
+
+    def test_event_log_is_bounded(self) -> None:
+        state: dict = {}
+        for i in range(lexicon_diff.MAX_TRUST_EVENTS + 10):
+            lexicon_diff._append_trust_event(
+                state, {"signer": f"s{i}", "action": "imported",
+                        "tools": [], "at": "t"})
+        events = state[lexicon_diff.TRUST_KEY]["events"]
+        self.assertEqual(len(events), lexicon_diff.MAX_TRUST_EVENTS)
+
+
 if __name__ == "__main__":
     unittest.main()

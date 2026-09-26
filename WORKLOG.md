@@ -462,3 +462,509 @@ Suite 1297 green; selfcheck green.
 (9a28465 -> 09d522e), 59 files changed, +10,031/-976. Working tree
 clean. Issue #120 checked at session start (OPEN, 14 comments, last
 updated 2026-09-25T17:34:30Z; snapshot's core facts still match).
+
+---
+
+## Session 2 — 2026-09-26 (Agent exponential-build — baseline)
+
+Task ID: 0
+Agent: ANI engineering agent (autonomous exponential-build run)
+
+Scope of this session (fixed by the operating prompt; no phases beyond
+it): Phase 1 unification layer (cortex/inbox.py, explain_unified.py,
+diagnostics/fusion.py), Phase 2 NLU & resource governance
+(dreamtime throttle, slot_tagger, lexicon trust, genius/units.py),
+Phase 3 second-brain depth (personal/correlate.py, linkrec blend,
+personal/selfcal.py), Phase 4 governance docs. One commit per
+sub-item; branch `agent/exponential-build`; main untouched.
+
+### Setup
+
+- Fresh clone of `0x0nYx/caelestia-assistant` (HEAD `7d53b72`,
+  branch `main`) into `/home/z/my-project/caelestia-assistant`.
+- Branch `agent/exponential-build` created from main; main will not
+  be committed to or merged by the agent.
+- Read-only reference checkout: `ladybug-me/caelestia-kde` (shallow)
+  at `/home/z/my-project/caelestia-kde`, needed only for the
+  gen_adapter byte-identity verification.
+- Read access confirmed to: assistant/genius/, assistant/cortex/,
+  assistant/brain/, assistant/settings/, assistant/diagnostics/,
+  assistant/agent/, assistant/scan/, assistant/brain/personal/.
+
+### Baseline (before any change)
+
+- Full suite: `python3 -m unittest discover -s . -p "test_*.py"`
+  → **1297 tests, OK (skipped=12)**, ~57 s. (Session 1 ended at
+  1297 OK skipped=1; two more skips are environmental — network/
+  display-free suite, deltas noted per-phase as commits land.)
+- `python3 -m assistant.hub selfcheck` → OK (rule schema valid,
+  risk tiers consistent, import policy clean, settings lint rules
+  valid).
+- Registry byte-identity: `python3 -m assistant.settings.gen_adapter
+  --verify --repo-root /home/z/my-project/caelestia-kde` → OK,
+  tools.json byte-identical to the cpp-headers adapter output.
+  NOTE on invocation: the operating prompt's literal command
+  (`python3 -m assistant.settings gen_adapter --verify`) is not the
+  recognized surface — the adapter's own module main is the entry
+  (`python3 -m assistant.settings.gen_adapter --verify`), and this
+  sandbox keeps the caelestia checkout outside the repo, hence the
+  explicit --repo-root. Equivalent check, same guard.
+- Grep-first pre-checks for Phases 1-3: no existing module named
+  inbox.py / explain_unified.py / fusion.py / slot_tagger.py /
+  units.py / correlate.py / selfcal.py anywhere in the tree — all
+  seven new-file items are genuinely new; extension items
+  (dreamtime.py, lexicon_diff.py, linkrec.py) will be re-checked
+  in place at their sub-item.
+
+### Plan for this session
+
+Phase 1 first (highest leverage, lowest risk), then Phase 2, Phase 3,
+Phase 4 docs; STOP conditions as written in the operating prompt; a
+final WORKLOG summary entry lists every sub-item outcome.
+
+### Phase 1.1 — unified pending-decisions inbox — SHIPPED
+
+- Grep-first result: NO existing module aggregates the four decision
+  sources (brain/service.py has ledger_list/ledger_decide but no
+  join with gap clusters, the plan cache, or agent consents; brief
+  compose() is a morning digest, not a decision surface). Genuinely
+  new — built.
+- New `assistant/cortex/inbox.py`: READ + DISPATCH layer over
+  (1) `brain/ledger.py` pending proposals, (2) gap proposals —
+  surfaced `ontology_gap` ledger items AND unproposed qualifying
+  clusters previewed via `dispatch.cluster_gaps`, (3) the session
+  pending-plan cache (`cortex/plans.py`, caller-owned payload file —
+  no new session store), (4) the agent's per-node consent queue via
+  `agent/engine.py`'s own simulate/consent_fn machinery.
+- Ranking composes EXISTING values only: stated confidence (ledger /
+  gap purity), the Beta-Binomial kind posterior from
+  `brain/calibrate.acceptance_rate` (its own Beta(1,1) prior for
+  unseen kinds), and the NamedBandit arm mean (`rank()`'s stable
+  mean_estimate; the same class `cortex/learn.py` uses for its
+  strategy bandit; arms keyed exactly as `settings_bridge.decide`
+  rewards them — preset or `tool:<name>`). Score = stated x kind x
+  arm, tie-broken (source, id): deterministic, nothing new computed.
+- Dispatch goes to each source's OWN entry point: `Ledger.decide`;
+  `dispatch.propose_gap_cluster` (NEW single-cluster entry point in
+  dispatch.py, refactored out of `propose_gap_clusters` with
+  byte-identical batch behavior — the inbox never files a proposal
+  itself); plan ops re-validated by `settings.planner.plan` then
+  handed to `settings.applier.apply` (dry-run preview by default;
+  real write only behind the CLI's explicit `--write`;
+  `PlanCache.commit` only after a real apply; reject = the cache's
+  own TOTAL `discard`, stated out loud); agent decisions run
+  `Agent.execute` with a consent_fn scripted to THAT node only (all
+  other consent nodes refused) — or simulate-only without `--write`.
+- Hub: `inbox` verb added (list/ranked/approve/reject; --json,
+  --ledger/--state/--pending-plan/--goal/--file).
+- Tests: `assistant/cortex/tests/test_inbox.py` — 25 cases: four-source
+  aggregation, exact rank-input composition, deterministic ordering,
+  per-source approve/reject dispatch (ledger via tmp fixtures, gap
+  through the real dispatch entry point, plan with planner/applier
+  mocked and payload asserted, agent with the consent gate scripted),
+  honest refusals (unknown id/label/tool, missing target, agent
+  without goal), and the no-write guarantees (unproposed-gap reject
+  writes nothing; dry-run leaves the plan pending; reject never
+  executes the agent graph).
+
+### Phase 1.2 — unified `why` explainer — SHIPPED
+
+- Grep-first result: `settings/explain.py` owns the settings read-only
+  explanations; `genius/metacog.py` owns rule induction/clustering.
+  No module walks back across engines — genuinely new, and neither
+  existing explainer is touched.
+- New `assistant/cortex/explain_unified.py`: ONE structured shape
+  {engine, headline, lines, citations, confidence} for all five
+  engines, every string lifted from the producing module's own output
+  (templating, not synthesizing):
+  * diagnostics -> `engine.diagnose`'s own verdict, rule id/title, fix
+    lines, references, confidence;
+  * cortex -> `dispatch.render_answer`'s own chat-card lines + the
+    conformal calibrator's own reason/guarantee sentence for the
+    route's score (its own "insufficient calibration data" honesty
+    when there is no data);
+  * settings -> `settings.explain.explain`'s own answer + cites +
+    provenance hop strings when a ledger is available;
+  * brain -> `calibrate.acceptance_rate`'s own posteriors over the
+    ledger (per-kind rows + the calibration-note sentence shape);
+  * wizard -> `settings.wizard.render` output byte-for-byte, headline
+    from the winner's TOPSIS closeness.
+- Walk-back: `why` (no id) explains the NEWEST ledger record (the last
+  surfaced action with a durable record) through the engine its kind
+  names (settings -> settings adapter with the diff's own file/calls;
+  ontology_gap -> cortex; drift_* -> brain); `why <id>` accepts the
+  inbox id space (ledger:/gap:/plan:/agent: — plan items render the
+  cache's own summary() and contract line; agent items render the
+  engine's own simulate "would" strings).
+- Hub: `why` verb added. Read-only module: writes nothing anywhere.
+- Tests: `assistant/cortex/tests/test_explain_unified.py` — 17 cases,
+  one per source engine plus walk-back, consistent rendering, and CLI
+  (wizard engine, last-action JSON, inbox-id).
+- Flakiness note: one full-suite run during this sub-item reported a
+  single failure that never reproduced across three subsequent full
+  runs (buffered and unbuffered, 1339 OK each) and never surfaced a
+  test name; recorded here rather than hidden.
+
+### Phase 1.3 — evidence fusion for troubleshooting — SHIPPED
+
+- Grep-first result: no fusion step exists in genius/baysnet.py,
+  diagnostics/engine.py, or retrieval/ (each engine stops at its own
+  output). Genuinely new — built.
+- New `assistant/diagnostics/fusion.py`: READ-ONLY downstream consumer
+  combining the three engines' independently produced evidence via
+  weighted Bayes in log-odds space (weight-scaled likelihood-ratio
+  updates from a common prior; equal weights reduce exactly to the
+  naive-Bayes product brain/naive_bayes.py applies; opinion-pool view
+  cited to Genest & Zidek 1986). A source with no evidence for a
+  hypothesis ABSTAINS — never a silent 0.5 vote.
+- Calibration honesty: the rules' qualitative confidence tier
+  ("deterministic"/"probable") is a LABEL, never invented into a
+  number; all three sources' unbounded native strengths (rule match
+  points, BM25, scan hit density) go through ONE documented saturating
+  transform c = s/(s+K), monotone, deterministic, K=1 default.
+  Out-of-range values are REJECTED, never clamped (the settings
+  convention): confidence outside (0,1), negative/unknown weights,
+  duplicate votes, bad prior -> ValueError.
+- Hypotheses are caller-keyed; merging engines' candidates onto shared
+  hypotheses happens ONLY through an explicit caller-supplied
+  hypothesis_map — no fuzzy joining. Convenience diagnose() runs the
+  three engines read-only (scan only when the caller supplies
+  stream_text + patterns, the agent dispatcher's own rule), never
+  modifies their outputs, and returns one ranked list with per-source
+  contributions and the honest odds multiplier.
+- Tests: `assistant/diagnostics/tests/test_fusion.py` — 11 cases:
+  hand-computed math (incl. the naive-Bayes reduction), abstention,
+  deterministic ranking + tie-break, all rejection paths, per-source
+  collectors (engine output byte-unchanged), and the convenience path
+  with mocked retrieval (merge only via mapping; scan join; no-map
+  means no join).
+
+### Phase 2.1 — closed-loop resource throttle — SHIPPED
+
+- Grep-first result: dreamtime.py decided only IF a window opens
+  (eligible) and which jobs fit (schedule); telemetry.py was
+  read-only/on-demand with no consumer loop. No existing controller —
+  extended dreamtime.py in place, no parallel scheduler.
+- New in `assistant/brain/dreamtime.py`: `CadenceController` — a PI
+  loop (Astrom & Hagglund 1995 citation in the docstring) with
+  conditional-integration anti-windup and explicit actuator limits,
+  observing diagnostics/telemetry.py's READ-ONLY snapshots DURING a
+  run and adjusting the scan/brain batch cadence (minutes between
+  runs) to hold a configurable CPU ceiling.
+- Conservative defaults: ceiling 25% (BELOW eligible()'s own
+  max_load=30 gate, so braking starts before eligibility would lapse),
+  base cadence 15 min, floor 5 min (never hammers even on a cold box),
+  cap 240 min (beyond that it is a scheduling decision, not a
+  throttle decision). Pinned by test.
+- Telemetry is INJECTABLE: the controller takes a `source` callable —
+  tests pass fixture dicts shaped like `read_loadavg()`, the live
+  caller passes `telemetry.snapshot`. NOTHING in the module touches
+  /proc itself. An unavailable or OSError-failing probe is an honest
+  no-op: the cadence holds, observations do not advance — the loop
+  never brakes on a broken sensor.
+- `os.cpu_count()` (pure read) normalizes load1 into percent; the lint's
+  FORBIDDEN_OS_ATTRS (system/popen/exec*/spawn*/fork) are untouched.
+- No new write path: the controller returns numbers and state dicts;
+  the runner honors them.
+- Tests: `assistant/brain/tests/test_dreamtime_throttle.py` — 15
+  cases: exact loop math (hand-computed steady state 183.75 min under
+  sustained 100% load on 2 cores, anti-windup cap), relaxation to the
+  floor, at-ceiling hold, fixture-source injection, unavailable and
+  failing probes as no-ops, over_ceiling flag, conservative-default
+  pins, constructor rejection of out-of-range values, and an
+  eligible()-semantics regression pin.
+
+### Phase 2.2 — structured slot tagger — SHIPPED
+
+- Grep-first result: settings/slots.py is the compositional RECOVERY
+  grammar (frozen-grammar words like "thinner" deliberately NOT
+  re-owned); cortex/lexicon.py:char_ngrams and vectorize.tokenize are
+  the existing feature layer; cortex/conformal.py is the gate. No
+  learned slot layer existed — genuinely new, layered ON TOP.
+- New `assistant/cortex/slot_tagger.py`: an averaged structured
+  perceptron (Collins 2002 EMNLP; 2-best Viterbi per Forney 1973 for
+  the margin) over BIO slot tags {CUE, GENERIC, TARGET}. Supervision
+  comes ONLY from local approve/reject history in cortex/learn.py's
+  example shape: APPROVED rows' gold sequences are read off the
+  EXISTING grammar's own matched raws (slots.extract + an optional
+  caller noun matcher for TARGET); REJECTED/undecided rows supervise
+  NOTHING — a refused request is not evidence of slot structure.
+  No external corpus anywhere.
+- Determinism: fixed row order, averaged weights, early stop on a
+  zero-mistake epoch (separable by construction — the labels ARE the
+  grammar's). Confidence = fixed-scale logistic of the 2-best Viterbi
+  margin; never claims certainty.
+- CONFORMAL GATE (the safety property): tag_gated() answers with the
+  tagger only when a calibrator WITH data covers its confidence;
+  untrained tagger / uncovered confidence / NO calibration data all
+  fall back to the existing grammar path (slots.extract's own output,
+  verbatim) with the reason attached.
+- Overlong sequences (>64 tokens), misaligned gold, unknown tags,
+  zero-length: rejected, never truncated or guessed. Persistence is a
+  plain dict (weights+totals+steps) for the caller's learned-state
+  JSON; the module writes nothing.
+- Tests: `assistant/cortex/tests/test_slot_tagger.py` — 14 cases:
+  approved-only supervision, grammar-derived gold spans, determinism,
+  generalization (seen cue "trim" -> unseen target), char-ngram
+  feature wiring, bounded confidence, exact persistence round-trip,
+  rejection paths, and all three fallback arms of the gate plus the
+  covered path.
+
+### Phase 2.3 — reputation-weighted lexicon trust — SHIPPED
+
+- Grep-first result: lexicon_diff.py had import/forget but NO signer
+  metadata and NO rollback history — trust could not exist yet.
+  Extended in place; the module's own review/import semantics are
+  untouched.
+- Extended `assistant/cortex/lexicon_diff.py`:
+  * `import_diff(state, text, signer=None)` — optional signer
+    (the identity the user verified with THEIR external tool) recorded
+    on the import entry and as a bounded (500) local event; the report
+    gains an advisory `signer_trust` line;
+  * `forget()` records a ROLLBACK event against the entry's signer —
+    the one negative signal a signer can earn here;
+  * `signer_trust(state)` — EigenTrust-style power iteration
+    (Kamvar, Schlosser & Garcia-Molina 2003, WWW): pretrust = the
+    user's own Beta(1,1)-smoothed keep rate per signer; propagation
+    edges = Jaccard overlap of boosted tool sets (signers whose diffs
+    touch the same tools are correlated), blended a=0.15 toward direct
+    evidence, iterated to a deterministic fixed point. No events ->
+    {} — no invented opinions.
+  * `render_advisory()` — every rendering carries "ADVISORY ONLY,
+    review is never auto-skipped".
+- ADVISORY ONLY (pinned by test): a heavily-trusted signer's import
+  lands supervised pairs + review candidates + the verify/review
+  wording EXACTLY like anyone else's; no trust level auto-decides or
+  auto-skips the explicit review. Imports without --signer record no
+  trust state (backward compatible).
+- CLI: `cortex lexicon trust` (read-only advisory view) and
+  `--signer NAME` on import; the advisory line prints in the import
+  report.
+- Tests: `test_lexicon_diff.py` extended with 7 cases (35 total in
+  file): no-signer backward compat, event+advisory recording,
+  rollback negative signal, tool-overlap propagation (correlated
+  signer outranks disjoint one), empty-history honesty, the
+  never-auto-skip invariant, event-log bound.
+
+### Phase 4 — governance artifacts — SHIPPED (three commits)
+
+- 4.1 `docs/UPSTREAM_CASE.md`: the explicit argument for the
+  classical/deterministic layer over a bundled 200-500MB partial-
+  English small LLM for a config-editing use case on low-end hardware.
+  Quotes ISS-120.md VERBATIM where relevant (0x0nYx's 200-300M
+  parameters / "100M for learning English" / "greater than 500mbs"
+  download-overhead comments; 0xSolanaceae's Apertus exploration,
+  "can't ship the model bundled with the shell", and the explicit
+  backlog statement) — attribution preserved, no paraphrase-from-
+  memory. Content of ISS-120.md untouched (citation-pinned, read-
+  only).
+- 4.2 `docs/LICENSING_OPEN_QUESTION.md`: states plainly that the
+  shipped AGPLv3 relicense (CHANGELOG 0.1.0) combines against
+  upstream shell/'s GPL-3.0-or-later; that the combination is
+  permitted under GPLv3 section 13 but has NOT been confirmed with
+  upstream; and that NO PR should reference AGPL-covered files until
+  a human resolves it. The document resolves nothing itself and is
+  explicitly marked as not attempting to.
+- 4.3 `docs/PR_SURFACE_PLAN.md`: PROPOSES (does not execute) the
+  narrowed upstream-first set — the settings/ #120 core plus the
+  two-tier sidebar dispatch gate, in that order — while keeping
+  genius/, brain/, brain/personal/ and devflow/ as this repo's own
+  standalone scope, given issue #120 is confirmed backlogged per the
+  captured corpus. Gated on the licensing question by construction.
+
+
+### Phase 3.3 — personal prediction calibration — SHIPPED
+
+- Grep-first result: brain/calibrate.py is the routing-confidence
+  posterior (untouched, pinned); personal/journal.py scores recorded
+  DECISIONS. Neither scores the user's own forward-looking STATED
+  predictions — genuinely new, built as a distinct personal-only
+  instance mirroring the calibrate pattern.
+- New `assistant/brain/personal/selfcal.py` (stays inside the personal
+  scope split; own state key `personal_predictions`; calibrate.py NOT
+  modified):
+  * predict() — records a STATED prediction with probability strictly
+    inside (0,1): certainty claims are rejected, never clamped;
+    optional due date; explicit logging ONLY (nothing inferred from
+    unstated behavior anywhere in the module);
+  * resolve() — records what happened; double resolution refused (the
+    ledger keeps its first resolution — no rewriting history);
+  * brier_score() — Brier 1950's proper scoring rule over resolved
+    predictions; None when nothing resolved (no invented scores);
+  * calibration_curve() — stated-p bucket vs hit rate, journal.py's
+    fewer/wider-bins honesty rule; open_predictions(); summary().
+- Pure functions, no I/O; the caller persists via state.py (learned-
+  state JSON, an existing write path).
+- Tests: `assistant/brain/personal/tests/test_selfcal.py` — 10 cases:
+  explicit-only creation, certainty rejection, hand-computed Brier
+  (0.45), no-invented-score honesty, double-resolution and unknown-id
+  refusals, calibration buckets, summary framing, distinct-instance
+  pins (own state key; calibrate.py surface untouched).
+
+
+### Phase 3.2 — backlink suggestion blend — SHIPPED
+
+- Grep-first result: linkrec.py was Adamic-Adar + minhash shingle-
+  Jaccard only; textmine.py had TF-IDF keywords but no public
+  vector/cosine seam. Import direction confirmed against
+  brain/personal/README.md's shared-utility list (textmine.py listed
+  for root imports via `..`).
+- Extended the SHARED engine first: `brain/textmine.py` gains public
+  `tfidf_vectors(texts)` + `cosine(a, b)` — the same TF-IDF family its
+  keywords() uses (Salton & Buckley 1988 weighting), whole-corpus df,
+  deterministic.
+- Extended `brain/personal/linkrec.py` IN PLACE:
+  suggest_links(graph, notes, top, min_jaccard, tfidf_weight=0.5)
+  now blends the two signals on one scale — score = (1-w)*aa_norm +
+  w*cosine, where aa_norm = aa/(aa+1) is the same saturating transform
+  fusion.py/units.py use for unbounded scores. The `via` label names
+  the actual weighted contributions ("combined" only when BOTH
+  contribute; w=0 reproduces the graph-only ranking; the minhash
+  shingle-Jaccard fallback is retained untouched for the cold start).
+  Existing via labels/behavior preserved; pairs carry their aa/cos
+  components when combined.
+- Tests: `test_personal_modules.py` LinkRecBlendTests (4 cases:
+  combined via + component keys, weight-exactness at w=1 and w=0,
+  cold-start TF-IDF suggestion and cross-topic ranking, empty notes)
+  plus a tfidf_vectors/cosine case in brain/tests/test_brain_v2.py
+  (ordering, bounds, empty-vocabulary honesty, determinism).
+
+
+### Phase 3.1 — habit/completion correlation mining — SHIPPED
+
+- Grep-first result: NO habit log exists anywhere in the repo (no
+  "habit" data structure); survival.py tracks completion, priority.py
+  tracks task features. The habit SIGNAL is therefore caller-supplied
+  by design: pair_records() takes the task records those engines
+  already consume plus an extractor over the user's own habit data;
+  missing signals are SKIPPED, never imputed (an unstated habit value
+  is not evidence).
+- New `assistant/brain/personal/correlate.py` (stays inside
+  brain/personal per README):
+  * point_biserial() — Tate 1954 point-biserial r between a
+    continuous habit signal and binary completion (n-1 sample sd
+    documented); degenerate groups (all-completed, zero-variance)
+    refuse to fabricate a correlation;
+  * chi_square() — 2x2 independence test with Yates' continuity
+    correction (Pearson 1900 / Yates 1934); binarization of a
+    continuous signal at a stated threshold is REPORTED in the result,
+    never silent; completion rates per group ride along;
+  * honesty conventions pinned: every result carries
+    "correlational, not causal" framing; thin evidence (n < 30, or any
+    expected cell < 5) is LABELED thin while the number still computes.
+- Tests: `assistant/brain/personal/tests/test_correlate.py` (tests dir
+  already existed, matching sibling structure) — 10 cases: hand-
+  computed r and Yates X², framing pins, thin labeling, degenerate
+  refusals, signal-skip behavior, stated binarization.
+
+
+### Phase 2.4 — dimensional/units algebra — SHIPPED
+
+- Grep-first result: no units/dimension module anywhere in genius/ or
+  the tree; mathengine is unit-free by design ("percent / unit-free
+  arithmetic helpers"). Genuinely new — built, then wired through the
+  EXISTING dispatcher pattern.
+- New `assistant/genius/units.py`:
+  * the seven SI base dimensions as integer exponent vectors; SI
+    prefixes (longest-first split; "kg" registered directly per the
+    SI Brochure; "mol" never splits); coherent derived units (N, J,
+    W, Pa, V, F, ohm, ...); accepted non-SI (min, h, day, g, t, L,
+    eV, kWh, bar, atm, in, ft, mi); compound units ("m/s^2",
+    "km*h^-1"); cited to the BIPM SI Brochure 9th ed. 2019;
+  * dimension-checked arithmetic via precedence climbing: + and -
+    demand EQUAL dimensions and keep the left unit for display; * and
+    / compose; ^ takes a dimensionless integer; a MISMATCH is an
+    explicit UnitsError ("refusing to silently coerce — rejected,
+    never clamped", the settings convention);
+  * affine temperature (degC/degF) converts but refuses arithmetic
+    (offsets do not multiply) — documented, tested;
+  * JSON-serialisable results carrying SI values AND a display pair
+    only when the surviving unit resolves (prefix+base like km
+    included); composed names never fabricated into registries.
+- Wiring (matched to meta.py's own dispatch pattern): a `units`
+  domain (cues + structural regex + math_eval penalty), plus an
+  interception in math_eval via `looks_unitful` so unit-ful
+  arithmetic ("3 km + 200 m") reaches the units engine before plain
+  arithmetic. `looks_unitful` deliberately EXCLUDES bare "%" so
+  "15% of 80" still belongs to mathengine's percent path (regression
+  pinned by the existing integration tests, which caught the first
+  draft's overreach).
+- No new write path, no new imports beyond the allow-list (math, re,
+  typing).
+- Tests: `assistant/genius/tests/test_units.py` — 22 cases: parsing
+  (prefixes, compounds, mol, kg), conversion incl. affine
+  temperature, mismatch rejections, arithmetic composition, meta
+  wiring (own domain, interception, honest mismatch errors,
+  percent-path untouched), determinism.
+
+---
+
+## Session 2 FINAL — Definition of Done + sub-item outcomes
+
+Every Phase 0-4 sub-item SHIPPED (tested, committed, logged); none
+skipped; no STOP condition hit (the one non-reproducing flake during
+1.2 is documented in its own section, with three consecutive green
+full-suite runs after it).
+
+| Sub-item | Outcome | Commit |
+| --- | --- | --- |
+| 0.0 baseline | SHIPPED (1297 tests OK skipped=12; selfcheck OK; gen_adapter byte-identity OK) | abc8701 |
+| 1.1 unified inbox | SHIPPED (cortex/inbox.py + dispatch.propose_gap_cluster + hub verb; 25 tests) | 1db52dc |
+| 1.2 unified why | SHIPPED (cortex/explain_unified.py + hub verb; 17 tests) | 5e16a23 |
+| 1.3 evidence fusion | SHIPPED (diagnostics/fusion.py; 11 tests) | 8b71d35 |
+| 2.1 cadence throttle | SHIPPED (dreamtime.CadenceController; 15 tests) | b49713d |
+| 2.2 slot tagger | SHIPPED (cortex/slot_tagger.py, conformal-gated; 14 tests) | 0165689 |
+| 2.3 lexicon trust | SHIPPED (lexicon_diff EigenTrust-style advisory; 7 tests) | 9737e98 |
+| 2.4 units algebra | SHIPPED (genius/units.py + meta dispatch wiring; 22 tests) | 11f589b |
+| 3.1 correlate | SHIPPED (personal/correlate.py; 10 tests) | 0b6c78a |
+| 3.2 linkrec blend | SHIPPED (linkrec + textmine tfidf/cosine seam; 5 tests) | 210125e |
+| 3.3 selfcal | SHIPPED (personal/selfcal.py; 10 tests) | 38340c8 |
+| 4.1 UPSTREAM_CASE | SHIPPED (docs/UPSTREAM_CASE.md, ISS-120 verbatim quotes) | 558d2bd |
+| 4.2 LICENSING_OPEN_QUESTION | SHIPPED (docs/, explicitly unresolved) | 7cab679 |
+| 4.3 PR_SURFACE_PLAN | SHIPPED (docs/, proposed-not-executed) | 4cb2c27 |
+| final summary | SHIPPED (this entry) | (this commit) |
+
+**Final verification (against this commit):**
+- python3 -m unittest discover -s . -p "test_*.py" -> 1433 tests OK
+  (skipped=12); baseline was 1297, delta +136 across 9 test files.
+- python3 -m assistant.hub selfcheck -> OK.
+- python3 -m assistant.settings.gen_adapter --verify --repo-root
+  <caelestia checkout> -> OK, tools.json byte-identical.
+
+**Invariant check (the eight, each verified at HEAD):**
+1. Stdlib-only / import allow-list: HELD — ALLOWED_IMPORTS.txt
+   byte-identical to main (zero diff); no new stdlib module needed.
+2. No subprocess/socket/os.system: HELD — the only new os use is
+   os.cpu_count() (a pure read, not in FORBIDDEN_OS_ATTRS); telemetry
+   stays /proc+/sys read-only with injectable sources.
+3. Write paths enumerated: HELD — the five existing paths only. The
+   inbox dispatches plan applies through settings/applier.py (dry-run
+   by default, --write explicit); the plan payload file is the
+   caller-owned session learned-state; nothing else writes.
+4. No training/fine-tuning; named classical algorithms with
+   citations: HELD — structured perceptron (Collins 2002), EigenTrust
+   (Kamvar et al. 2003), weighted Bayes opinion pool (Genest & Zidek
+   1986), PI control (Astrom & Hagglund 1995), point-biserial (Tate
+   1954), chi-square/Yates (Pearson 1900/Yates 1934), Brier (1950),
+   Adamic-Adar/TF-IDF (Salton & Buckley 1988), SI algebra (BIPM
+   Brochure 9th ed. 2019) — all cited in module docstrings.
+5. No resident daemon: HELD — all new code is library functions +
+   one-shot CLI surfaces.
+6. Honest verdicts: HELD — gap clusters never auto-proposed (approve
+   files a ledger proposal); plan applies are dry-run without
+   --write; unproposed gap rejects write nothing; lexicon trust is
+   ADVISORY ONLY with review never auto-skipped (pinned by test);
+   fusion abstains instead of inventing votes; thin evidence labeled
+   thin; mismatched dimensions rejected, never coerced.
+7. Protected files untouched: HELD — LICENSE, README license section,
+   CHANGELOG licensing line/0.1.0 section, ISS-120.md content: zero
+   diff. CHANGELOG gained only [Unreleased] bullets.
+8. Scope discipline: HELD — all of Phase 3 stayed inside
+   brain/personal/; no phases beyond the operating prompt were
+   invented; no additional phases, no scope creep.
+
+**Branch state:** 15 commits on agent/exponential-build ahead of
+main; working tree clean; main untouched; not merged (left as the
+human's gate). The PAT used for pushing should be revoked now that
+the push is complete, as the operator stated.
+

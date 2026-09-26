@@ -40,6 +40,45 @@ def keywords(text, corpus_texts=(), top=8):
     return [w for w, _ in scored[:top]]
 
 
+def tfidf_vectors(texts):
+    """TF-IDF vectors for a list of texts, one {word: weight} per text.
+
+    The same TF-IDF family keywords() uses (term frequency times a
+    smoothed inverse document frequency, Salton & Buckley 1988's
+    standard weighting), computed over the given corpus: df counts the
+    texts containing the word, n_docs = len(texts). Deterministic; the
+    returned dicts are plain and comparable with cosine() below.
+    """
+    doc_tokens = [tokens(t) for t in texts]
+    n_docs = len(doc_tokens)
+    if n_docs == 0:
+        return []
+    dfs = Counter()
+    for d in doc_tokens:
+        dfs.update(set(d))
+    vectors = []
+    for d in doc_tokens:
+        tf = _tf(d)
+        vectors.append({w: f * (math.log(n_docs / dfs[w]) + 1.0)
+                        for w, f in tf.items()} if d else {})
+    return vectors
+
+
+def cosine(a, b):
+    """Cosine similarity between two TF-IDF vectors (tfidf_vectors'
+    output). 0.0 when either side is empty — no vocabulary is not a
+    similarity."""
+    if not a or not b:
+        return 0.0
+    common = set(a) & set(b)
+    dot = sum(a[w] * b[w] for w in common)
+    na = math.sqrt(sum(v * v for v in a.values()))
+    nb = math.sqrt(sum(v * v for v in b.values()))
+    if na == 0.0 or nb == 0.0:
+        return 0.0
+    return dot / (na * nb)
+
+
 def _sentences(text):
     text = text.strip()
     if not text:

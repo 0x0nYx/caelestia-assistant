@@ -53,18 +53,22 @@ from __future__ import annotations
 
 import hashlib
 import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 __all__ = [
-    "DIFF_HEADER", "MAX_PAIRS", "PHRASE_MAX", "IMPORTS_KEY",
-    "export_rows", "render", "parse", "diff_id", "import_diff",
-    "forget", "persisted_pairs", "imported_ids",
+    "DIFF_HEADER", "MAX_PAIRS", "PHRASE_MAX", "IMPORTS_KEY", "TRUST_KEY",
+    "MAX_TRUST_EVENTS", "export_rows", "render", "parse", "diff_id",
+    "import_diff", "forget", "persisted_pairs", "imported_ids",
+    "signer_trust", "render_advisory",
 ]
 
 DIFF_HEADER = "CAELESTIA LEXICON DIFF v1"
 MAX_PAIRS = 200
 PHRASE_MAX = 120
 IMPORTS_KEY = "lexicon_imports"
+TRUST_KEY = "lexicon_trust"
+MAX_TRUST_EVENTS = 500
 
 _ROW_RE = re.compile(
     r"^\s*(?P<sign>[+-])(?P<text>.*?\S)\s*->\s*(?P<surface>\S+)"
@@ -214,11 +218,19 @@ def diff_id(rows: List[Dict[str, Any]]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def import_diff(state: Dict[str, Any], text: str) -> Dict[str, Any]:
+def import_diff(state: Dict[str, Any], text: str,
+                signer: Optional[str] = None) -> Dict[str, Any]:
     """Apply one diff into the state: parse + validate, persist the rows
     under their diff-id, and REPORT (boosted tools, parity measurement,
     rollback command). Never touches SYNONYMS; never raises on
-    malformed input."""
+    malformed input.
+
+    ``signer`` (optional, phase 2.3): the identity the user verified with
+    THEIR external tool (minisign/sq/gpg) — recorded as local metadata
+    so a rollback history can exist, and feeding the ADVISORY
+    EigenTrust-style trust score in the report. It changes nothing about
+    the import's safety behavior: review candidates are added exactly as
+    before, and no trust level ever auto-skips the explicit review."""
     rows, warnings = parse(text)
     if not rows:
         return {"error": "nothing importable in this diff "
@@ -229,6 +241,8 @@ def import_diff(state: Dict[str, Any], text: str) -> Dict[str, Any]:
     if not isinstance(imports, dict):
         imports = {}
     imports[did] = {"rows": rows, "n": len(rows)}
+    if signer:
+        imports[did]["signer"] = str(signer)
     state[IMPORTS_KEY] = imports
     # review-bucket candidates (the proposal's second landing): each row
     # becomes one candidate the learner's batch-review flow can label —
@@ -251,7 +265,12 @@ def import_diff(state: Dict[str, Any], text: str) -> Dict[str, Any]:
         pass  # the review-bucket landing is best-effort, never fatal
     # the boosted-tools warning (the injection surface made visible)
     boosted = sorted({row["surface"] for row in rows})
-    return {
+    if signer:
+        _append_trust_event(state, {
+            "signer": str(signer), "action": "imported",
+            "diff_id": did, "tools": boosted,
+            "at": datetime.now().isoformat(timespec="seconds")})
+    report = {
         "diff_id": did,
         "imported": len(rows),
         "boosted_tools": boosted,
@@ -265,12 +284,18 @@ def import_diff(state: Dict[str, Any], text: str) -> Dict[str, Any]:
                   "(minisign/sq/gpg) before trusting the source — the "
                   "assistant states the content, the human owns the trust",
     }
+    if signer:
+        report["signer_trust"] = render_advisory(signer_trust(state),
+                                                 str(signer))
+    return report
 
 
 def forget(state: Dict[str, Any], the_id: str) -> Dict[str, Any]:
     """Drop one imported set by diff-id. The pre-import pair list is
     restored by construction (the remaining imports stand); the next
-    embedder build drops the forgotten pairs."""
+    embedder build drops the forgotten pairs. A set that carried signer
+    metadata records a ROLLBACK event for the trust propagation (phase
+    2.3) — the one negative signal a signer can earn here."""
     imports = state.get(IMPORTS_KEY)
     if not isinstance(imports, dict) or the_id not in imports:
         known = sorted(k for k in imports if isinstance(k, str)) \
@@ -279,13 +304,28 @@ def forget(state: Dict[str, Any], the_id: str) -> Dict[str, Any]:
                 + (f"(have: {', '.join(known)})" if known else
                    "(nothing imported)")}
     dropped = imports.pop(the_id)
+    signer = (dropped.get("signer") if isinstance(dropped, dict)
+              else None)
+    if signer:
+        _append_trust_event(state, {
+            "signer": str(signer), "action": "rolled_back",
+            "diff_id": the_id,
+            "tools": sorted({row.get("surface", "")
+                             for row in (dropped.get("rows") or [])
+                             if isinstance(row, dict)}),
+            "at": datetime.now().isoformat(timespec="seconds")})
     if not imports:
         state.pop(IMPORTS_KEY, None)
     else:
         state[IMPORTS_KEY] = imports
-    return {"forgot": the_id, "rows_dropped": len(dropped.get("rows", [])),
-            "note": "the next embedder build drops these pairs "
-                    "(corpus-only again for this set)"}
+    result = {"forgot": the_id,
+              "rows_dropped": len(dropped.get("rows", [])),
+              "note": "the next embedder build drops these pairs "
+                      "(corpus-only again for this set)"}
+    if signer:
+        result["note"] += ("; rollback recorded against signer "
+                           f"{signer!r} (advisory trust signal)")
+    return result
 
 
 def imported_ids(state: Dict[str, Any]) -> List[str]:
@@ -308,3 +348,128 @@ def persisted_pairs(state: Dict[str, Any]) -> List[Tuple[str, str]]:
             if isinstance(row, dict) and row.get("text") and row.get("surface"):
                 pairs.append((str(row["text"]), str(row["surface"])))
     return pairs[:MAX_PAIRS]
+
+
+# ---------------------------------------------------------------------------
+# Signer trust (phase 2.3) — ADVISORY ONLY, never an auto-decision.
+#
+# EigenTrust (Kamvar, Schlosser & Garcia-Molina 2003, "The Eigentrust
+# algorithm for reputation management in P2P networks", WWW) computes
+# reputation as the fixed point of t = a*p + (1-a)*C^T t: direct evidence
+# (the pretrust p) blended with what the graph propagates through
+# normalized trust edges (C), iterated to convergence. This module has
+# no peer-to-peer opinions — what it HAS locally is:
+#   - direct evidence per signer: their diffs the user KEPT vs the diffs
+#     the user ROLLED BACK (import/forget events above);
+#   - edges worth propagating along: signers whose diffs boost the SAME
+#     tools are correlated — a Jaccard overlap edge, so a rollback of one
+#     diff also dents the signers whose diffs boost the same tools, and
+#     a well-received diff lifts its correlated signers a little.
+# The fixed point is computed by the same power iteration; the result is
+# an ADVISORY score rendered next to the import report. It MUST NOT and
+# DOES NOT auto-decide anything: every diff still lands as supervised
+# pairs + review candidates, and the explicit review requirement is
+# unchanged for every diff at every trust level (pinned by test).
+# ---------------------------------------------------------------------------
+
+
+def _append_trust_event(state: Dict[str, Any], event: Dict[str, Any]) -> None:
+    """Bounded newest-appended event log (pure; the caller persists)."""
+    trust = state.get(TRUST_KEY)
+    if not isinstance(trust, dict):
+        trust = {}
+    events = [e for e in (trust.get("events") or []) if isinstance(e, dict)]
+    events.append(event)
+    trust["events"] = events[-MAX_TRUST_EVENTS:]
+    state[TRUST_KEY] = trust
+
+
+def signer_trust(state: Dict[str, Any], a: float = 0.15,
+                 iterations: int = 25) -> Dict[str, Dict[str, Any]]:
+    """The EigenTrust-style fixed point over the recorded signer events.
+
+    Returns {signer: {"trust", "kept", "rolled_back", "tools"}} sorted
+    by trust desc, name asc (deterministic). ``a`` is the blend toward
+    direct evidence (the pretrust), the rest propagates through the
+    Jaccard tool-overlap edges. No events -> {} (no invented opinions)."""
+    events = []
+    trust = state.get(TRUST_KEY)
+    if isinstance(trust, dict):
+        events = [e for e in (trust.get("events") or [])
+                  if isinstance(e, dict) and e.get("signer")]
+    if not events:
+        return {}
+
+    kept: Dict[str, int] = {}
+    rolled: Dict[str, int] = {}
+    tools: Dict[str, set] = {}
+    for e in events:
+        name = str(e.get("signer", ""))
+        if not name:
+            continue
+        if e.get("action") == "rolled_back":
+            rolled[name] = rolled.get(name, 0) + 1
+        else:
+            kept[name] = kept.get(name, 0) + 1
+        tools.setdefault(name, set()).update(
+            str(t) for t in (e.get("tools") or []) if t)
+    names = sorted(set(kept) | set(rolled))
+
+    # pretrust: the user's own Beta-smoothed keep rate (the bandit's
+    # Beta(1,1) prior shape — no history means 0.5, never 1.0)
+    pretrust = {}
+    for name in names:
+        pretrust[name] = (kept.get(name, 0) + 1.0) / \
+            (kept.get(name, 0) + rolled.get(name, 0) + 2.0)
+    total = sum(pretrust.values()) or 1.0
+    p = {n: pretrust[n] / total for n in names}
+
+    # edges: Jaccard overlap of boosted tool sets, row-normalized
+    def jaccard(x: set, y: set) -> float:
+        if not x or not y:
+            return 0.0
+        inter = len(x & y)
+        union = len(x | y)
+        return inter / union if union else 0.0
+
+    t = {n: p[n] for n in names}
+    for _ in range(max(1, iterations)):
+        nxt = {}
+        for i in names:
+            propagated = 0.0
+            for j in names:
+                if i == j:
+                    continue
+                w = jaccard(tools.get(j, set()), tools.get(i, set()))
+                if w > 0.0:
+                    propagated += w * t[j]
+            nxt[i] = a * p[i] + (1.0 - a) * propagated
+        t = nxt
+    return {
+        name: {
+            "trust": round(t[name], 4),
+            "kept": kept.get(name, 0),
+            "rolled_back": rolled.get(name, 0),
+            "tools": len(tools.get(name, ())),
+        }
+        for name in sorted(names, key=lambda n: (-t[n], n))
+    }
+
+
+def render_advisory(scores: Dict[str, Dict[str, Any]],
+                    signer: Optional[str] = None) -> str:
+    """The human-facing ADVISORY sentence for the import report. Every
+    rendering carries the explicit warning that review is NOT skipped —
+    the trust score never decides anything."""
+    if not scores:
+        return ("advisory: no signer history yet — trust starts at the "
+                "flat prior; review this diff explicitly (trust never "
+                "auto-skips review)")
+    rows = []
+    for name, s in scores.items():
+        marker = " (this diff)" if signer and name == signer else ""
+        rows.append(f"{name}{marker}: trust {s['trust']} "
+                    f"({s['kept']} kept, {s['rolled_back']} rolled back)")
+    return ("advisory signer trust (EigenTrust-style over keep/rollback "
+            "history and tool overlap — ADVISORY ONLY, review is never "
+            "auto-skipped): " + "; ".join(rows[:6]))

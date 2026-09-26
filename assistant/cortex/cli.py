@@ -633,12 +633,18 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                                             "no auto-merge — verify signatures "
                                             "with YOUR external tool)")
     lex_p.add_argument("action", choices=["export", "import", "forget",
-                                           "list"],
+                                           "list", "trust"],
                        help="export: print the reviewable diff; import: apply a "
                             "diff from stdin as supervised pairs; forget: drop "
-                            "one imported set by id; list: imported sets")
+                            "one imported set by id; list: imported sets; "
+                            "trust: the ADVISORY signer trust view (never "
+                            "auto-decides anything)")
     lex_p.add_argument("diff_id", nargs="?", default="",
                        help="forget: the diff id to drop (see list)")
+    lex_p.add_argument("--signer", default=None,
+                       help="import: the identity YOU verified with your own "
+                            "tool (minisign/sq/gpg) — recorded for the "
+                            "advisory trust history only", )
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -685,7 +691,7 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             return 0
         if args.action == "import":
             text = sys.stdin.read()
-            report = lexicon_diff.import_diff(state, text)
+            report = lexicon_diff.import_diff(state, text, signer=args.signer)
             if "error" in report:
                 print(f"error: {report['error']}", file=sys.stderr)
                 for warn in report.get("warnings", []):
@@ -700,6 +706,8 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             for warn in report.get("warnings", []):
                 print(f"  warning: {warn}")
             print(f"  {report['note']}")
+            if report.get("signer_trust"):
+                print(f"  {report['signer_trust']}")
             print(f"  {report['verify']}")
             print(f"  rollback: {report['rollback']}")
             return 0
@@ -711,6 +719,14 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             brain_state.save(state)
             print(f"forgot {report['forgot']} "
                   f"({report['rows_dropped']} row(s)); {report['note']}")
+            return 0
+        if args.action == "trust":
+            scores = lexicon_diff.signer_trust(state)
+            if not scores:
+                print("no signer history — imports without --signer "
+                      "record nothing; trust starts at the flat prior")
+                return 0
+            print(lexicon_diff.render_advisory(scores))
             return 0
         # list
         ids = lexicon_diff.imported_ids(state)

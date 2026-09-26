@@ -18,7 +18,7 @@ from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Sequence, Set
 __all__ = [
     "LogicError", "Formula", "parse_formula", "evaluate_formula", "truth_table",
     "classify_formula", "equivalent", "entails", "sat_solve", "rule_infer",
-    "CSP", "solve_csp",
+    "CSP", "solve_csp", "schedule_resources",
 ]
 
 _TOKENS = {
@@ -457,3 +457,116 @@ def solve_csp(csp: CSP, max_solutions: int = 10) -> Dict[str, Any]:
             "nodes_explored": nodes[0], "ac3_pruned": ac3_report,
             "satisfiable": bool(solutions),
             "first": solutions[0] if solutions else None}
+
+
+# ---------------------------------------------------------------------------
+# Resource-contention scheduling (phase 2.2): the general primitive.
+#
+# settings/optimize.py runs AC-3 arc-consistency over SETTINGS KEYS (which
+# bar supports which spacing). This is the SAME constraint machinery,
+# lifted to the general shape the agent layer needs: tasks contend for
+# limited resources across discrete slots. No settings knowledge lives
+# here and no settings caller changes — this is an addition, not a
+# migration; both surfaces sit on the one CSP implementation above.
+# ---------------------------------------------------------------------------
+
+
+def schedule_resources(tasks: Sequence[Any],
+                       n_slots: int,
+                       precedence: Sequence[Tuple[str, str]] = (),
+                       windows: Optional[Dict[str, Tuple[int, int]]] = None,
+                       max_solutions: int = 5) -> Dict[str, Any]:
+    """Schedule tasks that contend for named resources over ``n_slots``.
+
+    The general resource-contention primitive (usable by the agent layer
+    as a planning step, and by any caller with the same shape):
+
+    - ``tasks``: sequence of ``(task_id, resource)`` pairs or dicts with
+      ``{"id", "resource"}`` — two tasks sharing a resource can never
+      occupy the same slot (modeled as all-different per resource, the
+      classic timetabling formulation);
+    - ``precedence``: ``(before_id, after_id)`` pairs — ``before``
+      must land strictly earlier than ``after`` (binary ``<`` arcs);
+    - ``windows``: optional per-task ``{task: (earliest, latest)}`` slot
+      bounds (domain pruning before AC-3 runs);
+    - ``n_slots``: the discrete horizon (slots are integers 0..n-1;
+      durations are NOT modeled — one task, one slot, the unit-capacity
+      case; anything coarser composes over multiple calls).
+
+    Solving = the CSP machinery above: domain windows, then AC-3 arc
+    consistency, then backtracking with MRV + forward checking. The
+    FIRST solution is the schedule; ``ac3_pruned`` reports which domains
+    the arc-consistency pass narrowed before search (the same honest
+    evidence settings/optimize reports); an unsatisfiable request
+    returns the pruning trail, never a silent empty answer.
+    """
+    if n_slots < 1:
+        raise ValueError("n_slots must be >= 1")
+    task_ids: List[str] = []
+    resource_of: Dict[str, str] = {}
+    for task in tasks:
+        if isinstance(task, dict):
+            task_id = str(task.get("id", ""))
+            resource = str(task.get("resource", ""))
+        else:
+            task_id, resource = str(task[0]), str(task[1])
+        if not task_id or not resource:
+            raise ValueError("each task needs an id and a resource")
+        if task_id in resource_of:
+            raise ValueError(f"duplicate task id {task_id!r}")
+        task_ids.append(task_id)
+        resource_of[task_id] = resource
+
+    known = set(task_ids)
+    for before, after in precedence:
+        if before not in known or after not in known:
+            raise ValueError(f"precedence names unknown task: "
+                             f"{before!r} -> {after!r}")
+
+    domains: Dict[str, Sequence[int]] = {}
+    windows = windows or {}
+    for task_id in task_ids:
+        if task_id in windows:
+            lo, hi = windows[task_id]
+            lo, hi = max(0, int(lo)), min(n_slots - 1, int(hi))
+            if lo > hi:
+                raise ValueError(f"window for {task_id!r} is empty")
+            domains[task_id] = list(range(lo, hi + 1))
+        else:
+            domains[task_id] = list(range(n_slots))
+
+    # all-different per resource: tasks on the same resource never share
+    # a slot (unit capacity — the timetabling classic).
+    by_resource: Dict[str, List[str]] = {}
+    for task_id in task_ids:
+        by_resource.setdefault(resource_of[task_id], []).append(task_id)
+    all_different = [group for group in by_resource.values() if len(group) > 1]
+
+    # precedence as strictly-before binary arcs on the slot integers
+    constraints = [(before, after, "<") for before, after in precedence]
+
+    problem = CSP(task_ids, domains, constraints, all_different)
+    result = solve_csp(problem, max_solutions=max_solutions)
+    out: Dict[str, Any] = {
+        "algorithm": ("resource-contention scheduling over the CSP above: "
+                      "per-resource all-different + precedence arcs, AC-3 "
+                      "then backtracking (MRV + forward checking)"),
+        "satisfiable": result["satisfiable"],
+        "ac3_pruned": result["ac3_pruned"],
+        "nodes_explored": result["nodes_explored"],
+        "resources": {r: sorted(g) for r, g in by_resource.items()},
+    }
+    first = result.get("first")
+    if first is not None:
+        out["schedule"] = dict(sorted(first.items(), key=lambda kv: kv[1]))
+        # the load view: slot -> tasks (readable plan for the agent layer)
+        load: Dict[int, List[str]] = {}
+        for task_id, slot in first.items():
+            load.setdefault(int(slot), []).append(task_id)
+        out["slot_load"] = {str(slot): sorted(tasks_)
+                            for slot, tasks_ in sorted(load.items())}
+    else:
+        out["schedule"] = None
+        out["reason"] = ("no conflict-free assignment exists under these "
+                         "slots/precedence/windows (see ac3_pruned)")
+    return out

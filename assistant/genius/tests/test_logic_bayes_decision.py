@@ -330,3 +330,59 @@ class TestMetacog(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.2: the general resource-contention scheduling primitive.
+# ---------------------------------------------------------------------------
+
+class TestScheduleResources(unittest.TestCase):
+    def test_conflict_free_per_resource(self):
+        r = lg.schedule_resources(
+            [("compile", "cpu"), ("test", "cpu"), ("package", "cpu")], 3)
+        self.assertTrue(r["satisfiable"])
+        slots = list(r["schedule"].values())
+        self.assertEqual(sorted(slots), [0, 1, 2])  # all distinct
+
+    def test_precedence_orders_the_plan(self):
+        r = lg.schedule_resources(
+            [("compile", "cpu"), ("test", "cpu"), ("package", "cpu")], 3,
+            precedence=[("compile", "test"), ("test", "package")])
+        self.assertTrue(r["satisfiable"])
+        self.assertEqual(r["schedule"],
+                         {"compile": 0, "test": 1, "package": 2})
+
+    def test_resources_run_in_parallel(self):
+        # different resources may share a slot
+        r = lg.schedule_resources(
+            [("a", "cpu"), ("b", "gpu"), ("c", "net")], 1)
+        self.assertTrue(r["satisfiable"])
+        self.assertEqual(r["slot_load"], {"0": ["a", "b", "c"]})
+
+    def test_infeasible_reports_pruning_not_silence(self):
+        r = lg.schedule_resources([("a", "gpu"), ("b", "gpu"), ("c", "gpu")], 2)
+        self.assertFalse(r["satisfiable"])
+        self.assertIsNone(r["schedule"])
+        self.assertIn("reason", r)
+
+    def test_windows_bound_the_domain(self):
+        r = lg.schedule_resources([("x", "net"), ("y", "net")], 4,
+                                  windows={"x": (0, 1), "y": (0, 1)})
+        self.assertTrue(r["satisfiable"])
+        self.assertTrue(r["schedule"]["x"] <= 1)
+        self.assertTrue(r["schedule"]["y"] <= 1)
+
+    def test_dict_tasks_and_unknown_precedence_rejected(self):
+        r = lg.schedule_resources([{"id": "a", "resource": "cpu"},
+                                   {"id": "b", "resource": "cpu"}], 2)
+        self.assertTrue(r["satisfiable"])
+        with self.assertRaises(ValueError):
+            lg.schedule_resources([("a", "cpu")], 2,
+                                  precedence=[("nope", "a")])
+
+    def test_ac3_leaves_evidence(self):
+        r = lg.schedule_resources(
+            [("a", "cpu"), ("b", "cpu"), ("c", "cpu")], 3,
+            precedence=[("a", "b"), ("b", "c")])
+        self.assertIsInstance(r["ac3_pruned"], list)
+        self.assertTrue(r["ac3_pruned"])  # domains narrowed before search

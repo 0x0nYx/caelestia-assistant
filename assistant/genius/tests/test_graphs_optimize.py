@@ -230,3 +230,135 @@ class TestOptimize(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.2: max-flow, communities, branch-and-bound, tabu search.
+# ---------------------------------------------------------------------------
+
+class TestEdmondsKarp(unittest.TestCase):
+    # the classic CLRS-style flow network: answer 15
+    NET = {"s": {"a": 10, "b": 5},
+           "a": {"b": 15, "t": 10},
+           "b": {"t": 10}}
+
+    def test_known_max_flow(self):
+        r = g.edmonds_karp(self.NET, "s", "t")
+        self.assertEqual(r["max_flow"], 15.0)
+
+    def test_min_cut_matches_flow_value(self):
+        # max-flow/min-cut: the cut crossing capacity equals the flow
+        r = g.edmonds_karp(self.NET, "s", "t")
+        cut_value = sum(self.NET[u][v]
+                        for u, v in r["min_cut_edges"])
+        self.assertEqual(cut_value, r["max_flow"])
+
+    def test_zero_capacity_edge_is_skipped(self):
+        r = g.edmonds_karp({"s": {"t": 0}}, "s", "t")
+        self.assertEqual(r["max_flow"], 0.0)
+
+    def test_asymmetric_capacities(self):
+        r = g.edmonds_karp({"s": {"t": 7}, "t": {"s": 3}}, "s", "t")
+        self.assertEqual(r["max_flow"], 7.0)
+
+    def test_source_equals_sink_rejected(self):
+        with self.assertRaises(ValueError):
+            g.edmonds_karp(self.NET, "s", "s")
+
+    def test_negative_capacity_rejected(self):
+        with self.assertRaises(ValueError):
+            g.edmonds_karp({"s": {"t": -1}}, "s", "t")
+
+
+class TestCommunities(unittest.TestCase):
+    def test_two_clusters_separate(self):
+        adjacency = {"a": ["b", "c"], "b": ["a"], "c": ["a"],
+                     "d": ["e"], "e": ["d"]}
+        r = g.communities(adjacency)
+        self.assertEqual(r["n_communities"], 2)
+        self.assertEqual(sorted(map(sorted, r["communities"])),
+                         [["a", "b", "c"], ["d", "e"]])
+
+    def test_dict_neighbors_accepted(self):
+        r = g.communities({"a": {"b": 1}, "b": {"a": 1}})
+        self.assertEqual(r["communities"], [["a", "b"]])
+
+    def test_isolated_node_is_its_own_group(self):
+        r = g.communities({"x": [], "y": ["z"], "z": ["y"]})
+        self.assertEqual(sorted(map(sorted, r["communities"])),
+                         [["x"], ["y", "z"]])
+
+
+class TestBranchAndBound(unittest.TestCase):
+    def test_classic_knapsack(self):
+        # (w,v): (10,60),(20,100),(30,120), cap 50 -> take items 1,2 = 220
+        r = op.branch_and_bound([(10, 60), (20, 100), (30, 120)], 50)
+        self.assertEqual(r["chosen"], [1, 2])
+        self.assertEqual(r["total_value"], 220.0)
+        self.assertEqual(r["total_weight"], 50.0)
+
+    def test_optimal_on_exhaustive_cross_check(self):
+        import random as _random
+        rng = _random.Random(2026)
+        for _ in range(25):
+            n = rng.randint(4, 10)
+            items = [(rng.randint(1, 20), rng.randint(1, 30))
+                     for _ in range(n)]
+            cap = rng.randint(5, 60)
+            best = 0
+            for mask in range(1 << n):
+                w = sum(items[i][0] for i in range(n) if mask >> i & 1)
+                v = sum(items[i][1] for i in range(n) if mask >> i & 1)
+                if w <= cap and v > best:
+                    best = v
+            r = op.branch_and_bound(items, cap)
+            self.assertEqual(r["total_value"], float(best),
+                             f"items={items} cap={cap}")
+
+    def test_empty_choice_on_tight_capacity(self):
+        r = op.branch_and_bound([(10, 5)], 1)
+        self.assertEqual(r["chosen"], [])
+        self.assertEqual(r["total_value"], 0.0)
+
+    def test_negative_inputs_rejected(self):
+        with self.assertRaises(ValueError):
+            op.branch_and_bound([(-1, 5)], 10)
+
+
+class TestTabuSearch(unittest.TestCase):
+    def test_sorts_a_switch_cost_sequence(self):
+        # minimizing sum |x_i - x_{i+1}|: the sorted order is optimal
+        def cost(order):
+            return sum(abs(a - b) for a, b in zip(order, order[1:]))
+
+        def neighbors(order):
+            out = []
+            for i in range(len(order) - 1):
+                for j in range(i + 1, len(order)):
+                    cand = list(order)
+                    cand[i], cand[j] = cand[j], cand[i]
+                    out.append(cand)
+            return out
+
+        r = op.tabu_search(cost, [4, 1, 3, 2, 5], neighbors, rounds=40)
+        self.assertEqual([int(x) for x in r["best"]], [1, 2, 3, 4, 5])
+        self.assertEqual(r["score"], 4.0)
+
+    def test_deterministic(self):
+        def cost(order):
+            return sum(abs(a - b) for a, b in zip(order, order[1:]))
+
+        def neighbors(order):
+            return [order[1:] + order[:1], order[:-1]]
+
+        a = op.tabu_search(cost, [3, 1, 2], neighbors, rounds=10)
+        b = op.tabu_search(cost, [3, 1, 2], neighbors, rounds=10)
+        self.assertEqual(a, b)
+
+    def test_maximize_mode(self):
+        def score(order):
+            return order[0]
+
+        r = op.tabu_search(score, [1, 2, 3], lambda o: [[o[0] + 1, *o[1:]]],
+                           rounds=5, minimize=False)
+        self.assertEqual(r["score"], 6.0)

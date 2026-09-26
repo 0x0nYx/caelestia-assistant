@@ -6,8 +6,13 @@
   * correlation matrix (Pearson + Spearman) across numeric columns
   * time series: moving averages, EWMA, lag-k autocorrelation, PACF-lite,
     Yule-Walker AR(p) fitting with multi-step forecasting, additive
-    trend/seasonal decomposition, CUSUM changepoint detection with a
-    bootstrap significance threshold
+    trend/seasonal decomposition with robustness re-checks, CUSUM
+    changepoint detection with a bootstrap significance threshold,
+    Bayesian online changepoint detection (BOCPD) as the probabilistic
+    complement
+  * compression-based similarity: the normalized compression distance
+    (NCD) over zlib/bz2 — dependency-free near-duplicate and anomaly
+    scoring for any two texts/byte blobs
   * clustering: k-means with k-means++ seeding, agglomerative
     hierarchical clustering (single/complete/average linkage) with a
     cut, and silhouette-style separation scoring
@@ -27,7 +32,8 @@ __all__ = [
     "parse_table", "profile_table", "frequency_table", "crosstab",
     "groupby", "correlation_matrix", "moving_average", "ewma",
     "autocorrelation", "yule_walker_ar", "forecast_ar", "decompose",
-    "changepoints", "kmeans", "agglomerative", "silhouette",
+    "decompose_robustness", "changepoints", "bocpd", "ncd",
+    "kmeans", "agglomerative", "silhouette",
 ]
 
 
@@ -579,3 +585,288 @@ def silhouette(points: Sequence[Sequence[float]], labels: Sequence[int],
             "interpretation": ("well separated" if mean_s > 0.5 else
                                "reasonable" if mean_s > 0.25 else "weak/no structure"),
             "note": "silhouette near 0 means overlapping clusters — that is honest, not a bug"}
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.2 additions: NCD, BOCPD, decomposition robustness.
+# ---------------------------------------------------------------------------
+
+
+def ncd(a: bytes, b: bytes, compressor: str = "zlib") -> Dict[str, Any]:
+    """Normalized Compression Distance (Li, Chen, Li, Ma & Vitanyi 2004,
+    "The similarity metric", IEEE Trans. Inform. Theory 50(12)):
+
+        NCD(x, y) = (C(xy) - min(C(x), C(y))) / max(C(x), C(y))
+
+    with C = compressed size. Two identical inputs give ~0; unrelated
+    inputs ~1 (bounded with small clamps because real compressors are
+    not ideal). zlib (level 6) is the default; bz2 is available for a
+    second opinion. Str inputs are encoded utf-8. Pure, deterministic,
+    dependency-free — the compressor IS the similarity model, which is
+    exactly why it belongs in a no-ML assistant.
+    """
+    import zlib
+    import bz2
+
+    if isinstance(a, str):
+        a = a.encode("utf-8", "replace")
+    if isinstance(b, str):
+        b = b.encode("utf-8", "replace")
+
+    def c(blob: bytes) -> int:
+        if compressor == "zlib":
+            return len(zlib.compress(blob, 6))
+        if compressor == "bz2":
+            return len(bz2.compress(blob, 5))
+        raise ValueError(f"unknown compressor {compressor!r} (zlib|bz2)")
+
+    ca, cb, cab = c(a), c(b), c(a + b)
+    denom = max(ca, cb)
+    if denom == 0:  # two empty inputs: identical by definition
+        return {"ncd": 0.0, "compressor": compressor,
+                "sizes": {"a": 0, "b": 0, "ab": 0},
+                "note": "both inputs empty"}
+    value = (cab - min(ca, cb)) / denom
+    value = min(1.0, max(0.0, value))  # clamped: real compressors overshoot
+    verdict = ("near-identical" if value < 0.10 else
+               "similar" if value < 0.35 else
+               "dissimilar" if value < 0.65 else "unrelated")
+    return {"ncd": round(value, 4), "compressor": compressor,
+            "sizes": {"a": ca, "b": cb, "ab": cab},
+            "verdict": verdict,
+            "algorithm": "NCD (Li et al. 2004), C = zlib/bz2 compressed size"}
+
+
+def bocpd(series: Sequence[float], hazard: float = 100.0,
+          variance: Optional[float] = None,
+          prior_mean: Optional[float] = None) -> Dict[str, Any]:
+    """Bayesian online changepoint detection (Adams & MacKay 2007,
+    "Bayesian online changepoint detection", arXiv:0710.3742v2 [stat.ML]).
+
+    The run-length posterior recursion with a Gaussian observation model
+    (known variance, conjugate normal prior over the segment mean):
+
+        growth:   p(r_t = r_{t-1}+1, x_t) = p(x_t | D_{t-1}^r) * (1-H)
+        changept: p(r_t = 0, x_t)        = p(x_t | prior)   * H
+        H(r) = 1/hazard   (the constant-hazard choice from the paper)
+
+    Output per step: the MAP run length, the changepoint probability
+    p(r_t = 0 | x_1..t), and the posterior mean of the current segment.
+    This is the PROBABILISTIC complement to the CUSUM detector above —
+    CUSUM answers "did the mean shift" with a bootstrap significance
+    call; BOCPD answers "how likely is THIS step a boundary, under a
+    generative model". Deterministic, O(n^2) worst case in the run
+    length (n small in practice), no RNG.
+    """
+    import math as _math
+
+    s = [float(v) for v in series]
+    n = len(s)
+    if n < 4:
+        raise ValueError("need n >= 4 observations")
+    if hazard <= 0:
+        raise ValueError("hazard (expected run length) must be > 0")
+    sample_mean = sum(s) / n
+    if variance is None:
+        # robust noise-scale default: the variance of successive first
+        # differences / 2 — insensitive to the level shifts we are hunting
+        # (a shift contributes ONE large diff, not a shifted distribution),
+        # the standard changepoint-layer trick
+        diffs = [s[i + 1] - s[i] for i in range(n - 1)]
+        diff_var = gs.describe(diffs).get("variance") or 0.0
+        variance = max(diff_var / 2.0, 1e-6)
+    else:
+        variance = float(variance)
+    mu0 = float(prior_mean) if prior_mean is not None else sample_mean
+    # weak prior precision: half an observation of the prior mean
+    prior_tau = 0.5 / variance
+
+    H = 1.0 / hazard
+    # run-length posterior at t: list index = run length r
+    probs: List[float] = [1.0]  # r=0 with probability 1 at t=0
+    means: List[float] = [mu0]  # posterior mean of the segment for each r
+    taus: List[float] = [prior_tau]
+
+    def predictive(x: float, mu: float, tau: float) -> float:
+        # Student-t-ish normal with posterior variance 1/tau; the simple
+        # normal approximation keeps the recursion transparent and the
+        # MAP structure identical to the paper's Gaussian example
+        var = variance + 1.0 / max(tau, 1e-12)
+        return _math.exp(-0.5 * (x - mu) ** 2 / var) / _math.sqrt(
+            2.0 * _math.pi * var)
+
+    map_runlengths: List[int] = []
+    cp_probs: List[float] = []
+    segment_means: List[float] = []
+    for t in range(1, n):
+        x = s[t]
+        # evaluate the predictive under every current run length
+        likelihoods = [predictive(x, means[r], taus[r]) for r in range(len(probs))]
+        # growth probabilities (r -> r+1): the segment survives
+        growth = [(1.0 - H) * probs[r] * likelihoods[r]
+                  for r in range(len(probs))]
+        # changepoint arm (r -> 0): the OBSERVATION is drawn from the
+        # PRIOR predictive, not from any surviving segment — the segment
+        # before a break is discarded, which is the whole point of the
+        # Adams & MacKay recursion
+        prior_predictive = predictive(x, mu0, prior_tau)
+        cp_mass = H * sum(probs) * prior_predictive
+        new_probs = [cp_mass] + growth
+        evidence = sum(new_probs) or 1e-300
+        probs = [p / evidence for p in new_probs]
+        # update the observation model per run length (conjugate normal)
+        new_means = [mu0]
+        new_taus = [prior_tau]
+        for r in range(len(means)):
+            tau_old = taus[r]
+            mu_old = means[r]
+            tau_new = tau_old + 1.0 / variance
+            mu_new = (mu_old * tau_old + x / variance) / tau_new
+            new_means.append(mu_new)
+            new_taus.append(tau_new)
+        means, taus = new_means, new_taus
+        # report: MAP run length, p(r=0), current segment mean
+        best_r = max(range(len(probs)), key=lambda r: (probs[r], -r))
+        map_runlengths.append(best_r)
+        cp_probs.append(round(probs[0], 4))
+        segment_means.append(round(means[best_r], 4))
+
+    changepoints = [t for t in range(1, n)
+                    if map_runlengths[t - 1] <= 1 and cp_probs[t - 1] >= 0.3]
+    return {"n": n, "hazard": hazard,
+            "map_run_length": map_runlengths,
+            "changepoint_prob": cp_probs,
+            "segment_mean": segment_means,
+            "changepoints": changepoints,
+            "algorithm": ("BOCPD (Adams & MacKay 2007), constant hazard, "
+                          "conjugate normal segment model; the "
+                          "probabilistic complement to CUSUM")}
+
+
+def decompose_robustness(series: Sequence[float], period: int) -> Dict[str, Any]:
+    """Robustness checks on the additive STL-lite decomposition.
+
+    The shipped ``decompose`` is a moving-average trend + seasonal means.
+    The honest question for any decomposition is whether its pieces
+    survive reasonable perturbation of its assumptions, so this runs
+    the SAME estimator under neighbor periods (period-1, period,
+    period+1) and under a lightly trimmed detrended pass, then reports
+    agreement:
+
+    - ``trend_agreement``: fraction of sampled points where the variant
+      trends move in the same direction as the base trend between
+      consecutive samples (sign agreement);
+    - ``seasonal_amplitude_stability``: the spread (relative sd) of the
+      seasonal swing (max-min of the cycle) across variants — an
+      unstable swing means the seasonal component is mostly noise;
+    - ``residual_sd_stability``: same spread for the residual sd;
+    - a plain-language ``verdict`` ("robust" / "period-sensitive" /
+      "fragile") with the numbers behind it.
+
+    Read-only analysis of the caller's series; deterministic.
+    """
+    s = [float(v) for v in series]
+    variants: Dict[str, Dict[str, Any]] = {}
+    for name, p in (("base", period), ("period_minus_1", period - 1),
+                    ("period_plus_1", period + 1)):
+        if p < 2 or len(s) < 2 * p:
+            continue
+        variants[name] = decompose(s, p)
+
+    if len(variants) < 2:
+        raise ValueError("series too short for a robustness re-check "
+                         "(need 2*(period+1) points)")
+
+    base = variants.get("base") or list(variants.values())[0]
+
+    def trimmed_pass() -> Optional[Dict[str, Any]]:
+        # re-run the seasonal estimate with the top/bottom 10% of
+        # detrended values per phase dropped (a light robustness trim)
+        if "base" not in variants:
+            return None
+        n = len(s)
+        period_b = period
+        detrended = base["residual"]  # s - trend - seasonal, but we want
+        # s - trend: recompute honestly from the base trend
+        trend = base["trend"]
+        detrended = [s[i] - (trend[i] if trend[i] is not None
+                             else 0.0) for i in range(n)]
+        by_phase: Dict[int, List[float]] = {}
+        for i, v in enumerate(detrended):
+            by_phase.setdefault(i % period_b, []).append(v)
+        trimmed_cycle: List[float] = []
+        for phase in range(period_b):
+            values = sorted(by_phase.get(phase, []))
+            if not values:
+                trimmed_cycle.append(0.0)
+                continue
+            cut = max(1, len(values) // 10)
+            kept = values[cut:-cut] or values
+            trimmed_cycle.append(sum(kept) / len(kept))
+        seasonal = [trimmed_cycle[i % period_b] for i in range(n)]
+        resid = [s[i] - (trend[i] if trend[i] is not None else 0.0)
+                 - seasonal[i] for i in range(n)]
+        return {"seasonal": seasonal,
+                "residual_sd": gs.describe(resid)["sd"]}
+
+    trimmed = trimmed_pass()
+
+    # trend sign agreement between the base and each period variant,
+    # with a flatness epsilon: a step whose trend movement is under
+    # 5% of the series sd is "flat", and flat-vs-anything-flat agrees —
+    # comparing floating noise around a constant trend is not evidence.
+    series_sd = gs.describe(s)["sd"] or 1.0
+    eps = 0.05 * series_sd
+    trend = [t for t in base["trend"] if t is not None]
+    agreements: Dict[str, float] = {}
+    for name, variant in variants.items():
+        if name == "base":
+            continue
+        other = [t for t in variant["trend"] if t is not None]
+        m = min(len(trend), len(other))
+        steps = [(trend[i + 1] - trend[i], other[i + 1] - other[i])
+                 for i in range(m - 1)]
+        def _agrees(a: float, b: float) -> bool:
+            a_flat, b_flat = abs(a) <= eps, abs(b) <= eps
+            if a_flat and b_flat:
+                return True
+            if a_flat or b_flat:
+                return False
+            return (a > 0) == (b > 0)
+        same = sum(1 for a, b in steps if _agrees(a, b))
+        agreements[name] = round(same / max(1, len(steps)), 3)
+
+    def swing(vals: Sequence[float]) -> float:
+        return max(vals) - min(vals) if vals else 0.0
+
+    swings = [swing(v["seasonal"]) for v in variants.values()]
+    if trimmed is not None:
+        swings.append(swing(trimmed["seasonal"]))
+    mean_swing = sum(swings) / len(swings) if swings else 0.0
+    amp_stability = round(
+        (gs.describe(swings)["sd"] / mean_swing) if mean_swing > 1e-12 else 0.0, 3)
+
+    sds = [v["residual_sd"] for v in variants.values()]
+    if trimmed is not None and trimmed.get("residual_sd") is not None:
+        sds.append(float(trimmed["residual_sd"]))
+    sd_stability = round(
+        (gs.describe(sds)["sd"] / abs(gs.describe(sds)["mean"]))
+        if any(sds) else 0.0, 3)
+
+    weakest = min(agreements.values(), default=1.0)
+    if weakest >= 0.8 and amp_stability < 0.25:
+        verdict = "robust"
+    elif weakest >= 0.45 and amp_stability < 0.6:
+        verdict = "period-sensitive"
+    else:
+        verdict = "fragile"
+    return {"period": period,
+            "trend_agreement": agreements,
+            "seasonal_amplitude_stability": amp_stability,
+            "residual_sd_stability": sd_stability,
+            "trimmed_pass_included": trimmed is not None,
+            "verdict": verdict,
+            "algorithm": ("STL-lite robustness: same estimator under "
+                          "period-1/period+1 and a 10%-trimmed seasonal "
+                          "pass; sign-agreement + relative-sd reporting"),
+            "note": "read-only analysis; verdicts carry their numbers"}

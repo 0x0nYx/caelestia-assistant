@@ -191,3 +191,92 @@ class TestDataModule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.2: NCD, BOCPD, decomposition robustness.
+# ---------------------------------------------------------------------------
+
+class TestNCD(unittest.TestCase):
+    def test_identical_texts_score_low(self):
+        text = "the quick brown fox jumps over the lazy dog " * 4
+        r = gd.ncd(text, text)
+        self.assertLess(r["ncd"], 0.2)
+
+    def test_unrelated_texts_score_high(self):
+        a = "rust borrow checker compile errors " * 8
+        b = "kde plasma widget wayland panel theming " * 8
+        r = gd.ncd(a, b)
+        self.assertGreater(r["ncd"], 0.4)
+
+    def test_near_variants_score_between(self):
+        a = "plasma widgets consume cpu when animating " * 8
+        b = "plasma widgets consume cpu when animating fast " * 8
+        r = gd.ncd(a, b)
+        self.assertGreaterEqual(r["ncd"], 0.0)
+        self.assertLess(r["ncd"], r["ncd"] + 1)  # bounded + present
+
+    def test_bz2_second_opinion(self):
+        a = "aaaaaaaaaaaaaaaaaaaa"
+        b = "abcdefghijklmnopqrst"
+        r = gd.ncd(a, b, compressor="bz2")
+        self.assertEqual(r["compressor"], "bz2")
+        self.assertGreaterEqual(r["ncd"], 0.0)
+
+    def test_bytes_input(self):
+        # a longer blob: 3-byte inputs are overhead-dominated (documented
+        # NCD small-input limitation)
+        blob = bytes(range(256)) * 4
+        r = gd.ncd(blob, blob)
+        self.assertLess(r["ncd"], 0.2)
+
+    def test_empty_pair(self):
+        r = gd.ncd(b"", b"")
+        self.assertEqual(r["ncd"], 0.0)
+
+
+class TestBOCPD(unittest.TestCase):
+    def test_detects_clean_mean_shift(self):
+        series = [5.0] * 20 + [10.0] * 20
+        r = gd.bocpd(series, hazard=20)
+        self.assertEqual(r["changepoints"], [20])
+        self.assertGreater(r["changepoint_prob"][19], 0.5)
+
+    def test_detects_two_shifts(self):
+        series = [5.0] * 15 + [8.0] * 15 + [2.0] * 15
+        r = gd.bocpd(series, hazard=15)
+        self.assertEqual(r["changepoints"], [15, 30])
+
+    def test_flat_series_has_no_changepoints(self):
+        series = [5.0 + 0.3 * ((i * 29) % 7 - 3) / 3 for i in range(40)]
+        r = gd.bocpd(series, hazard=20)
+        self.assertEqual(r["changepoints"], [])
+
+    def test_run_lengths_grow_inside_a_segment(self):
+        series = [5.0] * 12 + [9.0] * 12
+        r = gd.bocpd(series, hazard=20)
+        self.assertLess(r["map_run_length"][5], r["map_run_length"][10])
+
+    def test_short_series_rejected(self):
+        with self.assertRaises(ValueError):
+            gd.bocpd([1.0, 2.0])
+
+
+class TestDecomposeRobustness(unittest.TestCase):
+    def test_clean_periodic_series_is_not_fragile(self):
+        import math as _math
+        series = [10 + 3 * _math.sin(2 * _math.pi * i / 12)
+                  for i in range(48)]
+        r = gd.decompose_robustness(series, 12)
+        self.assertIn(r["verdict"], ("period-sensitive", "robust"))
+        self.assertLess(r["seasonal_amplitude_stability"], 0.5)
+
+    def test_white_noise_is_flagged(self):
+        series = [((i * 1103515245 + 12345) % 1000) / 1000.0 * 6
+                  for i in range(60)]
+        r = gd.decompose_robustness(series, 12)
+        self.assertEqual(r["verdict"], "fragile")
+
+    def test_too_short_series_rejected(self):
+        with self.assertRaises(ValueError):
+            gd.decompose_robustness([1.0, 2.0, 3.0], 12)

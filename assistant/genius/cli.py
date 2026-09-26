@@ -250,7 +250,15 @@ def cmd_tree(args, out) -> int:
 
 def cmd_data(args, out) -> int:
     try:
-        if args.csv:
+        if args.ncd:
+            # compression similarity needs no series: two texts split by ;
+            parts = (args.ncd.split(";;") if ";;" in args.ncd
+                     else args.ncd.split(";"))
+            if len(parts) != 2:
+                raise ValueError("ncd needs two texts separated by ;")
+            _print(data.ncd(parts[0].strip(), parts[1].strip(),
+                            compressor=args.compressor), args.json)
+        elif args.csv:
             text = Path(args.csv).read_text(encoding="utf-8", errors="replace")
             table = data.parse_table(text, delimiter=args.delimiter)
             if args.profile:
@@ -272,6 +280,18 @@ def cmd_data(args, out) -> int:
                 _print(km, args.json)
             elif args.changepoints:
                 _print(data.changepoints(nums), args.json)
+            elif args.bocpd:
+                _print(data.bocpd(nums, hazard=args.hazard), args.json)
+            elif args.robustness:
+                _print(data.decompose_robustness(nums, args.robustness), args.json)
+            elif args.ncd:
+                # two comma-separated texts (or ; to include commas)
+                parts = (args.ncd.split(";;") if ";;" in args.ncd
+                         else args.ncd.split(";"))
+                if len(parts) != 2:
+                    raise ValueError("ncd needs two texts separated by ;")
+                _print(data.ncd(parts[0].strip(), parts[1].strip(),
+                                compressor=args.compressor), args.json)
             elif args.startup_regressions:
                 _print(data.startup_regressions(
                     nums, timestamps=args.stamps.split(",") if args.stamps else None,
@@ -505,6 +525,22 @@ def cmd_graphs(args, out) -> int:
             res = g.hungarian(cost)
             res["rows"] = rows
             res["algorithm"] = "hungarian/jonker-volgenant O(n^2 m)"
+        elif args.action == "astar":
+            graph = _json.loads(args.data)
+            if not args.target:
+                raise ValueError("astar needs --target")
+            res = g.astar(graph, args.source, args.target,
+                          heuristic=lambda _node: 0.0)  # admissible zero
+            res["algorithm"] = ("a* (admissible zero heuristic == dijkstra "
+                                "ordering; pass a domain heuristic via do/api)")
+        elif args.action == "maxflow":
+            payload = _json.loads(args.data)
+            capacity = payload.get("capacity") or payload
+            res = g.edmonds_karp(capacity, args.source,
+                                 args.target or args.sink or "t")
+        elif args.action == "communities":
+            adjacency = _json.loads(args.data)
+            res = g.communities(adjacency)
         else:
             raise ValueError(f"unknown graphs action {args.action!r}")
     except (ValueError, KeyError, TypeError, _json.JSONDecodeError) as exc:
@@ -557,11 +593,66 @@ def cmd_optimize(args, out) -> int:
                     raise ValueError("genetic needs --bounds [[lo,hi], ...]")
                 res = op.genetic(energy, bounds)
                 res["algorithm"] = "steady-state genetic algorithm"
+        elif args.action == "bandb":
+            # branch-and-bound knapsack: --weights w,w,... --values v,v,...
+            # --capacity the budget
+            weights = [float(x) for x in args.weights.split(",")]
+            values = [float(x) for x in args.values.split(",")]
+            if len(weights) != len(values):
+                raise ValueError("bandb needs --weights W,W,... and --values "
+                                 "V,V,... of the same length")
+            capacity = args.capacity
+            if capacity is None:
+                raise ValueError("bandb needs --capacity")
+            res = op.branch_and_bound(list(zip(weights, values)), capacity)
+        elif args.action == "tabu":
+            # tabu search over a permutation: minimize the expression in
+            # x (the switch-cost sum |x_i - x_{i+1}| form) given --x0
+            node = me.parse(args.expr or args.target or "abs(x)")
+            initial = [float(v) for v in (args.x0 or "4,1,3,2,5").split(",")]
+
+            def switch_cost(order):
+                total = 0.0
+                for a, b in zip(order, order[1:]):
+                    env = {"x": abs(float(a) - float(b))}
+                    total += me.evaluate(node, env)
+                return total
+
+            def swap_neighbors(order):
+                out = []
+                for i in range(len(order) - 1):
+                    for j in range(i + 1, len(order)):
+                        cand = list(order)
+                        cand[i], cand[j] = cand[j], cand[i]
+                        out.append(cand)
+                return out
+
+            res = op.tabu_search(switch_cost, initial, swap_neighbors,
+                                 rounds=args.rounds or 60)
         else:
             raise ValueError(f"unknown optimize action {args.action!r}")
     except (ValueError, KeyError, TypeError, _json.JSONDecodeError,
             me.CalcError) as exc:
         print(f"genius optimize: {exc}", file=sys.stderr)
+        return 1
+    _print(res, args.json)
+    return 0
+
+
+def cmd_schedule(args, out) -> int:
+    """schedule: the general resource-contention primitive (logic.py)."""
+    import json as _json
+    from . import logic
+    try:
+        tasks = _json.loads(args.tasks)
+        precedence = [tuple(p) for p in _json.loads(args.precedence or "[]")]
+        windows = {k: tuple(v) for k, v in
+                   (_json.loads(args.windows or "{}")).items()}
+        res = logic.schedule_resources(tasks, args.slots,
+                                       precedence=precedence,
+                                       windows=windows or None)
+    except (ValueError, KeyError, TypeError, _json.JSONDecodeError) as exc:
+        print(f"genius schedule: {exc}", file=sys.stderr)
         return 1
     _print(res, args.json)
     return 0
@@ -727,6 +818,17 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--corr", choices=["pearson", "spearman"])
     q.add_argument("--cluster", type=int)
     q.add_argument("--changepoints", action="store_true")
+    q.add_argument("--bocpd", action="store_true",
+                   help="Bayesian online changepoint detection (the "
+                        "probabilistic complement to CUSUM)")
+    q.add_argument("--hazard", type=float, default=100.0,
+                   help="BOCPD expected run length (default 100)")
+    q.add_argument("--robustness", type=int, default=None, metavar="PERIOD",
+                   help="STL-lite decomposition robustness re-checks at PERIOD")
+    q.add_argument("--ncd", default=None,
+                   help="compression similarity of two texts: 'text one;text two'")
+    q.add_argument("--compressor", default="zlib", choices=["zlib", "bz2"],
+                   help="NCD compressor (default zlib)")
     q.add_argument("--startup-regressions", action="store_true", dest="startup_regressions",
                    help="interpret --series as boot times: CUSUM changepoints "
                         "flagged as regressions/improvements (--stamps, --versions optional)")
@@ -796,11 +898,14 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("goal")
     q.add_argument("--fit", type=int)
 
-    gr = sp("graphs", cmd_graphs, help="graph algorithms: dijkstra/topsort/mst/assign")
-    gr.add_argument("action", choices=["dijkstra", "topsort", "mst", "assign"])
+    gr = sp("graphs", cmd_graphs, help="graph algorithms: "
+            "dijkstra/astar/topsort/mst/assign/maxflow/communities")
+    gr.add_argument("action", choices=["dijkstra", "astar", "topsort", "mst",
+                                        "assign", "maxflow", "communities"])
     gr.add_argument("data", nargs="?", default="{}", help="JSON payload")
     gr.add_argument("--source", default="a")
     gr.add_argument("--target", default=None)
+    gr.add_argument("--sink", default=None, help="maxflow sink (or --target)")
     gr.add_argument("--rows", default="", help="comma numbers for assign")
     gr.add_argument("--costs", default="", help="';'-separated rows for assign")
 
@@ -820,9 +925,11 @@ def build_parser() -> argparse.ArgumentParser:
     fb.add_argument("--correct", default=None, metavar="TYPE",
                     help="filetype: teach the fallback classifier this type")
 
-    op_ = sp("optimize", cmd_optimize, help="anneal/hillclimb/genetic/pareto/ternary")
+    op_ = sp("optimize", cmd_optimize, help="anneal/hillclimb/genetic/pareto/"
+            "ternary/bandb/tabu")
     op_.add_argument("action",
-                     choices=["anneal", "hillclimb", "genetic", "pareto", "ternary"])
+                     choices=["anneal", "hillclimb", "genetic", "pareto",
+                              "ternary", "bandb", "tabu"])
     op_.add_argument("target", nargs="?", default=None,
                      help="energy expression in x (optimizers) or JSON points (pareto)")
     op_.add_argument("--expr", default=None,
@@ -833,6 +940,21 @@ def build_parser() -> argparse.ArgumentParser:
     op_.add_argument("--hi", type=float, default=10.0)
     op_.add_argument("--axes", nargs="*", default=None)
     op_.add_argument("--directions", default=None)
+    op_.add_argument("--capacity", type=float, default=None,
+                     help="bandb: knapsack capacity")
+    op_.add_argument("--weights", default=None, help="bandb: comma weights")
+    op_.add_argument("--values", default=None, help="bandb: comma values")
+    op_.add_argument("--rounds", type=int, default=None,
+                     help="tabu: search rounds (default 60)")
+
+    sc = sp("schedule", cmd_schedule,
+            help="resource-contention scheduling (CSP + AC-3)")
+    sc.add_argument("tasks", help='JSON tasks: [["id","resource"], ...]')
+    sc.add_argument("--slots", type=int, default=4, help="slot count")
+    sc.add_argument("--precedence", default="[]",
+                    help='JSON pairs [["before","after"], ...]')
+    sc.add_argument("--windows", default="{}",
+                    help='JSON {task: [earliest, latest]}')
 
     q = sp("report", cmd_report, help="self-reflection over your ledger")
     q.add_argument("--ledger", default=str(Path.home() /
@@ -853,7 +975,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     subcommands = {"do", "math", "solve", "calc", "stats", "matrix", "prob",
                    "logic", "decide", "tree", "data", "text", "qa", "summarize",
                    "classify", "palette", "gen", "sys", "history", "plan",
-                   "graphs", "optimize", "fsbrain", "report", "learn"}
+                   "graphs", "optimize", "fsbrain", "schedule", "report",
+                   "learn"}
     if argv and not argv[0].startswith("-") and argv[0] not in subcommands:
         argv = ["do"] + argv
     args = parser.parse_args(argv)

@@ -17,6 +17,8 @@ functions returning plain data.
 | `golden_section` | golden-section search on a unimodal function | same, fewer evaluations |
 | `pareto_frontier` | non-dominated set extraction | multi-objective trade-offs |
 | `pareto_sort` | full non-dominated ranking (front 1, 2, ...) | tiered recommendation lists |
+| `branch_and_bound` | 0/1 knapsack with the LP (fractional-greedy) bound | small integer programs |
+| `tabu_search` | deterministic tabu-list local search (Glover 1986) | scheduling-shaped permutations |
 
 The settings optimizer (assistant/settings/optimize.py) builds on the Pareto
 utilities; the agent layer uses `hill_climb` for plan repair.
@@ -29,7 +31,7 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 __all__ = [
     "anneal", "hill_climb", "genetic", "ternary_min", "golden_section",
-    "pareto_frontier", "pareto_sort",
+    "pareto_frontier", "pareto_sort", "branch_and_bound", "tabu_search",
 ]
 
 
@@ -271,3 +273,169 @@ def pareto_sort(points: Sequence[Dict[str, float]], axes: Sequence[str],
         remaining = [p for p in remaining if id(p) not in front_ids]
     return {"fronts": fronts, "tiers": len(fronts), "axes": list(axes),
             "directions": dirs}
+
+
+# ---------------------------------------------------------------------------
+# Branch-and-bound and tabu search (phase 2.2) — discrete optimization.
+# ---------------------------------------------------------------------------
+
+
+def branch_and_bound(items: Sequence[Tuple[float, float]],
+                     capacity: float,
+                     max_nodes: int = 200000) -> Dict[str, Any]:
+    """0/1 knapsack by branch-and-bound with the LP relaxation bound.
+
+    The canonical small integer program: each item is (weight, value),
+    at most one copy each, total weight <= capacity, maximize value.
+    Bound (Land & Doig 1960's branch-and-bound idea, instantiated with
+    Dantzig's fractional-greedy upper bound — the classic 1957 bound):
+    sort by value density, fill fractionally, allow the last item to
+    split; that relaxed value upper-bounds every integer completion, so
+    a subtree whose bound <= the best integer solution is pruned.
+
+    Depth-first with best-first item ordering; deterministic (ties break
+    by index). ``max_nodes`` guards against pathological instances — the
+    search stops and says so honestly instead of hanging. Returns the
+    chosen item indices, the optimal value/weight, and the pruning
+    accounting.
+    """
+    if capacity < 0:
+        raise ValueError("capacity must be non-negative")
+    parsed = [(float(w), float(v), i) for i, (w, v) in enumerate(items)]
+    for w, v, _i in parsed:
+        if w < 0 or v < 0:
+            raise ValueError("weights and values must be non-negative")
+    # value-density order (greedy relaxation order)
+    order = sorted(parsed, key=lambda t: (-(t[1] / t[0]) if t[0] > 0 else -t[1], t[2]))
+
+    def bound(index: int, weight: float, value: float) -> float:
+        """LP relaxation of the remaining items (fractional greedy)."""
+        best = value
+        remaining = capacity - weight
+        for w, v, _i in order[index:]:
+            if remaining <= 0:
+                break
+            if w <= remaining:
+                best += v
+                remaining -= w
+            else:
+                best += v * (remaining / w)  # fractional fill
+                remaining = 0.0
+        return best
+
+    best_value = 0.0
+    best_taken: List[int] = []
+    nodes = 0
+    pruned = 0
+    stopped = False
+
+    # iterative DFS: stack entries (item index in `order`, weight, value,
+    # taken-list) — the two children are take/skip
+    stack: List[Tuple[int, float, float, List[int]]] = [(0, 0.0, 0.0, [])]
+    while stack:
+        if nodes >= max_nodes:
+            stopped = True
+            break
+        index, weight, value, taken = stack.pop()
+        nodes += 1
+        if index >= len(order):
+            if value > best_value:
+                best_value = value
+                best_taken = taken
+            continue
+        if bound(index, weight, value) <= best_value:
+            pruned += 1
+            continue
+        w, v, original = order[index]
+        # skip child first so the take child (deeper, better bound) is
+        # explored last-but-first from the stack -> value-greedy dive
+        stack.append((index + 1, weight, value, taken))
+        if weight + w <= capacity:
+            stack.append((index + 1, weight + w, value + v,
+                          taken + [original]))
+
+    total_weight = sum(items[i][0] for i in best_taken)
+    out: Dict[str, Any] = {
+        "chosen": sorted(best_taken),
+        "total_value": round(best_value, 6),
+        "total_weight": round(total_weight, 6),
+        "capacity": capacity,
+        "nodes_explored": nodes,
+        "subtrees_pruned": pruned,
+        "algorithm": ("branch-and-bound (Land & Doig 1960) with the "
+                      "fractional-greedy LP bound (Dantzig 1957)"),
+    }
+    if stopped:
+        out["note"] = (f"node budget {max_nodes} reached — the answer is "
+                       "the best found, not a proven optimum")
+    return out
+
+
+def tabu_search(score: Callable[[Sequence[Any]], float],
+                initial: Sequence[Any],
+                neighbors: Callable[[Sequence[Any]], Sequence[Sequence[Any]]],
+                rounds: int = 60,
+                tabu_size: int = 12,
+                minimize: bool = True) -> Dict[str, Any]:
+    """Deterministic tabu-list local search (Glover 1986, "Future paths
+    for integer programming and links to artificial intelligence",
+    Comput. & OR 13(5)).
+
+    ``score(candidate)``: the objective (minimized by default);
+    ``neighbors(candidate)``: the move set (a list of candidates);
+    ``tabu_size``: the recency list length — the last N accepted moves'
+    signatures cannot be re-entered, which is what escapes the local
+    optima plain hill climbing gets stuck in.
+
+    Deterministic: neighbors are evaluated in the given order, the best
+    non-tabu (or aspiration-better) move wins, ties break to the first.
+    Returns the best candidate seen, its score, and the trajectory's
+    honest accounting (moves taken, tabu blocks, aspiration overrides).
+    """
+    current = list(initial)
+    current_score = score(current)
+    best = list(current)
+    best_score = current_score
+    tabu: List[str] = []
+    blocks = 0
+    aspirations = 0
+    moves = 0
+
+    def signature(candidate: Sequence[Any]) -> str:
+        return repr(list(candidate))
+
+    for _ in range(rounds):
+        candidates = list(neighbors(current))
+        if not candidates:
+            break
+        chosen = None
+        chosen_score = None
+        for cand in candidates:
+            s = score(cand)
+            sig = signature(cand)
+            better = (s < current_score) if minimize else (s > current_score)
+            is_tabu = sig in tabu
+            aspiration = (s < best_score) if minimize else (s > best_score)
+            if is_tabu and not aspiration:
+                blocks += 1
+                continue
+            if aspiration and is_tabu:
+                aspirations += 1
+            if (chosen_score is None
+                    or ((s < chosen_score) if minimize else (s > chosen_score))):
+                chosen, chosen_score = list(cand), s
+        if chosen is None:
+            break  # every move is tabu without aspiration: stop honestly
+        moves += 1
+        current, current_score = chosen, chosen_score
+        tabu.append(signature(chosen))
+        if len(tabu) > tabu_size:
+            tabu.pop(0)
+        if (current_score < best_score) if minimize else (current_score > best_score):
+            best, best_score = list(current), current_score
+
+    return {"best": best, "score": best_score,
+            "rounds_run": moves,
+            "tabu_blocks": blocks, "aspiration_overrides": aspirations,
+            "algorithm": (f"tabu search (Glover 1986), deterministic "
+                          f"order, tabu list {tabu_size}")}

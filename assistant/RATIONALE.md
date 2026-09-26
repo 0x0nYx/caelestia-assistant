@@ -378,6 +378,58 @@ write path — filetype corrections persisted through the brain state's
 existing atomic save, bounded at 500 docs. No new imports beyond the
 existing allow-list; no interaction edges against the shipped shell.
 
+## 12. New genius domains (phase 2.2)
+
+Five additions, each a named classical algorithm with a citation in the
+code, no dependencies, no training:
+
+- **Graphs, first-class**: the `genius graphs` front door now exposes
+  dijkstra/astar/topsort/mst/assign (previously dijkstra lacked astar in
+  the CLI) plus Edmonds-Karp max-flow with the min-cut by the
+  max-flow/min-cut theorem (Edmonds & Karp 1972), and label-propagation
+  communities (Raghavan et al. 2007) — the communities function ADAPTS
+  the caller's adjacency into `brain.personal.graph.Graph` and runs its
+  existing deterministic implementation verbatim rather than forking a
+  second label-propagation. A `graph_algorithms` meta domain routes
+  natural-language graph requests to a capability card.
+- **Resource-contention scheduling** (`logic.schedule_resources`): the
+  settings layer's AC-3 runs over settings keys; this is the SAME CSP
+  machinery lifted to the general shape the agent layer needs — tasks
+  contend for named resources over discrete slots (per-resource
+  all-different + precedence arcs + time windows), solved by AC-3 then
+  backtracking with MRV + forward checking, with the pruning trail
+  reported as evidence. settings/optimize.py is untouched: both surfaces
+  sit on the one CSP implementation.
+- **Branch-and-bound** (0/1 knapsack with Dantzig's fractional bound,
+  Land & Doig 1960) for small integer programs; cross-checked against
+  exhaustive search on randomized instances in the tests.
+- **Tabu search** (Glover 1986) — deterministic order, recency list,
+  aspiration override — for scheduling-shaped permutation problems; the
+  CLI exposes the switch-cost form, the API takes any score/neighbor
+  pair.
+- **NCD** (Li et al. 2004) over zlib/bz2 — the compressor IS the
+  similarity model, which is exactly the honest fit for a no-ML
+  assistant; bz2 joins ALLOWED_IMPORTS.txt as a documented,
+  same-class-as-zlib pure compression module (the import tripwire fired
+  on the first version — the policy enforcement works, and the addition
+  is a one-line named exception, not a relaxation).
+- **BOCPD** (Adams & MacKay 2007) as the probabilistic complement to
+  the existing bootstrap-CUSUM: run-length posterior, constant hazard,
+  conjugate normal segments, the differences-based noise-scale default
+  (insensitive to the shifts being hunted). One implementation bug was
+  caught by testing against a ground-truth shift (the changepoint arm
+  must use the PRIOR predictive, not the segment mixture — the classic
+  mistake) — the tests pin the corrected recursion.
+- **STL-lite robustness** re-checks: the same decomposition estimator
+  under period±1 and a 10%-trimmed seasonal pass, reporting trend sign
+  agreement (with a flatness epsilon so noise around a constant trend is
+  not counted as disagreement), seasonal-amplitude and residual-sd
+  stability, and a verdict that carries its numbers.
+
+Safety accounting: all read-only computations over caller-supplied
+inputs; no new write paths; no interaction edges against the shipped
+shell.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

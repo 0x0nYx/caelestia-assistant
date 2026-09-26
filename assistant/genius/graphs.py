@@ -21,6 +21,8 @@ Algorithms implemented (each real, named, and honest about complexity):
 | `min_spanning_tree` | Kruskal over UnionFind | O(E log E) |
 | `bellman_ford` | Bellman-Ford with negative-cycle reporting | O(V·E) |
 | `articulation_points` | Tarjan low-link DFS | O(V+E) |
+| `edmonds_karp` | Ford-Fulkerson with BFS augmentation (Edmonds & Karp 1972) | O(V·E^2) |
+| `communities` | label propagation over the shared Graph (Raghavan et al. 2007) | O(V+E) per pass |
 
 These power the agent layer (dependency-resolved task graphs), the settings
 optimizer (constraint graphs) and any `do` request that mentions shortest
@@ -35,6 +37,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 __all__ = [
     "dijkstra", "astar", "toposort", "longest_path_dag", "UnionFind",
     "hungarian", "min_spanning_tree", "bellman_ford", "articulation_points",
+    "edmonds_karp", "communities",
 ]
 
 
@@ -388,3 +391,128 @@ def hungarian(cost: Sequence[Sequence[float]]) -> Dict[str, Any]:
             assignment[p[j] - 1] = j - 1
     total = sum(cost[i][assignment[i]] for i in range(n))  # type: ignore[index]
     return {"assignment": assignment, "total": total}
+
+
+# ---------------------------------------------------------------------------
+# Max-flow (Edmonds-Karp) and label-propagation communities (phase 2.2).
+# ---------------------------------------------------------------------------
+
+
+def edmonds_karp(capacity: Dict[str, Dict[str, float]], source: str,
+                 sink: str) -> Dict[str, Any]:
+    """Maximum flow: the Ford-Fulkerson method with BFS augmentation
+    (Edmonds & Karp 1972, "Theoretical improvements in algorithmic
+    efficiency for network flow problems", JACM 19(2) — the BFS choice
+    bounds the augmentations at O(V·E), each costing O(E), for the
+    O(V·E^2) total in the table above).
+
+    ``capacity``: {u: {v: capacity}} — residual-capacity semantics; the
+    reverse direction of an edge may carry capacity too (both keys are
+    independent). Capacities must be non-negative. Returns the flow
+    value, a per-edge flow map (only NONZERO flows are reported), and
+    the min-cut (the BFS-reachable residual set at termination — the
+    max-flow/min-cut theorem says it is a minimum cut).
+    """
+    if source == sink:
+        raise ValueError("source and sink must differ")
+    nodes = set(capacity)
+    for u, nbrs in capacity.items():
+        if u not in nodes:
+            nodes.add(u)
+        for v, c in nbrs.items():
+            nodes.add(v)
+            if c < 0:
+                raise ValueError(f"negative capacity {u}->{v} ({c})")
+    # residual graph as a flat dict of dicts, symmetric seats allocated
+    residual: Dict[str, Dict[str, float]] = {u: {} for u in nodes}
+    for u, nbrs in capacity.items():
+        for v, c in nbrs.items():
+            residual[u][v] = residual[u].get(v, 0.0) + float(c)
+            residual[v].setdefault(u, 0.0)
+
+    from collections import deque
+
+    def bfs(parent: Dict[str, str]) -> bool:
+        seen = {source}
+        queue = deque([source])
+        while queue:
+            u = queue.popleft()
+            for v, cap in residual[u].items():
+                if cap > 0 and v not in seen:
+                    seen.add(v)
+                    parent[v] = u
+                    if v == sink:
+                        return True
+                    queue.append(v)
+        return False
+
+    parent: Dict[str, str] = {}
+    flow = 0.0
+    while bfs(parent):
+        # bottleneck along the BFS path
+        bottleneck = math.inf
+        v = sink
+        while v != source:
+            u = parent[v]
+            bottleneck = min(bottleneck, residual[u][v])
+            v = u
+        v = sink
+        while v != source:
+            u = parent[v]
+            residual[u][v] -= bottleneck
+            residual[v][u] += bottleneck
+            v = u
+        flow += bottleneck
+        parent = {}
+
+    flows: Dict[str, Dict[str, float]] = {}
+    for u, nbrs in capacity.items():
+        for v in nbrs:
+            pushed = residual[v].get(u, 0.0)  # reverse residual = net flow
+            if pushed > 0:
+                flows.setdefault(u, {})[v] = round(pushed, 6)
+    # min cut: residual-reachable set from source at termination
+    reachable = {source}
+    queue = deque([source])
+    while queue:
+        u = queue.popleft()
+        for v, cap in residual[u].items():
+            if cap > 0 and v not in reachable:
+                reachable.add(v)
+                queue.append(v)
+    cut_edges = [(u, v) for u in reachable
+                 for v in capacity.get(u, {}) if v not in reachable]
+    return {"max_flow": round(flow, 6), "flows": flows,
+            "min_cut_set": sorted(reachable),
+            "min_cut_edges": cut_edges,
+            "algorithm": "edmonds-karp (BFS-augmented Ford-Fulkerson, "
+                         "O(V*E^2)); min cut by max-flow/min-cut theorem"}
+
+
+def communities(adjacency: Dict[str, Any]) -> Dict[str, Any]:
+    """Label-propagation community detection over an adjacency map.
+
+    Reuses ``brain.personal.graph.Graph`` verbatim — its ``communities()``
+    is the deterministic label propagation (Raghavan, Albert & Kumara
+    2007, "Near linear time algorithm to detect community structures",
+    Phys. Rev. E 76) the note-vault analysis already ships, with sorted
+    node visits and smallest-label tie-breaks. The adjacency is adapted
+    (never reimplemented) into the Graph's add() shape; lists and dict
+    neighbor maps are both accepted.
+    """
+    from ..brain.personal.graph import Graph
+
+    graph = Graph()
+    for node, neighbors in adjacency.items():
+        if isinstance(neighbors, dict):
+            targets = list(neighbors.keys())
+        else:
+            targets = [str(n) for n in neighbors]
+        graph.add(str(node), [str(t) for t in targets])
+    groups = graph.communities()
+    return {"communities": groups,
+            "n_communities": len(groups),
+            "n_nodes": len(graph.nodes),
+            "orphans": graph.orphans(),
+            "algorithm": "label propagation (Raghavan et al. 2007) via "
+                         "brain.personal.graph.Graph, reused verbatim"}

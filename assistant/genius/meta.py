@@ -69,7 +69,8 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
     "logic": [
         "tautology", "contradiction", "logically equivalent", "satisfiable",
         "truth table", "entails", "if and only if", "propositional",
-        "constraint problem", "schedule these",
+        "constraint problem", "schedule these", "resource contention",
+        "timetable", "conflict-free",
     ],
     "decision": [
         "should i choose", "which option", "better choice", "weigh",
@@ -78,7 +79,10 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
     ],
     "data_analyze": [
         "csv", "dataset", "columns", "group by", "crosstab", "cluster",
-        "changepoint", "this data", "rows of",
+        "changepoint", "this data", "rows of", "bocpd",
+        "bayesian changepoint", "run length", "stl",
+        "decomposition robustness", "compression similarity", "ncd",
+        "how similar are these",
     ],
     "text_analyze": [
         "sentiment", "tone of", "readability", "summarize", "summary of",
@@ -97,6 +101,8 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
         "duplicates", "duplicate files", "disk usage", "hotspots",
         "clean my", "storage", "log analysis", "parse this log",
         "json config", "lint this config",
+        "stale files", "which files are old", "file type", "filetype",
+        "near duplicates", "second brain",
     ],
     "shell_history": [
         "my history", "shell history", "commands i run", "what do i usually",
@@ -105,6 +111,11 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
     "plan_goal": [
         "how do i", "plan to", "steps to", "break down", "decompose",
         "roadmap for", "help me organize my work", "what should i do first",
+    ],
+    "graph_algorithms": [
+        "shortest path", "max flow", "min cut", "communities",
+        "community detection", "label propagation", "topological order",
+        "minimum spanning", "network flow", "bottleneck of the network",
     ],
     "self_reflect": [
         "what have you learned", "your coverage", "about yourself",
@@ -414,6 +425,15 @@ def _run_domain(domain: str, text: str) -> Dict[str, Any]:
             out["jarque_bera"] = stats.jarque_bera(nums)
         return out
     if domain == "logic":
+        if "schedule" in low or "resource contention" in low or "timetable" in low:
+            return {"verdict": "SCHEDULE_GUIDANCE",
+                    "how": ("tasks + slots + resources as JSON: "
+                            "genius schedule TASKS_JSON --slots N "
+                            "--precedence PAIRS_JSON (see genius schedule --help)"),
+                    "capabilities": ["per-resource conflict-free slots",
+                                     "precedence arcs", "time windows",
+                                     "AC-3 pruning evidence"],
+                    "safety": "read-only computation; the agent layer consumes it as a planning step"}
         # strip interrogative framing and trailing nouns, keep the formula
         formula = text.strip()
         formula = re.sub(r"[?.]+$", "", formula)
@@ -503,6 +523,28 @@ def _run_domain(domain: str, text: str) -> Dict[str, Any]:
         if "distance" in low and len(hexes) >= 2:
             return creative.color_distance(hexes[0], hexes[1])
         return creative.palette(base, harmony=harmony)
+    if domain == "graph_algorithms":
+        return {"verdict": "GRAPH_GUIDANCE",
+                "how": ("adjacency/capacity JSON: genius graphs dijkstra "
+                        "'{\"a\":{\"b\":4}}' --source a --target b | "
+                        "genius graphs maxflow '{...}' --source s --target t | "
+                        "genius graphs communities '{...}'"),
+                "capabilities": ["dijkstra/astar shortest paths",
+                                 "edmonds-karp max flow + min cut",
+                                 "label-propagation communities",
+                                 "topsort / mst / hungarian assignment"],
+                "note": "read-only computations over caller-supplied graphs"}
+    if domain == "graph_algorithms":
+        return {"verdict": "GRAPH_GUIDANCE",
+                "how": ("adjacency/capacity JSON: genius graphs dijkstra "
+                        "GRAPH_JSON --source a --target b | "
+                        "genius graphs maxflow CAPACITY_JSON --source s --target t | "
+                        "genius graphs communities ADJACENCY_JSON"),
+                "capabilities": ["dijkstra/astar shortest paths",
+                                 "edmonds-karp max flow + min cut",
+                                 "label-propagation communities",
+                                 "topsort / mst / hungarian assignment"],
+                "note": "read-only computations over caller-supplied graphs"}
     if domain == "system_scan":
         return {"verdict": "SCAN_GUIDANCE",
                 "how": "point me at a directory: genius duplicates DIR / "
@@ -578,5 +620,6 @@ def _domain_hint(domain: str) -> str:
         "logic": "try: do 'is (p and q) -> (p or r) a tautology'",
         "color_palette": "try: do 'palette complementary of #3b7dd8'",
         "plan_goal": "try: do 'how do i learn rust' or 'steps to fix the flaky test'",
+        "graph_algorithms": "try: genius graphs dijkstra '{\"a\":{\"b\":4}}' --source a",
     }
     return hints.get(domain, f"see `genius {domain.replace('_', '-')} --help`")

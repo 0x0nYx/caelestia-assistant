@@ -44,6 +44,12 @@ hashlib
 # fingerprints for duplicate detection — pure checksum, no file writing).
 heapq
 zlib
+# bz2 (phase 2.2, data.py ncd): the second compressor for the normalized
+# compression distance — same class as zlib above (pure stdlib
+# compression, no execution, no network, no file writes); explicitly part
+# of the NCD spec (Li et al. 2004 recommends two compressors for a
+# second opinion).
+bz2
 # io / contextlib: brain tests capture stdout (StringIO, redirect_stdout).
 io
 contextlib

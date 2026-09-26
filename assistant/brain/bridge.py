@@ -72,6 +72,10 @@ OPS = {
     "genius_palette": lambda q, s, l: _genius_safe(
         q, "creative.palette", q["hex"], harmony=q.get("harmony", "analogous"),
         n=int(q.get("n", 5))),
+    "genius_graphs": lambda q, s, l: _genius_graphs(
+        method=str(q.get("method", "dijkstra")), graph=q.get("graph"),
+        source=q.get("source"), target=q.get("target"), nodes=q.get("nodes"),
+        edges=q.get("edges"), cost=q.get("cost")),
     "genius_plan": lambda q, s, l: _genius_safe(q, "tasks.decompose", q["goal"]),
     "genius_sentiment": lambda q, s, l: _genius_safe(q, "language.sentiment", q["text"]),
     "genius_summarize": lambda q, s, l: _genius_safe(
@@ -198,6 +202,32 @@ def _genius_safe(q, dotted, *args, **kwargs):
         return fn(*args, **kwargs)
     except (ValueError, KeyError, TypeError) as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _genius_graphs(method: str, graph, source, target, nodes, edges,
+                   cost):
+    """Sidebar graphs op (exponential-build 5.1): classical graph
+    algorithms over JSON-serialisable inputs. A* is deliberately NOT
+    exposed here — its heuristic is a function, not data, and the
+    bridge cannot receive code (the CLI keeps A*). Args are pinned in
+    the QML parity test."""
+    from ..genius import graphs
+    if method == "dijkstra":
+        if not graph or source is None:
+            raise ValueError("dijkstra needs a graph object and a source")
+        return graphs.dijkstra(dict(graph), str(source), target=target)
+    if method == "mst":
+        if not nodes or not edges:
+            raise ValueError("mst needs nodes (list) and edges ([u, v, w])")
+        return graphs.min_spanning_tree(
+            [str(n) for n in nodes],
+            [(str(a), str(b), float(w)) for a, b, w in edges])
+    if method == "assign":
+        if not cost:
+            raise ValueError("assign needs a cost matrix (rows x columns)")
+        return graphs.hungarian([[float(w) for w in row] for row in cost])
+    return {"error": f"unknown graphs method {method!r} "
+                     "(dijkstra|mst|assign)"}
 
 
 def _genius_do(q, state_path):

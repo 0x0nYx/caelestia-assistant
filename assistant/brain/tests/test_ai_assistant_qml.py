@@ -105,6 +105,18 @@ GENIUS_TOOLS = (
      " split_complementary), n (number, optional — palette size, default 5)",
      {"hex": "#3b7dd8", "harmony": "triadic"},
      ("hex",), ("harmony", "n")),
+    ("caelestia_genius_graphs",
+     "Runs classical graph algorithms on-device (Dijkstra shortest paths,"
+     " Kruskal minimum spanning tree, Hungarian assignment) — exact and"
+     " deterministic, no model.",
+     "method (string, optional — dijkstra (default), mst, assign),"
+     " graph (object, for dijkstra — {node: {neighbor: weight}}),"
+     " source (string, for dijkstra), target (string, optional —"
+     " dijkstra), nodes (array of strings, for mst), edges (array of"
+     " [u, v, weight], for mst), cost (array of number rows, for assign)",
+     {"method": "dijkstra", "graph": {"a": {"b": 2.0}}, "source": "a"},
+     (), ("method", "graph", "source", "target", "nodes", "edges",
+          "cost")),
 )
 
 OP_OF = {
@@ -113,6 +125,7 @@ OP_OF = {
     "caelestia_genius_logic": "genius_logic",
     "caelestia_genius_decide": "genius_decide",
     "caelestia_genius_palette": "genius_palette",
+    "caelestia_genius_graphs": "genius_graphs",
 }
 
 # q["key"]  /  q.get("key"  — as regex, quotes built from DQ

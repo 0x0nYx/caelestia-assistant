@@ -1031,6 +1031,17 @@ says so. Read-only walk; the only writes are the index files the
 caller named plus removed spool files; no subprocess, no network;
 lookup is an honest sorted-file scan built for low RAM, not latency.
 
+**Phase 5 — genius-as-sidebar-tool (2026-09-27)**
+
+**5.1 graphs.** `caelestia_genius_graphs` joins the sidebar registry
+(the exact math/stats/logic/decide/palette shape): one bridge op
+(`genius_graphs`) dispatching Dijkstra shortest paths, Kruskal MST and
+Hungarian assignment over JSON-serialisable inputs, with per-method
+validation and honest errors (an unknown method lists what exists; a
+missing cost matrix is a refusal). A* is deliberately NOT exposed: its
+heuristic is a function, not data, and the bridge cannot receive code
+— the CLI keeps it. Read-only compute, nothing executes.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -59,8 +59,12 @@ class UndoLogStoreTests(unittest.TestCase):
         log = history.undo_log(self.target)
         self.assertEqual(len(log), 1)
         record = log[0]
-        # PII-strip rule: exactly these keys, nothing else.
-        self.assertEqual(set(record), {"tool", "magnitude", "direction"})
+        # PII-strip rule: exactly these keys, nothing else. ``quick`` is
+        # a relative fact computed from the ring at undo time (the
+        # undone apply was still the head), not a stored time.
+        self.assertEqual(set(record),
+                         {"tool", "magnitude", "direction", "quick"})
+        self.assertIs(record["quick"], True)  # undo() reverts the head
         self.assertEqual(record["tool"], "setBarScale")
         # old=None (key absent): the registry default (1.0) is the honest
         # baseline — |1.3 - 1.0|, direction up, not |1.3 - 0|.
@@ -75,7 +79,21 @@ class UndoLogStoreTests(unittest.TestCase):
         self.assertEqual(len(log), 1)
         self.assertEqual(log[0]["tool"], "setBlurEnabled")
         self.assertEqual(log[0]["direction"], 1)  # the apply turned blur ON
-        self.assertEqual(set(log[0]), {"tool", "magnitude", "direction"})
+        self.assertIs(log[0]["quick"], True)  # it was still the head
+        self.assertEqual(set(log[0]),
+                         {"tool", "magnitude", "direction", "quick"})
+
+    def test_by_id_undo_of_a_buried_entry_is_not_quick(self) -> None:
+        # Two applies, then revert the OLDER one ('restore yesterday's
+        # theme'): a deliberate selective restore, not an immediate
+        # reaction to the newest change — quick must be False.
+        self._apply("bar.scale", 1.2)
+        self._apply("bar.scale", 1.4)
+        old_id = history.entries(self.target)[-1]["id"]  # oldest survives
+        self.assertEqual(len(history.entries(self.target)), 2)
+        history.undo_by_id(self.target, old_id)
+        record = history.undo_log(self.target)[-1]
+        self.assertIs(record["quick"], False)
 
     def test_direction_and_magnitude_track_the_apply(self) -> None:
         self._apply("bar.scale", 1.0)          # first apply (from unset)
@@ -187,6 +205,69 @@ class FoldUndoNegativesTests(unittest.TestCase):
         calibrate.fold_undo_negatives(
             big, [{"tool": "setBarScale", "magnitude": 5.0, "direction": 1}])
         self.assertEqual(small["tool:setBarScale"], big["tool:setBarScale"])
+
+
+class QuickUndoWeightTests(unittest.TestCase):
+    """Exponential-build 1.2: an approve-then-quick-undo (reverted while
+    still the head of the bounded undo ring) is a STRONGER negative
+    signal than a plain reject — a weighted update in the same
+    Beta-Binomial model, with the weight pinned by arithmetic."""
+
+    def test_quick_undo_shifts_posterior_further_than_a_plain_reject(self):
+        # Approve-then-quick-undo: +1 alpha, then QUICK_UNDO_WEIGHT beta.
+        approve_then_undo = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "approved"}])
+        calibrate.fold_undo_negatives(approve_then_undo, [
+            {"tool": "setBarScale", "magnitude": 0.3, "direction": 1,
+             "quick": True}])
+        # A plain reject: +1 beta, nothing else.
+        plain_reject = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "rejected"}])
+        self.assertLess(approve_then_undo["settings"]["mean"],
+                        plain_reject["settings"]["mean"])
+        # The exact hand-computed posteriors: 2/7 vs 1/3.
+        self.assertEqual(approve_then_undo["settings"]["mean"],
+                         round(2.0 / 7.0, 3))
+        self.assertEqual(plain_reject["settings"]["mean"], 0.333)
+        # The per-tool posterior carries the same weighted lesson.
+        self.assertEqual(approve_then_undo["tool:setBarScale"]["mean"],
+                         round(1.0 / (1.0 + 1.0 + calibrate.QUICK_UNDO_WEIGHT), 3))
+
+    def test_quick_weight_is_the_smallest_integer_that_shifts_further(self):
+        # w=3 exactly TIES the plain reject (2/(3+3) == 1/3) — the pin
+        # demands strictly further, so the constant must be 4.
+        self.assertEqual(calibrate.QUICK_UNDO_WEIGHT, 4.0)
+        tie = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "approved"}])
+        calibrate.fold_undo_negatives(tie, [
+            {"tool": "setBarScale", "magnitude": 0.3, "direction": 1,
+             "quick": True}], quick_weight=3.0)
+        self.assertEqual(tie["settings"]["mean"], 0.333)
+
+    def test_slow_undo_keeps_the_plain_weight(self):
+        # A selective restore of an old entry (quick=False) stays at one
+        # negative observation: it cancels the approval it reverts
+        # (2/4 = 0.5) but does not overshoot a plain reject (0.333) —
+        # the previous conservative behavior, kept.
+        approve_then_slow_undo = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "approved"}])
+        calibrate.fold_undo_negatives(approve_then_slow_undo, [
+            {"tool": "setBarScale", "magnitude": 0.3, "direction": 1,
+             "quick": False}])
+        plain_reject = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "rejected"}])
+        self.assertEqual(approve_then_slow_undo["settings"]["mean"], 0.5)
+        self.assertGreater(approve_then_slow_undo["settings"]["mean"],
+                           plain_reject["settings"]["mean"])
+
+    def test_records_without_the_field_stay_plain(self):
+        # Older logs (pre-quick) fold exactly as before: one negative
+        # observation, never a guess about whether they were quick.
+        stats = calibrate.acceptance_rate(
+            [{"kind": "settings", "status": "approved"}])
+        calibrate.fold_undo_negatives(stats, [
+            {"tool": "setBarScale", "magnitude": 0.3, "direction": 1}])
+        self.assertEqual(stats["settings"]["mean"], 0.5)
 
 
 class BridgeWiringTests(unittest.TestCase):

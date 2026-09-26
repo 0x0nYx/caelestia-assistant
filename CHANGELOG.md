@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Undo-weighted calibration: settings undo records gain a PII-safe
+  `quick` flag (reverted while still the head of the bounded undo
+  ring); `fold_undo_negatives` weighs an approve-then-quick-undo at
+  4 beta units vs a plain reject's 1 — posterior 2/7 vs 1/3 — while
+  slow undos and old logs keep the plain weight.
 - Gap-cluster tool-template stubs: `cortex gaps --draft-stubs`
   drafts a reviewable markdown stub (name, cue words, TODO body) for
   each dense, ledger-unaddressed gap cluster — never registered, never

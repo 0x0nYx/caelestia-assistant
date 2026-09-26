@@ -38,13 +38,19 @@ MAX_ENTRIES = 12  # >= the required 10; oldest evicted first
 
 # A3 — the PII-stripped negative-example store. Every UNDO (the user
 # rejecting an applied change by reverting it) appends one record per
-# undone op: {tool, magnitude, direction} and NOTHING else — no timestamp,
-# no label, no old/new values, no raw text (the PII-strip rule). The store
-# lives INSIDE the existing history file (same _save atomic write path,
-# same sibling path — no new write surface) and survives the 12-entry
-# ring's evictions; it is itself bounded (FIFO at UNDO_LOG_MAX) so the
-# config directory cannot grow without limit — the same discipline
-# DESIGN.md applies to the ring.
+# undone op: {tool, magnitude, direction, quick} and NOTHING else — no
+# timestamp, no label, no old/new values, no raw text (the PII-strip
+# rule). ``quick`` is computed AT UNDO TIME from the ring itself: the
+# undone apply was still the head of the bounded history when it was
+# reverted, i.e. an immediate revert with no later apply separating it
+# from the top — a relative fact about the interaction, not a time, so
+# it stays inside the strip rule while letting calibration weight
+# approve-then-immediately-revert apart from a selective old restore.
+# The store lives INSIDE the existing history file (same _save atomic
+# write path, same sibling path — no new write surface) and survives
+# the 12-entry ring's evictions; it is itself bounded (FIFO at
+# UNDO_LOG_MAX) so the config directory cannot grow without limit — the
+# same discipline DESIGN.md applies to the ring.
 UNDO_LOG_MAX = 500
 UNDO_LOG_KEY = "undo_log"
 
@@ -126,21 +132,28 @@ def undo_log(target: FileTarget) -> List[Dict[str, Any]]:
     """The PII-stripped negative-example store (a copy, oldest first).
 
     Records are {"tool": registry tool name, "magnitude": float,
-    "direction": -1|0|+1} — nothing else, by construction (see
-    _negative_records). Read-only; the brain layer folds these into
-    Beta-Binomial calibration as explicit negative signal."""
+    "direction": -1|0|+1, "quick": bool} — nothing else, by construction
+    (see _negative_records). ``quick`` marks an immediate revert: the
+    undone apply was still the head of the bounded ring, so nothing was
+    applied between it and the undo. Read-only; the brain layer folds
+    these into Beta-Binomial calibration as explicit negative signal,
+    weighting a quick revert stronger than a plain reject."""
     return [dict(rec) for rec in _load(target).get(UNDO_LOG_KEY, [])]
 
 
-def _negative_records(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _negative_records(entry: Dict[str, Any],
+                      quick: bool = False) -> List[Dict[str, Any]]:
     """A3: PII-strip one history entry into negative-example records.
 
     One record per undone op whose path resolves to a registry tool:
     the TOOL (registry id), the MAGNITUDE of the applied change
-    (|new - old| for numbers; 1.0 for bools), and its DIRECTION (sign of
-    new - old; +1 = turned on for bools). No timestamps, no labels, no
-    values, no raw text — the record cannot identify a person, a file,
-    or a time, which is what makes keeping it forever acceptable.
+    (|new - old| for numbers; 1.0 for bools), its DIRECTION (sign of
+    new - old; +1 = turned on for bools), and QUICK (the undone apply
+    was still the head of the bounded ring at undo time — an immediate
+    revert, no later apply in between; computed by the caller from the
+    ring, never stored as a time). No timestamps, no labels, no values,
+    no raw text — the record cannot identify a person, a file, or a
+    time, which is what makes keeping it forever acceptable.
     Pure: operates on the passed entry only.
     """
     records: List[Dict[str, Any]] = []
@@ -151,7 +164,8 @@ def _negative_records(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
         old, new = op.get("old"), op.get("new")
         if spec.kind == "bool":
             records.append({"tool": spec.name, "magnitude": 1.0,
-                            "direction": 1 if new is True else -1})
+                            "direction": 1 if new is True else -1,
+                            "quick": bool(quick)})
         elif isinstance(new, (int, float)) and not isinstance(new, bool):
             # old=None means the key was ABSENT before the apply: the
             # registry default is the honest baseline (a scale of 1.3
@@ -162,15 +176,16 @@ def _negative_records(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
                 delta = float(new) - float(baseline)
                 records.append({"tool": spec.name,
                                 "magnitude": abs(delta),
-                                "direction": (delta > 0) - (delta < 0)})
+                                "direction": (delta > 0) - (delta < 0),
+                                "quick": bool(quick)})
             else:
                 records.append({"tool": spec.name, "magnitude": 0.0,
-                                "direction": 0})
+                                "direction": 0, "quick": bool(quick)})
         else:
             # enum/string values carry choice information, not a magnitude —
             # only the fact of the undo is retained, direction 0.
             records.append({"tool": spec.name, "magnitude": 0.0,
-                            "direction": 0})
+                            "direction": 0, "quick": bool(quick)})
     return records
 
 
@@ -225,7 +240,7 @@ def undo(target: FileTarget, steps: int = 1) -> Dict[str, Any]:
         plan, skipped = _reverse_plan(entry)
         combined.extend(plan["entries"])
         labels.append(str(entry.get("label") or f"#{entry.get('id')}"))
-        negative.extend(_negative_records(entry))  # A3: keep the PII-stripped trail
+        negative.extend(_negative_records(entry, quick=True))  # A3: keep the PII-stripped trail
         data["entries"].pop(0)
     if negative:
         data.setdefault(UNDO_LOG_KEY, []).extend(negative)
@@ -260,7 +275,9 @@ def undo_by_id(target: FileTarget, entry_id: int) -> Dict[str, Any]:
     entry = data["entries"][index]
     plan, skipped = _reverse_plan(entry)
     data["entries"].pop(index)
-    negative = _negative_records(entry)  # A3: keep the PII-stripped trail
+    # quick only for an immediate revert: the entry was still the head of
+    # the bounded ring, so no later apply separates it from the undo.
+    negative = _negative_records(entry, quick=(index == 0))  # A3: keep the PII-stripped trail
     if negative:
         data.setdefault(UNDO_LOG_KEY, []).extend(negative)
     if not plan["entries"]:

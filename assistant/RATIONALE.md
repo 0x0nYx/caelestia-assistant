@@ -773,6 +773,26 @@ the project says everywhere else: the requests keep falling through
 honestly until a human writes the named classical algorithm behind the
 template.
 
+**1.2 undo-weighted calibration.** The settings undo log (the A3
+PII-stripped negative store) gains one boolean per record — `quick` —
+computed AT UNDO TIME from the bounded 12-entry ring itself: the undone
+apply was still the ring's head, i.e. an immediate revert with no later
+apply in between. No timestamp, label, value or text is stored, so the
+strip rule's promise ("cannot identify a person, a file, or a time")
+still holds — a relative fact about the interaction, not a clock
+reading. `calibrate.fold_undo_negatives` is the same Beta-Binomial
+update it always was; a quick record simply contributes
+`QUICK_UNDO_WEIGHT = 4.0` beta units instead of 1.0, and 4.0 is the
+smallest integer weight whose arithmetic satisfies the requirement the
+operating prompt pins: with the Beta(1,1) prior, approve-then-quick-
+undo lands at mean 2/7, strictly BELOW a plain reject's 1/3 (w = 3
+exactly ties; the boundary is pinned by test). A slow undo keeps the
+plain weight — it cancels the approval it reverts (mean 2/4 = 0.5) and
+no more, so the old conservative behavior is unchanged; pre-quick logs
+fold exactly as before. Both two existing record-shape pins were
+updated (not deleted) to pin the new shape, the same discipline the
+previous session used when behavior explicitly changed.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -60,3 +60,17 @@ AGPLv3-covered file from this repository.** Concretely:
 
 This document intentionally does NOT attempt to resolve the question,
 contact upstream on the repo's behalf, or relicense anything.
+
+---
+
+## Dated note — 2026-09-27 (exponential-build-2 run)
+
+Still unresolved. Still blocking any upstream PR from this repository.
+The second exponential-build run (phases 1–5, branch
+`agent/exponential-build-2`) did not attempt to resolve this question,
+did not contact upstream, and did not relicense anything: the rule
+above ("no pull request to upstream may reference, import, or include
+any AGPLv3-covered file from this repository") was in force for every
+commit of that run and remains in force. The new code is AGPLv3 like
+the rest of the repository, and every upstream-surface candidate it
+adds stays gated behind this document's resolution.

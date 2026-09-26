@@ -673,3 +673,39 @@ final WORKLOG summary entry lists every sub-item outcome.
   failing probes as no-ops, over_ceiling flag, conservative-default
   pins, constructor rejection of out-of-range values, and an
   eligible()-semantics regression pin.
+
+### Phase 2.2 — structured slot tagger — SHIPPED
+
+- Grep-first result: settings/slots.py is the compositional RECOVERY
+  grammar (frozen-grammar words like "thinner" deliberately NOT
+  re-owned); cortex/lexicon.py:char_ngrams and vectorize.tokenize are
+  the existing feature layer; cortex/conformal.py is the gate. No
+  learned slot layer existed — genuinely new, layered ON TOP.
+- New `assistant/cortex/slot_tagger.py`: an averaged structured
+  perceptron (Collins 2002 EMNLP; 2-best Viterbi per Forney 1973 for
+  the margin) over BIO slot tags {CUE, GENERIC, TARGET}. Supervision
+  comes ONLY from local approve/reject history in cortex/learn.py's
+  example shape: APPROVED rows' gold sequences are read off the
+  EXISTING grammar's own matched raws (slots.extract + an optional
+  caller noun matcher for TARGET); REJECTED/undecided rows supervise
+  NOTHING — a refused request is not evidence of slot structure.
+  No external corpus anywhere.
+- Determinism: fixed row order, averaged weights, early stop on a
+  zero-mistake epoch (separable by construction — the labels ARE the
+  grammar's). Confidence = fixed-scale logistic of the 2-best Viterbi
+  margin; never claims certainty.
+- CONFORMAL GATE (the safety property): tag_gated() answers with the
+  tagger only when a calibrator WITH data covers its confidence;
+  untrained tagger / uncovered confidence / NO calibration data all
+  fall back to the existing grammar path (slots.extract's own output,
+  verbatim) with the reason attached.
+- Overlong sequences (>64 tokens), misaligned gold, unknown tags,
+  zero-length: rejected, never truncated or guessed. Persistence is a
+  plain dict (weights+totals+steps) for the caller's learned-state
+  JSON; the module writes nothing.
+- Tests: `assistant/cortex/tests/test_slot_tagger.py` — 14 cases:
+  approved-only supervision, grammar-derived gold spans, determinism,
+  generalization (seen cue "trim" -> unseen target), char-ngram
+  feature wiring, bounded confidence, exact persistence round-trip,
+  rejection paths, and all three fallback arms of the gate plus the
+  covered path.

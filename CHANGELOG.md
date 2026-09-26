@@ -21,6 +21,12 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Structured slot tagger (`cortex/slot_tagger.py`): an averaged
+  structured perceptron (Collins 2002) layered ON TOP of the
+  compositional slot grammar, trained only from local approved history
+  through the grammar's own labels, gated by the conformal calibrator —
+  low confidence or no calibration data falls back to the existing
+  grammar/char-ngram path with the reason attached.
 - Closed-loop resource throttle (brain/dreamtime.py): a PI cadence
   controller (anti-windup bounded, actuator-limited) reads the
   telemetry layer's read-only /proc+/sys snapshots during batch runs

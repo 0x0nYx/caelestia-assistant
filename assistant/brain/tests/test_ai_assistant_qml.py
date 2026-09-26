@@ -135,6 +135,16 @@ GENIUS_TOOLS = (
      " recommendations to return, default 6)",
      {"profile": "battery-saver", "k": 3},
      (), ("profile", "k")),
+    ("caelestia_genius_fsbrain_summary",
+     "Reads the filesystem second-brain staleness REPORT for a folder"
+     " on-device (frecency-ranked stale files, read-only). This is the"
+     " report only \u2014 it never moves, renames or deletes anything"
+     " (the tidy mover is a separate, confirmed tool).",
+     "path (string, required \u2014 the directory to summarize), top"
+     " (number, optional \u2014 rows kept, default 10), half_life_days"
+     " (number, optional \u2014 frecency half-life, default 30)",
+     {"path": "~/documents", "top": 5},
+     ("path",), ("top", "half_life_days")),
 )
 
 OP_OF = {
@@ -146,6 +156,7 @@ OP_OF = {
     "caelestia_genius_graphs": "genius_graphs",
     "caelestia_genius_units": "genius_units",
     "caelestia_genius_optimize": "optimize_recommend",
+    "caelestia_genius_fsbrain_summary": "genius_fsbrain_summary",
 }
 
 # q["key"]  /  q.get("key"  — as regex, quotes built from DQ

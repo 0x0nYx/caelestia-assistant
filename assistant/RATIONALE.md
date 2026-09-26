@@ -1058,6 +1058,15 @@ and changes nothing; apply stays a separate, confirmed action through
 the planner/applier gates. The op's lambda now reads its parameters
 inline so the parity suite's introspection guard covers it too.
 
+**5.4 fsbrain-summary.** `caelestia_genius_fsbrain_summary` (bridge
+op `genius_fsbrain_summary` -> `genius/fsbrain.py::staleness_report`,
+the existing frecency analysis): the read-only staleness/dup REPORT
+only — the entry's own description and the bridge allow-list both say
+the tidy MOVER is never reachable from the sidebar. Params pinned by
+the parity suite (path required; top and half_life_days optional); the
+op joins the read-only-genius-ops allow-list; every fsbrain analysis
+was already bounded-walk, read-only.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

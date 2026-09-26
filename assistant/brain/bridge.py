@@ -78,6 +78,10 @@ OPS = {
         edges=q.get("edges"), cost=q.get("cost")),
     "genius_units": lambda q, s, l: _genius_safe(q, "units.evaluate",
                                                  q["text"]),
+    "genius_fsbrain_summary": lambda q, s, l: _genius_safe(
+        q, "fsbrain.staleness_report", str(q["path"]),
+        top=int(q.get("top", 10)),
+        half_life_days=float(q.get("half_life_days", 30))),
     "genius_plan": lambda q, s, l: _genius_safe(q, "tasks.decompose", q["goal"]),
     "genius_sentiment": lambda q, s, l: _genius_safe(q, "language.sentiment", q["text"]),
     "genius_summarize": lambda q, s, l: _genius_safe(
@@ -186,7 +190,7 @@ def _genius_safe(q, dotted, *args, **kwargs):
     run — the bridge cannot be pointed at arbitrary code.
     """
     from ..genius import (creative, decision, language, logic, mathengine,  # noqa: F401
-                          stats, tasks, units)
+                          stats, tasks, units, fsbrain)
     allowed = {
         "mathengine.expression_info": mathengine.expression_info,
         "stats.describe": stats.describe,
@@ -197,6 +201,7 @@ def _genius_safe(q, dotted, *args, **kwargs):
         "language.sentiment": language.sentiment,
         "language.summarize_focused": language.summarize_focused,
         "units.evaluate": units.evaluate,
+        "fsbrain.staleness_report": fsbrain.staleness_report,
     }
     fn = allowed.get(dotted)
     if fn is None:

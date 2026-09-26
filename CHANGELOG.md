@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **`assistant/devflow/` — the developer-workflow domain (§7, fully
+  partitioned).** Commit-message skeletons and PR-description skeletons
+  from caller-supplied `git diff --numstat` text (deterministic
+  keyword-to-conventional-commit-type classification, real line deltas,
+  explicit human-fill placeholders — templated, never generative), and
+  TODO/FIXME/XXX/HACK/BUG triage over a source tree reusing the scan
+  layer's Aho-Corasick automaton. This package has NO relationship to
+  issue #120 or the KDE shell and is never part of any upstream-bound
+  PR — stated in its own README, and enforced structurally: nothing in
+  `assistant/settings/`, `assistant/cortex/` or `shell/` references it
+  (a unittest pins that), it is not wired into the hub, and it imports
+  nothing from the shell-facing layers. 18 tests.
 - **Unified local/cloud dispatcher (§5: one decision point, gap-mining).**
   The local-vs-cloud decision for the AI sidebar moved out of the QML and
   into `assistant/cortex/dispatch.py`: every user prompt is offered to the

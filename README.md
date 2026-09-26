@@ -139,6 +139,10 @@ caelestia-assist brain prefs                 # what it believes about you
 # Opt-in personal tools (NOT part of the #120 shell surface)
 python3 -m assistant.brain.personal --help
 
+# Developer-workflow drafting (NOT part of the #120 shell surface)
+python3 -m assistant.devflow commit < <(git diff --numstat)   # commit skeleton
+python3 -m assistant.devflow todo ~/my-checkout               # TODO/FIXME triage
+
 # Any task, no chat needed
 caelestia-assist do "solve x^2 - 2 = 0"
 caelestia-assist do "summarize this: $(cat notes/foo.md)"

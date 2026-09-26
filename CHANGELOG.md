@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- NCD file/folder resemblance: `genius fsbrain resemble FILE
+  --folders D1,D2,...` answers "which folder does this file most
+  resemble" via the existing NCD primitive (Li et al. 2004) — read-
+  only, bounded deterministic sampling, empty folders skipped and
+  named, truncation reported, full ranking returned.
 - Stdlib CSV expression domain: `genius data --csv ... --expr ...`
   evaluates named-column expressions (arithmetic, comparisons, Kleene
   and/or/not, stats.py aggregates) over a user-supplied CSV/TSV via an

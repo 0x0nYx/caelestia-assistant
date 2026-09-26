@@ -868,6 +868,21 @@ correlation from fewer than 3 aligned pairs. No I/O in the evaluator —
 the caller owns the table text — and the CLI path reads the user's
 file and prints; it writes nothing.
 
+**2.3 NCD file/folder resemblance.** `fsbrain` gains `ncd_resemble`
+(pure core) + `resemble_file` (read-only wrapper) + the `fsbrain
+resemble` CLI action: "which existing folder does this file most
+resemble", answered by the ONE existing NCD primitive
+(`genius/data.py::ncd`, Li et al. 2004 — spy-pinned reuse, no new
+compressor, no new distance formula). Read-only accounting: the pure
+core never touches the filesystem (the caller hands it bytes); the
+wrapper only reads (bounded deterministic head samples, sorted walk,
+unreadable files counted and named, never faked); folders without
+readable samples are skipped and NAMED rather than scored a fake 1.0;
+empty content is refused; compared files are head-truncated to a
+documented cap with the truncation reported; the whole ranking is
+returned (best + all distances), ties broken by folder name — the
+answer is a report, and nothing is moved, written, or executed.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

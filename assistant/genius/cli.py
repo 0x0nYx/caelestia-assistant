@@ -472,6 +472,14 @@ def cmd_fsbrain(args, out) -> int:
                     if Path(brain_state.DEFAULT_STATE).exists() else {}
                 classifier = fsbrain.load_filetype_classifier(state)
                 res = fsbrain.infer_filetype(args.path, classifier=classifier)
+        elif args.action == "resemble":
+            # exponential-build 2.3: NCD folder resemblance, read-only
+            folders = [f for f in (args.folders or "").split(",") if f]
+            if not folders:
+                raise ValueError("resemble needs --folders D1,D2,...")
+            res = fsbrain.resemble_file(args.path, folders,
+                                        method=args.method,
+                                        max_samples=args.max_samples)
         else:
             raise ValueError(f"unknown fsbrain action {args.action!r}")
     except (ValueError, OSError) as exc:
@@ -963,12 +971,21 @@ def build_parser() -> argparse.ArgumentParser:
     gr.add_argument("--costs", default="", help="';'-separated rows for assign")
 
     fb = sp("fsbrain", cmd_fsbrain,
-            help="filesystem second-brain: stale/dupes/graph/filetype")
-    fb.add_argument("action", choices=["stale", "dupes", "graph", "filetype"])
+            help="filesystem second-brain: stale/dupes/graph/filetype/resemble")
+    fb.add_argument("action", choices=["stale", "dupes", "graph", "filetype",
+                                       "resemble"])
     fb.add_argument("path", nargs="?", default=None,
-                    help="directory (stale/dupes) or file (filetype)")
+                    help="directory (stale/dupes) or file (filetype/resemble)")
     fb.add_argument("paths", nargs="*", default=None,
                     help="directories/notes for graph")
+    fb.add_argument("--folders", default=None,
+                    help="resemble: comma-separated candidate folders")
+    fb.add_argument("--method", default="nearest", choices=["nearest", "profile"],
+                    help="resemble: folder distance = best sample or whole "
+                         "concatenated profile")
+    fb.add_argument("--max-samples", type=int, default=8,
+                    help="resemble: readable files sampled per folder "
+                         "(default 8)")
     fb.add_argument("--top", type=int, default=15, help="rows kept (default 15)")
     fb.add_argument("--half-life", type=float,
                     default=_fsbrain_halflife_default(),

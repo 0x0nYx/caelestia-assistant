@@ -968,3 +968,124 @@ main; working tree clean; main untouched; not merged (left as the
 human's gate). The PAT used for pushing should be revoked now that
 the push is complete, as the operator stated.
 
+
+---
+
+## Session 3 — 2026-09-27 (exponential-build-2: the 21-sub-item backlog)
+
+Task ID: exponential-build-2 (phases 1–6)
+Agent: ANI engineering agent
+
+### Setup
+
+- Cloned `0x0nYx/caelestia-assistant` (main at `13f54e0` — Session 2's
+  `agent/exponential-build` had been MERGED via PR #1, so per the
+  operating prompt §2 a fresh branch `agent/exponential-build-2` was
+  cut from main). No pre-existing working copy in the sandbox.
+- Cloned `ladybug-me/caelestia-kde` (be4188f) read-only as the
+  gen_adapter ground truth; never modified, never pushed.
+
+### Baseline (before any change)
+
+- Full suite: **1433 tests, OK (skipped=12)**, ~58s.
+- `python3 -m assistant.hub selfcheck` → OK.
+- `python3 -m assistant.settings.gen_adapter --verify --repo-root
+  <caelestia checkout>` → OK, byte-identical.
+
+### Sub-item outcomes
+
+| Sub-item | Outcome | Commit |
+| --- | --- | --- |
+| 1.1 gap-cluster → tool-template stubs | SHIPPED (`cortex gaps --draft-stubs`; pure helpers in dispatch.py, CLI owns the file write; never registered/wired/clobbered; 12 tests) | 0e0d4e1 |
+| 1.2 undo-weighted calibration | SHIPPED (PII-safe `quick` flag computed from the ring head at undo time; `QUICK_UNDO_WEIGHT=4.0` pins 2/7 < 1/3; slow undos keep weight 1; 2 shape pins updated, 5 tests added) | 153b84a |
+| 1.3 BOCPD drift on hit-rate | SHIPPED (`bocpd_drift_check` reuses genius.data.bocpd — spy-pinned; report-not-action; 8 tests) | eee8517 |
+| 1.4 pairwise re-ranker | SHIPPED (`cortex/reranker.py` over RouteResult.features; approved-only supervision; conformal gate; library-first like the tagger; 16 tests) | d20bb0b |
+| 2.1 inductive synthesis | SHIPPED (`genius/synth.py` + `genius synth` CLI; exact-verification abstain discipline; inert SUGGESTED_NOT_EXECUTED mv lines; 17 tests) | 58c0fc6 |
+| 2.2 CSV expression domain | SHIPPED (`genius/csvquery.py` + `data --expr`; ast whitelist, eval never called; Kleene None propagation; 20 tests) | 7537506 |
+| 2.3 NCD file/folder resemble | SHIPPED (`fsbrain resemble` CLI; reuses data.ncd — spy-pinned; empty folders skipped and NAMED; 14 tests) | 18f9745 |
+| 2.4 resolution syllogism checker | SHIPPED (`logic.syllogism_check` + meta routing; Robinson 1965; regular-plural canonicalization documented, irregulars honestly distinct; 18 tests) | b5e564d |
+| 2.5 commit-risk score | SHIPPED (`devflow/risk.py` + `devflow risk`; McCabe 1976 via ast × recency-decayed churn; reuses diffstat parser; 11 tests) | f9cef0a |
+| 2.6 robust Mahalanobis baseline | SHIPPED (`diagnostics/robust_baseline.py` + `archetypes.telemetry_drift`; median/MAD per Leys 2013; chi2 tail via stats.py; 14 tests) | 38111e0 |
+| 3.1 hierarchical partial pooling | SHIPPED (`brain/pooling.py`; method-of-moments mu0/k0/tau², k0=50/7 hand-pinned; no-evidence pools stay flat honestly; 10 tests) | ef84c5e |
+| 3.2 off-policy evaluation gate | SHIPPED (`brain/ope.py` + `brain ope SWITCH`; IPS replay with support/coverage; ledger byte-identity pinned; 11 tests) | a05d5c4 |
+| 3.3 regret-vs-best-fixed audit | SHIPPED (`brain/regret.py`; surfaced in `cortex report` + `brain calibration`; estimate caveat travels; 10 tests) | 9476289 |
+| 3.4 attention-aware timing | SHIPPED (`brain/timing.py`; Thompson over buckets seeded from the 3.1 pooled prior; rhythm+latency multipliers; Holt deferral advice; 12 tests) | 10e56b2 |
+| 4.1 disk-backed search index | SHIPPED (`retrieval/diskindex.py` + `disk-index`/`disk-search` CLI; external merge sort with budget-checked-before-append runs; measured VmHWM footprint; 11 tests) | b3ddc58 |
+| 5.1 graphs sidebar tool | SHIPPED (`caelestia_genius_graphs` + bridge op; A* excluded — heuristic is code, not data) | 58fc36a |
+| 5.1 follow-up | SHIPPED (genius_graphs joined the read-only op allow-list — red-state fix for a suite failure that was committed before it reproduced; documented below) | 3593e31 |
+| 5.2 units sidebar tool | SHIPPED (`caelestia_genius_units` → units.evaluate) | 26e4927 |
+| 5.3 optimize sidebar tool | SHIPPED (`caelestia_genius_optimize` → existing optimize_recommend op, preview-only) | 3c36126 |
+| 5.4 fsbrain-summary sidebar tool | SHIPPED (`caelestia_genius_fsbrain_summary` → staleness REPORT only, mover unreachable) | cdd94e4 |
+| 6.1 upstream-surface triage | SHIPPED (dated addendum to docs/PR_SURFACE_PLAN.md) | 9b38ec2 |
+| 6.2 licensing status note | SHIPPED (dated addendum to docs/LICENSING_OPEN_QUESTION.md — still open, still blocking) | 9b38ec2 |
+| final DoD + invariants | SHIPPED (this entry) | (this commit) |
+
+**Two process incidents, both fixed forward (no history rewrite):**
+
+1. After the 1.2 commit (153b84a) one full-suite run reported a failure
+   that never reproduced — three consecutive green runs followed. The
+   commit had been pushed by a chained command that did not stop on the
+   suite's exit code; the chaining bug was fixed and every later commit
+   was gated on an explicit green `SUITE_EXIT=0`. Same shape as
+   Session 2's documented 1.2 flake.
+2. After the 5.1 commit (58fc36a) the suite caught
+   `genius_graphs` missing from the integration suite's read-only
+   genius-op allow-list — a real omission, fixed forward in 3593e31 and
+   the suite gated on green before the commit thereafter. The guard
+   worked exactly as designed; the ordering of commit-vs-suite was the
+   failure.
+
+### Final Definition of Done (against the final commit)
+
+- `python3 -m unittest discover -s . -p "test_*.py"` → **1622 tests OK
+  (skipped=12)**; baseline was 1433, delta +189 across 10 new test
+  files + 3 updated.
+- `python3 -m assistant.hub selfcheck` → OK.
+- `python3 -m assistant.settings.gen_adapter --verify --repo-root
+  <caelestia checkout>` → OK, tools.json byte-identical.
+- `bash tests/test_assistant.sh` → passed: 10 failed: 0.
+
+### Invariant check (the eight, each verified against main at HEAD)
+
+1. Stdlib-only / import allow-list: HELD — ALLOWED_IMPORTS.txt
+   byte-identical to main (zero diff); no new stdlib module needed.
+2. No new executor imports: HELD — no import of
+   subprocess/socket/ctypes/os.exec* in any changed file (grep-verified;
+   the only os.system strings are the integration test that proves the
+   bridge refuses them).
+3. No training/fine-tuning; named classical algorithms with citations:
+   HELD — Adams & MacKay 2007 (BOCPD reuse), Rosenblatt 1958 /
+   Herbrich et al. 2000 / Collins 2002 (re-ranker), Gulwani 2011
+   (synthesis), Robinson 1965 / Horn 1951 (resolution), McCabe 1976
+   (complexity), Mahalanobis 1936 / Leys et al. 2013 (robust baseline),
+   Efron & Morris 1975 (pooling), Horvitz-Thompson / Dudik-Langford-Li
+   2011 (OPE), Li et al. 2004 (NCD reuse) — all in module docstrings.
+4. Write paths enumerated: HELD — new writes are (a) the explicitly
+   flagged `--draft-stubs` markdown files, (b) the disk-index files the
+   caller names (plus removed spool files), (c) learned-state JSON
+   round-trips of new models — no applier/ledger/mover path was added
+   or bypassed; nothing auto-executes; every suggested command is an
+   inert SUGGESTED_NOT_EXECUTED string.
+5. No new network surface: HELD — zero new http/urllib/socket usage;
+   the only loopback client remains generative/client.py, untouched.
+6. Honest verdicts everywhere: HELD — synth abstains when the DSL
+   cannot explain examples (ambiguity reported, never hidden); csvquery
+   refuses out-of-range quantiles and never coerces missing cells;
+   ncd_resemble names skipped folders instead of scoring them 1.0;
+   pooling admits flat when there is nothing to borrow; OPE refuses
+   zero/thin support instead of extrapolating; regret labels itself an
+   estimate; the disk-index report prints an unflattering process-level
+   number rather than asserting the ceiling held.
+7. Protected files read-only: HELD — LICENSE, README.md, the
+   CHANGELOG [0.1.0] section and ISS-120.md: zero diff vs main; only
+   appends to CHANGELOG [Unreleased], WORKLOG (this section),
+   RATIONALE (§19), and the two dated governance-doc addenda.
+8. Scope discipline: HELD — all work on branch
+   `agent/exponential-build-2` of the fork; upstream clone untouched
+   (clean tree, unchanged remote, never pushed); no PR opened anywhere;
+   the licensing question remains explicitly open.
+
+**Branch state:** 20 commits on `agent/exponential-build-2` ahead of
+main; working tree clean; main untouched; not merged (left as the
+human's gate). The PAT used for pushing should be revoked now that the
+push is complete, as the operator stated.

@@ -181,3 +181,77 @@ Suite: 1162 green (baseline 1049); selfcheck + bash harness green at
 every step. Remaining this phase: 2.4 (self-learning), 2.5 (plan
 cache), 2.7 (dbus + what-if), then 2.6 last (registry adapter +
 lexicon-diff + manifest registration), then Phases 3-4.
+
+### 2.4 + citation re-verification (commits e11020b, 3535b8a)
+
+**2.4 SHIPPED (e11020b)** — LinUCBBandit (Li et al. 2010, disjoint
+model, exact UCB bound); brain/features.py shared signed feature
+hashing (Weinberger et al. 2009); Ebbinghaus half-life as per-user
+brain-state setting (cortex halflife, bounds 0.5-365); brain/ranking.py
+shared Elo + Bradley-Terry primitive generalized to any named items
+(synthetic 300-pair ground-truth recovery per the proposal's own
+verification plan); settings --prefer / --rank consumers; calibration
+surfaced ("routes scored like this were right ~N% of the time (k
+decisions)", >=5-observation gate). 27 tests -> 1189 green.
+
+**Registry re-verification SHIPPED (3535b8a)** — sandbox layout fix:
+ground-truth caelestia-kde clone exposed through locally-excluded
+symlinks (shell/plugin, shell/components, shell/modules/{bar,drawers,
+nexus}, shell/services/Colours.qml; git-ignored via .git/info/exclude,
+nothing committed). With the citation guards live: all 277 tools'
+C++ declarations verified against upstream HEAD (zero drift); the
+byte-identity regeneration test caught real drift — committed
+tools.json carried 353 dev-process reason strings vs the generator's
+clean output; regenerated and re-committed (generator stays the single
+source of truth); 60 cited shell paths resolve.
+
+### 2.5 + 2.7-what-if (this commit)
+
+**2.5 SHIPPED** — `cortex/plans.py` PlanCache: session-scoped PENDING
+plan, tool-name composition LATER-WINS (the compound layer's own
+rule), re-validated through the standard planner before any proposal,
+commit only on successful apply, refused applies stay pending, explicit
+discard ("never mind"/"start over"/"drop it"), bounded at 12 ops,
+serialized through the session dict the bridge already round-trips.
+Chat loop: compose on every PLAN turn (card shows the composed plan +
+"composed with your pending plan (N ops total)"); explicit
+"apply these changes" commits through the standard consent gate;
+pending summary line after every card.
+
+**2.7 what-if SHIPPED** — `settings/consequences.py`: five-edge cited
+interaction table (transparency->blur, blur-inert, bar-scale 0.6
+clamp, dodge-needs-persistent, padding floor), projection with
+bounded derived effects, AC-3 domain check + INDUCED-value conflict
+extension (user contradicts an edge's forced value -> cited conflict),
+reversibility statement. Citation guard: every edge's cited file:line
+re-verified against the checkout by test (claimed_content needle,
+whitespace-squashed). Surfaces: settings --what-if TEXT|preset, chat
+"what if [X]" turns (bare "what if" projects pending only), agent
+engine validate_plan node (consent cards show consequences).
+
+**Bugs found and fixed while building this**:
+1. consequences.project() called optimize.check_conflicts with the
+   wrong arity (single dict vs (ops, constraints)) — silently swallowed
+   by try/except, so the AC-3 view NEVER fired; now correct + the
+   induced-value extension per the proposal.
+2. max_derived parameter accepted but never enforced — bounded now.
+3. Step ops projected as raw deltas: "make the bar smaller" projected
+   setBarScale=-1, firing the 0.6-floor edge + a false UNSUPPORTED
+   conflict. All three projection sites (chat what-if, settings
+   --what-if, engine validate_plan) now run over the planner's
+   RESOLVED entries.
+4. Bare "what if" routed the placeholder "show my pending changes" ->
+   fuzzy match on "changed" -> setToastsChargingChanged composed into
+   the pending plan. Bare what-if now projects pending only.
+5. Latent chat-exit crash (PRE-EXISTING, verified by stash): near-
+   threshold phrases logged the live _now() datetime raw into
+   cortex_review; brain_state.save raised "Object of type datetime is
+   not JSON serializable" at session end. Fixed by coercion at the
+   log_review_candidate boundary; regression test pins clean exit.
+6. edge citation line drift: dodgeEnabled is BarWrapper.qml:27 in
+   current upstream (26 was contentWidth) — caught by the new
+   citation-guard test, corrected.
+
+54 new tests -> 1243 green; selfcheck + bash harness green.
+Remaining: 2.7-dbus (dbus_surface.py per proposal), then 2.6 (registry
+adapter + lexicon-diff + capability registration), then Phases 3-4.

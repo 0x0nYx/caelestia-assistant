@@ -414,6 +414,13 @@ def log_review_candidate(bucket: List[Dict[str, object]], text: str,
     """
     if verdict not in ("ABSTAIN", "AMBIGUOUS"):
         return bucket
+    # ``at`` is declared str, but two call sites (cli.py, dispatch.py)
+    # pass the live ``_now()`` datetime — coerce once, here, so the
+    # bucket never carries a non-JSON object into brain_state.save
+    # (the pre-existing chat-exit crash this pins: datetime is not
+    # JSON serializable).
+    if not isinstance(at, str):
+        at = at.isoformat() if hasattr(at, "isoformat") else str(at)
     top = candidates[0] if candidates else None
     entry: Dict[str, object] = {
         "text": text[:120],

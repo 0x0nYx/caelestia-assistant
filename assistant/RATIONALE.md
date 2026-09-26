@@ -536,6 +536,63 @@ human decisions; `--prefer` writes one comparison row to the assistant
 state (never shell.json); nothing new executes, imports, or reaches
 the network.
 
+## 15. The pending plan cache and the what-if consequence view (2.5/2.7)
+
+- **The plan cache** (`cortex/plans.py`, phase 2.5): one session-scoped
+  PENDING plan, composed by TOOL NAME with LATER WINS — the compound
+  layer's own rule, so "make the bar thinner", "and the dock smaller",
+  "actually spacing tighter" amass changes before any commit. The
+  composed list re-validates through the STANDARD planner before it is
+  ever proposed (the cache never bypasses validation); commit happens
+  only when an apply actually went through, and a REFUSED apply leaves
+  the ops pending — that is the point of iteration. Discard is explicit
+  ("never mind" / "start over" / "drop it"), never silent. The cache
+  is a pure module serialized through the session dict the bridge
+  already round-trips; bounded at 12 ops.
+- **The consequence view** (`settings/consequences.py`, phase 2.7 per
+  proposals/2026-09-26-c-whatif-consequences.md): a HAND-CURATED,
+  citation-backed table of five KNOWN cross-key interactions in the
+  shell's own code (transparency-off flips blur off; blur is inert
+  without transparency; bar scale clamps at 0.6 at render time; dodge
+  is inert without persistent windows; bar padding floors at
+  Tokens.padding.small). The projection walks that table over a
+  candidate op list and returns derived effects the user did NOT ask
+  for — each with its citation and confidence — plus the AC-3 view
+  (requested values against registry domains) and the induced-value
+  extension: an edge that forces a value the user contradicted
+  ("transparency off" + "blur on") is a reported conflict, cited to
+  the handler that wins.
+- **The honesty rule**: the consequence universe is EXACTLY the cited
+  edge table — bounded, auditable, growable by reviewed diffs, never a
+  general model. Every edge's cited file:line is re-verified against
+  the checkout by test (the registry's citation-guard pattern,
+  extended); a stale edge is a test failure, never a silent surprise.
+  An edge whose effect only ANNOTATES (INERT/CLAMP states that change
+  no shell.json value) carries no machine value — it cannot lie to the
+  conflict check.
+- **Surfaces**: `settings --what-if TEXT` (a request or a preset name)
+  renders the view read-only; the chat loop's "what if ..." turn
+  composes the request with the pending plan and projects it; the
+  agent engine's validate_plan node carries the same dict so
+  `--simulate` consent cards show consequences, not just actions.
+- **Step ops project as resolved values**: the projection runs over
+  the planner's RESOLVED entries — "make the bar smaller" projects
+  bar.scale 0.9, never the raw step delta of -1 (the bug this pins
+  fired the 0.6-floor edge on every relative request). A bare "what
+  if" projects the pending plan itself and never routes a placeholder
+  phrase (the router's fuzzy match once turned "show my pending
+  changes" into a toast toggle and polluted the pending plan).
+
+Safety accounting: the consequence view is a VIEW — it reads op lists
+and the edge table, writes nothing, and the parser/planner/applier
+spine is untouched; the plan cache composes ops but every composed
+plan still passes the standard consent gate (dry-run by default,
+backup + bounded undo on apply). A latent chat-exit crash
+(`log_review_candidate` stored the live `_now()` datetime raw and
+`brain_state.save` raised on JSON serialization) was found by this
+work and fixed by coercion at the boundary; a regression test pins
+the clean exit.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

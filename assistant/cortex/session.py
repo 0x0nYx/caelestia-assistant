@@ -92,6 +92,11 @@ class SessionState:
     pending_question: Optional[str] = None
     pending_candidates: List[str] = field(default_factory=list)
     pending_resolved_text: str = ""
+    # The session-scoped PENDING plan cache's serialized form (owned by
+    # cortex/plans.py PlanCache — the what-if iteration primitive). A raw
+    # passthrough slot: this class carries it across bridge round-trips
+    # without interpreting it.
+    pending_plan: Optional[Dict[str, object]] = None
 
     # -- bookkeeping ---------------------------------------------------------
 
@@ -110,6 +115,7 @@ class SessionState:
             "last_surfaces": self.last_surfaces,
             "pending_question": self.pending_question,
             "pending_candidates": self.pending_candidates,
+            "pending_plan": self.pending_plan,
         }
 
     @staticmethod
@@ -131,6 +137,8 @@ class SessionState:
             str(data["pending_question"]) if data.get("pending_question") else None
         )
         state.pending_candidates = [str(c) for c in data.get("pending_candidates", []) or []]
+        state.pending_plan = data.get("pending_plan") if isinstance(
+            data.get("pending_plan"), dict) else None
         return state
 
 

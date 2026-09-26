@@ -428,6 +428,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "assistant state, never to shell.json)",
     )
     arg_parser.add_argument(
+        "--what-if", metavar="TEXT", default=None,
+        help="read-only consequence view: plan the request (or a preset "
+             "name) as a DRY RUN, then project it through the cited "
+             "interaction table (derived effects, conflicts, "
+             "reversibility); never writes, never applies",
+    )
+    arg_parser.add_argument(
         "--rank", action="store_true",
         help="read-only: print the learned pairwise preference ladder for "
              "presets (Elo + Bradley-Terry, with comparison counts)",
@@ -572,6 +579,65 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 1
         print("\n".join(render_plan(plan, [], f"preset: {args.preset}",
                                    args.file, True, apply_result, None)))
+        return 0
+
+    if args.what_if is not None:
+        # Phase 2.7: the what-if consequence view — a DRY-RUN plan plus
+        # the projection through the cited interaction table. Read-only:
+        # the parser/planner/applier spine is untouched and this surface
+        # can never apply anything.
+        from . import consequences as consequences_mod
+        from . import parser as whatif_parser
+
+        request = args.what_if
+        try:
+            parse = whatif_parser.parse(request)
+            ops = parse.get("ops") or []
+        except Exception:
+            ops = []
+        if not ops:
+            # preset name? plan its bundle as the candidate list
+            from . import presets as presets_mod
+
+            try:
+                ops = presets_mod.preset_ops(request)
+            except Exception:
+                ops = []
+        if not ops:
+            print(f"error: what-if could not plan {request!r} (use a "
+                  "request or a preset name)", file=sys.stderr)
+            return 1
+        target = Path(args.file) if args.file else default_target()
+        current: Dict[str, Any] = {}
+        if target.exists():
+            try:
+                current, _notes = planner._read_current(target)
+            except Exception:
+                current = {}
+        # Resolve the ops through the standard planner ONCE: step and
+        # multiply ops become the absolute values they produce. The
+        # projection runs over the RESOLVED entries — projecting a raw
+        # step delta (-1) as an absolute value fires false edges.
+        resolved_ops: List[Dict[str, Any]] = []
+        try:
+            plan = planner.plan(ops, target)
+            resolved_ops = [{"tool": e.get("tool"), "value": e.get("new")}
+                            for e in plan.get("entries", [])
+                            if not e.get("error")]
+        except planner.PlannerError as exc:
+            plan = None
+            print(f"note: planner refused: {exc} (projection below is "
+                  "the honest view of the requested ops)")
+        projection = consequences_mod.project(
+            resolved_ops or ops, current=current)
+        print("\n".join(_header(False)))
+        print("")
+        print("\n".join(consequences_mod.render(projection)))
+        print("")
+        if plan is not None:
+            print("\n".join(render_plan(plan, [],
+                                         f"what-if: {request}", args.file,
+                                         False, None, None)))
         return 0
 
     if args.rank:

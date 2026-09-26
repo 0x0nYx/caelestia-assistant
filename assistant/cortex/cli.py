@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,7 +36,9 @@ from typing import Any, Dict, List, Optional
 
 from ..brain import state as brain_state
 from ..settings import applier as settings_applier
+from ..settings import consequences
 from ..settings import history as settings_history
+from ..settings import planner as settings_planner
 from ..settings.cli import default_target, render_plan
 from . import learn as cortex_learn
 from .delegate import run_delegate, runner_names
@@ -48,6 +51,7 @@ from .memory import (
     summarize as memory_summarize,
 )
 from .pipeline import episode_for, process as cortex_process
+from .plans import DISCARD_RE, PlanCache
 from .session import SessionState
 
 LEARN_KEY = "cortex_learn"
@@ -262,6 +266,7 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
     episodes = _load_memory(state)
     review_bucket = list(state.get("cortex_review", []))
     session = SessionState()
+    plan_cache = PlanCache.from_dict(session.pending_plan)
 
     print(f"cortex chat — natural-language shell.json assistant")
     print(f"target: {target}")
@@ -290,7 +295,129 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
             print(f"  restored: {bool(outcome.get('restored'))}")
             continue
 
+        # Phase 2.5: explicit discard drops the pending plan (the honest
+        # way out of an iteration, instead of refusing it forever).
+        if DISCARD_RE.match(text):
+            dropped = plan_cache.pending_count()
+            plan_cache.discard()
+            session.pending_plan = None
+            print(f"  discarded {dropped} pending change(s)")
+            continue
+
+        # Phase 2.5: an explicit APPLY of the accumulated pending plan —
+        # recognized BEFORE the session's yes-answer machinery can eat it
+        # ("apply" is also a yes-word there; here it is an instruction).
+        if (re.match(r"^\s*(?:apply|apply these|apply these changes|"
+                     r"apply them|apply it|go ahead|commit)\s*[.!]?\s*$",
+                     text, re.IGNORECASE)
+                and plan_cache.pending_count() > 0):
+            pending_ops = plan_cache.pending()
+            class _ApplyResult:  # minimal shape _apply_plan needs
+                plan = None
+            try:
+                apply_result = _ApplyResult()
+                apply_result.plan = settings_planner.plan(pending_ops,
+                                                          target)
+            except settings_planner.PlannerError as exc:
+                print(f"  error: composed plan refused: {exc}",
+                      file=sys.stderr)
+                continue
+            if _apply_plan(apply_result, target, "pending plan"):
+                plan_cache.commit()
+                session.pending_plan = None
+                print(f"  applied {len(pending_ops)} composed change(s) "
+                      "(backup written; 'undo the last change' reverts it)")
+            else:
+                session.pending_plan = plan_cache.to_dict()
+                pending_line = plan_cache.summary()
+                print(f"  {pending_line} — still pending (refused)")
+            continue
+
+        # Phase 2.7: what-if turns render the CONSEQUENCE view for the
+        # composed plan (pending + this request) and never gate an apply —
+        # iterate first, commit later.
+        if re.match(r"^\s*what\s+if\b", text, re.IGNORECASE):
+            whatif_text = re.sub(r"^\s*what\s+if\b", "", text,
+                                 flags=re.IGNORECASE).strip()
+            if whatif_text:
+                # "what if X" — plan X (read-only), compose it with the
+                # pending plan, and project the CONSEQUENCES.
+                whatif_result = cortex_process(
+                    whatif_text, session=session, learner=learner,
+                    file_path=target, now=_now())
+                new_ops = whatif_result.ops or []
+            else:
+                # A BARE "what if" projects the pending plan itself — it
+                # must NOT route a placeholder request (the router's
+                # fuzzy match on "show my pending changes" once resolved
+                # to a toast toggle and polluted the pending plan).
+                new_ops = []
+            ops = new_ops or plan_cache.pending()
+            if ops:
+                if new_ops:
+                    ops = plan_cache.compose(new_ops, whatif_text)
+                current: Dict[str, Any] = {}
+                if target.exists():
+                    try:
+                        current, _notes = settings_planner._read_current(
+                            target)
+                    except Exception:
+                        current = {}
+                # The composed RAW ops (later-wins per tool, mirroring
+                # the compound layer) re-validate through the standard
+                # planner; the PROJECTION then runs over the planner's
+                # RESOLVED entries — step/multiply ops become absolute
+                # values, never raw deltas (projecting a step delta of
+                # -1 as an absolute scale was a real bug this pins).
+                resolved_ops: List[Dict[str, Any]] = []
+                try:
+                    composed_plan = settings_planner.plan(ops, target)
+                    resolved_ops = [
+                        {"tool": e.get("tool"), "value": e.get("new")}
+                        for e in composed_plan.get("entries", [])
+                        if not e.get("error")]
+                except settings_planner.PlannerError:
+                    pass  # the consequence view renders regardless
+                projection = consequences.project(
+                    resolved_ops or ops, current=current)
+                if args.json:
+                    print(json.dumps({"type": "whatif", "projection":
+                                      projection}, default=str))
+                else:
+                    print("\n".join(consequences.render(
+                        projection, title="what-if")))
+                    pending_line = plan_cache.summary()
+                    if pending_line:
+                        print(f"  {pending_line}")
+                        print("  say the next change, or 'apply these "
+                              "changes' when ready")
+                session.pending_plan = plan_cache.to_dict()
+            else:
+                print("  nothing to project: no ops in this request and "
+                      "no pending plan")
+            continue
+
         result = cortex_process(text, session=session, learner=learner, file_path=target, now=_now())
+
+        # Phase 2.5: compose this turn's ops with the PENDING plan (later
+        # wins per tool — the compound layer's own rule) and re-validate
+        # through the standard planner before proposing anything.
+        if result.verdict == "PLAN" and result.ops:
+            if plan_cache.pending_count() > 0:
+                composed_ops = plan_cache.compose(result.ops, text)
+                try:
+                    composed_plan = settings_planner.plan(composed_ops,
+                                                          target)
+                    result.plan = composed_plan
+                    result.ops = composed_ops
+                    result.session_note = (
+                        (result.session_note + " " if result.session_note
+                         else "") + f"composed with your pending plan "
+                        f"({plan_cache.pending_count()} ops total)")
+                except settings_planner.PlannerError as exc:
+                    result.notes.append(f"composed plan refused: {exc}")
+            else:
+                plan_cache.compose(result.ops, text)
 
         # Issue #120 phase 4.3: near-threshold phrases are parked for batch
         # review instead of being silently absorbed by the online learner.
@@ -360,7 +487,16 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
                 card.append(f"  {calibration_note}")
             print("\n".join(card))
             if applied:
-                print("  applied (backup written; 'undo the last change' reverts it)")
+                plan_cache.commit()
+                session.pending_plan = None
+                print("  applied (backup written; 'undo the last change' "
+                      "reverts it)")
+            elif result.verdict == "PLAN" and plan_cache.pending_count():
+                session.pending_plan = plan_cache.to_dict()
+                pending_line = plan_cache.summary()
+                if pending_line:
+                    print(f"  {pending_line} — compose the next change or "
+                          "say 'apply these changes'")
 
         # Learning + memory (persisted through the brain state).
         if learner is not None:

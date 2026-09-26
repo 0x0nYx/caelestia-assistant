@@ -110,8 +110,20 @@ def _d_explain(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
 def _d_route_request(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     from ..cortex import pipeline as cortex_pipeline
     res = cortex_pipeline.process(ctx.get("text", ""))
+    ops = [{"tool": op.get("tool"), "action": op.get("action"),
+            "value": op.get("value")}
+           for op in (getattr(res, "ops", None) or [])]
+    # The planner's RESOLVED entries (absolute values): step/multiply
+    # ops become the values they actually produce. The consequence
+    # projection (validate_plan) must run over these — projecting a raw
+    # step delta (-1) as an absolute scale fires false edges.
+    resolved = [{"tool": e.get("tool"), "value": e.get("new")}
+                for e in ((getattr(res, "plan", None) or {}).get("entries") or [])
+                if not e.get("error")]
     return {"verdict": res.verdict, "action": getattr(res, "action", ""),
-            "ops_count": len(getattr(res, "ops", []) or []),
+            "ops_count": len(ops),
+            "ops": ops,
+            "resolved_ops": resolved,
             "detail": str(getattr(res, "detail", ""))[:400]}
 
 
@@ -119,7 +131,24 @@ def _d_validate_plan(ctx: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, A
     route = ctx.get("results", {}).get("route_request", {})
     verdict = route.get("verdict")
     if verdict == "PLAN":
-        return {"validated": True, "note": "cortex produced a validated plan"}
+        # Phase 2.7: the consent card shows CONSEQUENCES, not just
+        # actions — the what-if projection rides the validation node so
+        # --simulate and the execution report both carry it (read-only
+        # view; the proposal's agent seam).
+        consequences = {}
+        # Prefer the RESOLVED ops (absolute values, steps resolved by
+        # the planner); fall back to raw ops only when the plan is
+        # absent.
+        project_ops = route.get("resolved_ops") or route.get("ops")
+        if project_ops:
+            try:
+                from ..settings import consequences as consequences_mod
+
+                consequences = consequences_mod.project(project_ops)
+            except Exception:
+                consequences = {}
+        return {"validated": True, "note": "cortex produced a validated "
+                "plan", "consequences": consequences}
     if verdict in ("QUESTION", "AMBIGUOUS"):
         return {"validated": False, "needs_input": True,
                 "note": route.get("detail", "the request needs one answer")}

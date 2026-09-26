@@ -421,6 +421,18 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="read-only: list the bounded undo history (newest first) and exit",
     )
     arg_parser.add_argument(
+        "--prefer", nargs=2, metavar=("PRESET_A", "PRESET_B"), default=None,
+        help="opt-in pairwise comparison: dry-run previews of both presets "
+             "side by side, then record which you pick (feeds the Elo/"
+             "Bradley-Terry ladder; writes one comparison row to the "
+             "assistant state, never to shell.json)",
+    )
+    arg_parser.add_argument(
+        "--rank", action="store_true",
+        help="read-only: print the learned pairwise preference ladder for "
+             "presets (Elo + Bradley-Terry, with comparison counts)",
+    )
+    arg_parser.add_argument(
         "--undo", nargs="?", const=1, default=None, type=int, metavar="STEPS",
         help="undo the newest STEPS applies (default 1) from the bounded "
              "history; writes only the reverted values",
@@ -560,6 +572,82 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 1
         print("\n".join(render_plan(plan, [], f"preset: {args.preset}",
                                    args.file, True, apply_result, None)))
+        return 0
+
+    if args.rank:
+        # Phase 2.4: the learned pairwise ladder — read-only, over the
+        # comparison rows --prefer records. The shared ranking primitive
+        # (brain/ranking.py) is the same one agent plan comparisons use.
+        from ..brain import ranking as ranking_mod
+        from ..brain import state as brain_state
+
+        state = brain_state.load()
+        rows = state.get("preset_comparisons") or []
+        if not rows:
+            print("no pairwise comparisons recorded yet; record one with "
+                  "settings --prefer PRESET_A PRESET_B")
+            return 0
+        pairs = [(row.get("winner"), row.get("loser")) for row in rows
+                 if row.get("winner") and row.get("loser")]
+        report = ranking_mod.ladder_report(pairs)
+        print("preset preference ladder (pairwise, learned from your "
+              "explicit comparisons):")
+        for row in report["ladder"]:
+            conf = (f"{row['comparisons']} comparisons"
+                    if row["enough_data"] else "not enough data")
+            print(f"  {row['rating']:8.1f}  {row['item']:<16} ({conf})")
+        tau = report["agreement_kendall_tau"]
+        if tau is not None:
+            print(f"elo/bradley-terry order agreement (kendall tau): {tau}")
+        print("proposals only — nothing is applied; the planner/applier "
+              "gates are untouched")
+        return 0
+
+    if args.prefer:
+        # Phase 2.4: ONE explicit pairwise comparison (the proposal's
+        # opt-in design — each pair is a deliberate choice, no batch).
+        from ..brain import state as brain_state
+        from . import presets as presets_mod
+
+        name_a, name_b = args.prefer
+        known = [str(p["name"]) for p in presets_mod.presets()]
+        target = Path(args.file) if args.file else default_target()
+        for name in (name_a, name_b):
+            if name not in known:
+                print(f"error: unknown preset {name!r}; known: "
+                      f"{', '.join(known)}", file=sys.stderr)
+                return 1
+        print("\n".join(_header(False)))
+        print("")
+        for index, name in enumerate((name_a, name_b), 1):
+            print(f"[{index}] preset {name} (dry-run, nothing written):")
+            try:
+                plan = planner.plan(presets_mod.preset_ops(name), target)
+            except planner.PlannerError as exc:
+                print(f"  planner refused: {exc}")
+                continue
+            print("\n".join("  " + line for line in render_plan(
+                plan, [], f"prefer: {name}", args.file, False, None, None)))
+        try:
+            pick = input(f"which do you prefer? [1={name_a} / 2={name_b} "
+                         "/ s=skip] ").strip().lower()
+        except EOFError:
+            pick = ""
+        if pick not in ("1", "2"):
+            print("no comparison recorded (skip)")
+            return 0
+        winner = name_a if pick == "1" else name_b
+        loser = name_b if pick == "1" else name_a
+        state = brain_state.load()
+        rows = state.setdefault("preset_comparisons", [])
+        if not isinstance(rows, list):
+            rows = []
+        from datetime import datetime
+        rows.append({"winner": winner, "loser": loser,
+                     "at": datetime.now().isoformat(timespec="seconds")})
+        state["preset_comparisons"] = rows[-200:]
+        brain_state.save(state)
+        print(f"recorded: {winner} > {loser} (see settings --rank)")
         return 0
 
     if args.lint:

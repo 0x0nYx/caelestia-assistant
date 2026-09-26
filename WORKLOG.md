@@ -126,3 +126,58 @@ Definition-of-done spot check (live):
 - `caelestia-assist chatt` → "did you mean: chat (distance 1)"
 - all six delegate categories answer inline via `route "<phrase>"`
 - `tell me about quantum chromodynamics` → still cloud (router-abstain)
+
+### Phase 2 progress (this session)
+
+**2.1 SHIPPED (commit 1b51183)** — `genius/fsbrain.py` + CLI
+(`genius fsbrain stale|dupes|graph|filetype [--correct TYPE]`) + 24
+tests. Staleness = sysintel frecency generalized to stat() events +
+Shannon entropy over category mixes (propose-only). Near-dups =
+scan.simhash + Manku banding. Knowledge graph = TF-IDF
+(brain.textmine, corpus=other docs) + RAKE phrases over
+brain.personal.graph.Graph's PageRank/communities (reused verbatim).
+Filetype = offset-anchored magic table via scan.ac + online-correctable
+NaiveBayes (corrections persist as bounded reviewable docs in brain
+state). **Event-watch finding (measured, live)**: select() on dirfds is
+ALWAYS ready on this platform; ctypes is banned by ALLOWED_IMPORTS →
+no watcher shipped (a select-loop would be a disguised poll loop — §5
+violation). Audit: zero sleep-loops/pollers exist in the codebase.
+Documented in RATIONALE known-gaps.
+
+**2.2 SHIPPED (commit 7901ac4)** — graphs: astar CLI + edmonds_karp
+max-flow/min-cut (Edmonds & Karp 1972) + label-propagation communities
+(adapted through brain.personal.graph — not reimplemented) +
+graph_algorithms meta domain. logic.schedule_resources: the general
+resource-contention primitive over the existing CSP+AC-3 (settings
+surface untouched). optimize: branch_and_bound (LP bound; exhaustively
+cross-checked) + deterministic tabu_search (Glover 1986). data: ncd
+(zlib+bz2 — bz2 added to ALLOWED_IMPORTS as a documented named
+exception after the import tripwire correctly fired), bocpd (Adams &
+MacKay 2007 — the changepoint-arm/prior-predictive bug was caught by
+ground-truth tests and pinned), decompose_robustness (period±1 +
+trimmed pass, flatness-epsilon sign agreement). 37 tests. CLI: genius
+schedule / graphs astar|maxflow|communities / optimize bandb|tabu /
+data --ncd --bocpd --robustness.
+
+**2.3 SHIPPED (commit 2e21af5)** — five goal archetypes on the same
+HTN consent/simulate contract: config_hygiene (lint + drift +
+standard-gate reconciliation; type-mismatch stays manual — the
+planner's no-structural-repair doctrine honored, pinned by test);
+package_audit (agent/pkgprobe.py — FIRST quarantined subprocess module:
+schema_lint per-module carve-out, exemption pinned by test, fixed arg
+arrays, read-only, capability kill-switch OFF by default; static local
+keyword list, NOT a CVE feed); log_triage (sysintel template mining →
+issues/ drafting — the two packages now compose); notification_triage
+(PURE classifier; live DBus observation documented as a gap — needs
+the quarantined DBus surface + maintainer sign-off per the proposal's
+own escalation); screenshot_diff (pixel-region block hashing, NO OCR,
+through the ONE PNG decoder — palette_extract.png_grid refactor).
+`assistant/capabilities.py`: the per-install manifest + hub
+`capabilities` route. Engine latent bug fixed (results addressable by
+action name — fix_plan/explain composition now actually fires).
+26 tests.
+
+Suite: 1162 green (baseline 1049); selfcheck + bash harness green at
+every step. Remaining this phase: 2.4 (self-learning), 2.5 (plan
+cache), 2.7 (dbus + what-if), then 2.6 last (registry adapter +
+lexicon-diff + manifest registration), then Phases 3-4.

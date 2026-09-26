@@ -44,6 +44,7 @@ from .memory import (
     followup_suggestion,
     record as memory_record,
     recall as memory_recall,
+    resolve_halflife,
     summarize as memory_summarize,
 )
 from .pipeline import episode_for, process as cortex_process
@@ -321,6 +322,16 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
             result.notes.append(
                 f"inline {result.delegate} run failed — the fallback hint stands")
 
+        # Calibration surfacing (phase 2.4): the honest line users can
+        # hold the assistant to — observed accuracy for THIS confidence
+        # bucket, only when the sample can support a claim. The bucket
+        # key is the RAW route probability (learn_hook carries it); the
+        # calibrated confidence is a different quantity.
+        raw_p = ((result.learn_hook or {}).get("p", result.confidence)
+                 if result.learn_hook is not None else result.confidence)
+        calibration_note = (learner.calibration_note(raw_p)
+                            if learner is not None else None)
+
         applied = False
         undone = False
         if result.verdict == "PLAN":
@@ -344,7 +355,10 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
             payload["undone"] = undone
             print(json.dumps(payload))
         else:
-            print("\n".join(_render_turn(result, applied=applied)))
+            card = _render_turn(result, applied=applied)
+            if calibration_note:
+                card.append(f"  {calibration_note}")
+            print("\n".join(card))
             if applied:
                 print("  applied (backup written; 'undo the last change' reverts it)")
 
@@ -366,7 +380,9 @@ def cmd_chat(argv: Optional[List[str]] = None) -> int:
             episodes = memory_record(episodes, episode_for(result, text, outcome, now=_now()))
             # Proactive follow-up (second-brain suggestion, proposal only).
             if applied and result.candidates:
-                suggestions = followup_suggestion(episodes, result.candidates[0]["surface"], now=_now())
+                suggestions = followup_suggestion(
+                    episodes, result.candidates[0]["surface"], now=_now(),
+                    halflife_days=resolve_halflife(state))
                 for suggestion in suggestions[:1]:
                     print(f"  suggestion: you often also change {suggestion['surface']} "
                           f"({suggestion['count']}x together) — say '{suggestion['surface'].replace('set', 'change ').strip()}' "
@@ -458,6 +474,11 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                           help="label/dismiss: the candidate index (see list)")
     review_p.add_argument("arg2", nargs="?", default="",
                           help="label: the correct surface (e.g. setBarScale)")
+    hl = sub.add_parser("halflife", help="read or set the memory decay "
+                                         "half-life in days (user-editable; "
+                                         "default 14, bounds 0.5-365)")
+    hl.add_argument("days", nargs="?", type=float, default=None,
+                    help="new half-life in days (omit to read)")
     gaps_p = sub.add_parser("gaps", help="cluster the logged local-ontology gaps "
                                          "(cloud hand-offs) and surface candidates")
     gaps_p.add_argument("--propose", action="store_true",
@@ -476,12 +497,32 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     learner = _load_learner(state)
     episodes = _load_memory(state)
 
+    if args.cmd == "halflife":
+        from .memory import (HALFLIFE_BOUNDS, HALFLIFE_DAYS, MEMORY_HALFLIFE_KEY,
+                             resolve_halflife)
+        if args.days is None:
+            print(f"memory decay half-life: {resolve_halflife(state)} days "
+                  f"(default {HALFLIFE_DAYS}; bounds "
+                  f"{HALFLIFE_BOUNDS[0]}-{HALFLIFE_BOUNDS[1]})")
+            return 0
+        lo, hi = HALFLIFE_BOUNDS
+        if not (lo <= args.days <= hi):
+            print(f"error: half-life must be within {lo}-{hi} days",
+                  file=sys.stderr)
+            return 1
+        state[MEMORY_HALFLIFE_KEY] = args.days
+        brain_state.save(state)
+        print(f"memory decay half-life set to {args.days} days "
+              "(affects recall weighting from now on; history untouched)")
+        return 0
+
     if args.cmd == "report":
         print("\n".join(_render_report(learner, episodes)))
         return 0
 
     if args.cmd == "recall":
-        rows = memory_recall(episodes, args.query, now=_now(), k=args.k)
+        rows = memory_recall(episodes, args.query, now=_now(), k=args.k,
+                             halflife_days=resolve_halflife(state))
         if not rows:
             print("no matching episodes in memory")
             return 0
@@ -572,7 +613,8 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if args.cmd == "suggest":
-        suggestions = followup_suggestion(episodes, args.surface, now=_now())
+        suggestions = followup_suggestion(episodes, args.surface, now=_now(),
+                                           halflife_days=resolve_halflife(state))
         if not suggestions:
             print(f"no co-change pattern with {args.surface} yet "
                   f"(needs repeated applied history)")

@@ -195,6 +195,8 @@ def render_answer(result) -> List[str]:
             lines.append(f"  [{entry.get('id')}] {label} at {entry.get('at')}")
     elif result.verdict == "INERT":
         lines.extend(result.suggestions)
+    if getattr(result, "calibration_note", None):
+        lines.append(str(result.calibration_note))
     if result.evidence:
         shown = "; ".join(dict.fromkeys(result.evidence))[:220]
         lines.append(f"(why: {shown})")
@@ -263,6 +265,19 @@ def dispatch(text: str, *, state: Optional[Dict[str, Any]] = None,
     learner = CortexLearner(state.get("cortex_learn")) \
         if state.get("cortex_learn") else None
     result = process(text, session=session, learner=learner, file_path=file_path)
+
+    # Calibration surfacing (phase 2.4): the honest accuracy line for
+    # THIS confidence bucket, when the sample supports it — the same
+    # sentence the CLI chat card shows.
+    if learner is not None:
+        try:
+            # raw route probability is the bucket key (learn_hook), not
+            # the calibrated confidence — a different quantity
+            raw_p = ((result.learn_hook or {}).get("p", result.confidence)
+                     if result.learn_hook is not None else result.confidence)
+            result.calibration_note = learner.calibration_note(raw_p)
+        except Exception:
+            result.calibration_note = None
 
     reason = _hand_off_reason(result, state)
 

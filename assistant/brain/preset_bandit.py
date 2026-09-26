@@ -22,9 +22,14 @@ a human to choose from (settings_bridge.recommend), exactly like every
 other brain learner. Persisted as a plain {name: [alpha, beta]} dict, same
 shape as HourBandit.to_dict(), so it lives in the same state.json file.
 """
+import math
 import random
+from typing import Any, Dict, List
+
+from .features import DEFAULT_DIMENSIONS, context_features
 
 SECONDARY_REWARD_WEIGHT = 0.25
+LINUCB_ALPHA = 0.3  # exploration strength: (Li et al. 2010)'s c term
 
 
 class NamedBandit:
@@ -77,3 +82,136 @@ class NamedBandit:
     @classmethod
     def from_dict(cls, d):
         return cls(d or {})
+
+
+# ---------------------------------------------------------------------------
+# Phase 2.4: LinUCB — the CONTEXTUAL bandit (matrix updates only).
+#
+# NamedBandit is context-blind: "compact" has ONE Beta pair regardless of
+# when/why it was offered. LinUCB (Li, Chu, Langford & Schapire 2010,
+# "A contextual-bandit approach to personalized news article
+# recommendation", WWW) models the expected approval as x^T theta per
+# arm, with a d x d Gram matrix per arm (the DISJOINT model) updated by
+# outer products — pure arithmetic, no library, no gradient, nothing
+# trained offline. Context = the shared feature hashing
+# (brain/features.py: request text + hour bucket), so the router /
+# genius / preset learners agree on the INPUT space while keeping
+# separate state (transfer without merging).
+# ---------------------------------------------------------------------------
+
+
+class LinUCBBandit:
+    """Disjoint LinUCB over named arms (presets, tools, or plans).
+
+    Per arm: A (d x d, starts as identity) and b (d, starts zero). The
+    upper confidence score for arm i under context x is
+    x^T A^-1 b + alpha * sqrt(x^T A^-1 x) — exploit plus an exact
+    confidence bound (the 2010 paper's Equation 5-7, disjoint part).
+    """
+
+    def __init__(self, arms=None, d: int = DEFAULT_DIMENSIONS,
+                 alpha: float = LINUCB_ALPHA):
+        # arms: {name: {"A": [[...]], "b": [...]}} (rows of A)
+        self.d = int(d)
+        self.alpha = float(alpha)
+        self.arms = {}
+        for name, payload in (arms or {}).items():
+            rows = [[float(v) for v in row] for row in payload["A"]]
+            vec = [float(v) for v in payload["b"]]
+            if len(rows) != self.d or len(vec) != self.d:
+                raise ValueError(f"arm {name!r} has wrong dimensions")
+            self.arms[name] = {"A": rows, "b": vec}
+
+    def _arm(self, name):
+        return self.arms.setdefault(
+            name, {"A": [[1.0 if i == j else 0.0 for j in range(self.d)]
+                         for i in range(self.d)],
+                   "b": [0.0] * self.d})
+
+    # -- linear algebra, small and explicit --------------------------------
+
+    def _solve(self, matrix, vector):
+        """Solve M x = v by Gaussian elimination with partial pivoting
+        (d <= 64; no library, deterministic)."""
+        n = self.d
+        m = [row[:] + [vector[i]] for i, row in enumerate(matrix)]
+        for col in range(n):
+            pivot = max(range(col, n), key=lambda r: abs(m[r][col]))
+            if abs(m[pivot][col]) < 1e-12:
+                m[col][col] += 1e-9  # ridge-nudge a singular Gram matrix
+            else:
+                m[col], m[pivot] = m[pivot], m[col]
+            pivot_value = m[col][col]
+            for r in range(n + 1):
+                if r != col and r < n or r == n:
+                    pass
+            for r in range(n):
+                if r == col:
+                    continue
+                factor = m[r][col] / pivot_value
+                if factor:
+                    for c in range(col, n + 1):
+                        m[r][c] -= factor * m[col][c]
+        return [m[i][n] / (m[i][i] or 1e-12) for i in range(n)]
+
+    def _quadratic(self, matrix, x):
+        """x^T M x without inverting explicitly (via the solve above)."""
+        solved = self._solve(matrix, list(x))
+        return sum(xi * si for xi, si in zip(x, solved))
+
+    # -- the bandit interface ----------------------------------------------
+
+    def score(self, name, context: List[float]) -> Dict[str, float]:
+        """Exploit term and UCB score for one arm under one context."""
+        arm = self._arm(name)
+        theta = self._solve(arm["A"], arm["b"])
+        exploit = sum(xi * ti for xi, ti in zip(context, theta))
+        confidence = self.alpha * math.sqrt(
+            max(0.0, self._quadratic(arm["A"], context)))
+        return {"exploit": round(exploit, 4),
+                "score": round(exploit + confidence, 4)}
+
+    def rank(self, names, context=None, text: str = "", hour: int = -1):
+        """Candidates ranked by LinUCB upper-confidence score, best first.
+
+        ``context``: the shared feature vector (brain.features.
+        context_features(text, hour) when not given directly). Returns
+        [(name, score, exploit), ...].
+        """
+        if context is None:
+            context = context_features(text, hour, d=self.d)
+        context = list(context)
+        if len(context) != self.d:
+            raise ValueError(f"context must be d={self.d}-dimensional")
+        scored = []
+        for name in names:
+            row = self.score(name, context)
+            scored.append((name, row["score"], row["exploit"]))
+        return sorted(scored, key=lambda r: -r[1])
+
+    def reward(self, name, approved, context=None, text: str = "",
+               hour: int = -1):
+        """One decision: A += x x^T, b += r x (r = +1 approved, -1
+        refused) — the disjoint-model update, matrix arithmetic only."""
+        if context is None:
+            context = context_features(text, hour, d=self.d)
+        context = list(context)
+        if len(context) != self.d:
+            raise ValueError(f"context must be d={self.d}-dimensional")
+        arm = self._arm(name)
+        r = 1.0 if approved else -1.0
+        for i in range(self.d):
+            arm["b"][i] += r * context[i]
+            for j in range(self.d):
+                arm["A"][i][j] += context[i] * context[j]
+
+    def to_dict(self):
+        return {name: {"A": [[round(v, 6) for v in row]
+                             for row in payload["A"]],
+                       "b": [round(v, 6) for v in payload["b"]]}
+                for name, payload in self.arms.items()}
+
+    @classmethod
+    def from_dict(cls, data, d: int = DEFAULT_DIMENSIONS,
+                  alpha: float = LINUCB_ALPHA) -> "LinUCBBandit":
+        return cls(data or {}, d=d, alpha=alpha)

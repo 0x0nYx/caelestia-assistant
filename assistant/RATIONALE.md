@@ -491,6 +491,51 @@ default, fixed arrays, read-only, pinned by test); one consented
 write path that IS the existing applier; everything else read-only;
 no interaction edges against the shipped shell changed.
 
+## 14. Self-learning upgrades (phase 2.4)
+
+- **LinUCB** (`brain/preset_bandit.LinUCBBandit`): the contextual
+  bandit (Li, Chu, Langford & Schapire 2010, disjoint model) beside the
+  context-blind NamedBandit — d x d Gram matrices updated by outer
+  products, exact UCB bound, Gaussian-elimination solve, pure
+  arithmetic, no library. The reward-shape test pins the paper's update
+  equations; the context test pins that the SAME preset ranks
+  differently under morning vs evening contexts. NamedBandit is
+  untouched (byte-identical reward semantics, pinned).
+- **Shared feature hashing** (`brain/features.py`): the hashing trick
+  (Weinberger et al. 2009) with signed collisions and L2
+  normalization — ONE input-space all learners agree on (router,
+  genius, presets) while their STATE stays separately auditable:
+  transfer without merging, the boundary RATIONALE already drew.
+- **Ebbinghaus half-life, user-editable** (correctness fix for
+  multi-user installs): the memory decay constant moves from a module
+  constant to the brain state (per-user by construction, bounds
+  0.5-365, garbage degrades to the default), read/set via
+  `cortex halflife [DAYS]`, threaded through recall and follow-up
+  weighting. History untouched — only future weighting changes.
+- **The shared ranking primitive** (`brain/ranking.py`): Elo (online)
+  + Bradley-Terry (batch logistic fit, deterministic gradient ascent)
+  + Kendall-tau agreement between them, over ANY named items — the
+  generalization of the preset-ranking proposal. The proposal's own
+  verification plan is the test: synthetic 300-pair recovery against
+  ground-truth strengths (exact ordering), sparsity honesty (<3
+  comparisons = "not enough data"), determinism. Consumers: presets
+  (`settings --prefer A B` records one deliberate comparison after
+  side-by-side DRY-RUN previews; `settings --rank` reads the ladder)
+  and agent plan comparisons (the same functions, separately-keyed
+  records).
+- **Calibration surfaced**: the chat card and the sidebar answer now
+  carry "routes scored like this one were right ~N% of the time (k
+  decisions)" — the OBSERVED acceptance rate of the route's
+  confidence bucket, only when >= 5 decisions support it (small
+  samples say nothing; silence beats a fake number). The bucket key is
+  the RAW route probability (learn_hook), not the calibrated
+  confidence — a distinction the tests pin.
+
+Safety accounting: all learners stay read-only rankers over
+human decisions; `--prefer` writes one comparison row to the assistant
+state (never shell.json); nothing new executes, imports, or reaches
+the network.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -32,6 +32,16 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 MAX_EPISODES = 500
 HALFLIFE_DAYS = 14.0
 
+# The user-editable override lives in the brain state (key
+# MEMORY_HALFLIFE_KEY) — per-user, because usage cadences differ; a
+# multi-user/community install each carries its own decay. The shipped
+# default is 14 days; `caelestia-assist cortex halflife [DAYS]` reads or
+# sets it. This is a correctness fix, not a knob: the default was a
+# fixed constant while different users demonstrably need different
+# forgetting rates.
+MEMORY_HALFLIFE_KEY = "cortex_memory_halflife_days"
+HALFLIFE_BOUNDS = (0.5, 365.0)
+
 OUTCOMES = ("routed", "ambiguous", "abstain", "applied", "approved", "rejected", "clarified", "undone")
 
 
@@ -77,13 +87,30 @@ def record(episodes: List[Dict[str, object]], episode: Dict[str, object],
     return out
 
 
-def _decay_weight(episode: Dict[str, object], now: datetime) -> float:
+def _decay_weight(episode: Dict[str, object], now: datetime,
+                  halflife_days: float = HALFLIFE_DAYS) -> float:
     age_days = max(0.0, (now - _episode_time(episode)).total_seconds() / 86400.0)
-    return 0.5 ** (age_days / HALFLIFE_DAYS)
+    return 0.5 ** (age_days / max(1e-9, halflife_days))
+
+
+def resolve_halflife(state: Optional[Dict[str, object]] = None) -> float:
+    """The effective half-life: the state's user setting when present and
+    in bounds, else the shipped default. Garbage values degrade to the
+    default (never a crash, never a negative decay)."""
+    raw = (state or {}).get(MEMORY_HALFLIFE_KEY)
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return HALFLIFE_DAYS
+    lo, hi = HALFLIFE_BOUNDS
+    if not (lo <= value <= hi):
+        return HALFLIFE_DAYS
+    return value
 
 
 def recall(episodes: Sequence[Dict[str, object]], query: str = "",
-           now: Optional[datetime] = None, k: int = 10) -> List[Dict[str, object]]:
+           now: Optional[datetime] = None, k: int = 10,
+           halflife_days: float = HALFLIFE_DAYS) -> List[Dict[str, object]]:
     """Decay-weighted recall of episodes matching ``query`` (surface-name
     or text-substring match; empty query = recent-everything)."""
     now = now or datetime(2026, 1, 1, 12, 0, 0)
@@ -95,7 +122,7 @@ def recall(episodes: Sequence[Dict[str, object]], query: str = "",
             text = str(episode.get("text", "")) + " " + str(episode.get("resolved", ""))
             if lowered not in surfaces.lower() and lowered not in text.lower():
                 continue
-        scored.append((_decay_weight(episode, now), episode))
+        scored.append((_decay_weight(episode, now, halflife_days), episode))
     scored.sort(key=lambda pair: (-pair[0], str(pair[1].get("at", ""))))
     return [episode for _w, episode in scored[:k]]
 
@@ -138,7 +165,9 @@ def lift(coocc: Dict[Tuple[str, str], int],
 
 def followup_suggestion(episodes: Sequence[Dict[str, object]], just_applied: str,
                         now: Optional[datetime] = None, min_count: int = 2,
-                        top: int = 3) -> List[Dict[str, object]]:
+                        top: int = 3,
+                        halflife_days: float = HALFLIFE_DAYS
+                        ) -> List[Dict[str, object]]:
     """The proactive second-brain suggestion: after ``just_applied``,
     which settings historically co-changed with it? Decay-weighted,
     lift-ranked, and returned as SUGGESTION DATA ONLY — the caller turns
@@ -152,7 +181,7 @@ def followup_suggestion(episodes: Sequence[Dict[str, object]], just_applied: str
         surfaces = set(str(s) for s in episode.get("surfaces", []))
         if just_applied not in surfaces:
             continue
-        weight = _decay_weight(episode, now)
+        weight = _decay_weight(episode, now, halflife_days)
         for surface in surfaces:
             if surface == just_applied:
                 continue

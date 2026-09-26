@@ -153,6 +153,14 @@ class Calibration:
     def mean(self) -> float:
         return self.alpha / (self.alpha + self.beta)
 
+    def observations(self, bucket: str) -> int:
+        """How many real outcomes landed in this bucket (the honesty
+        gate for surfacing: small samples say nothing)."""
+        row = self.buckets.get(bucket)
+        if not row:
+            return 0
+        return int(row.get("alpha", 1.0) + row.get("beta", 1.0) - 2.0)
+
     def bucket_mean(self, bucket: str) -> float:
         row = self.buckets.get(bucket) or {"alpha": 1.0, "beta": 1.0}
         return row["alpha"] / (row["alpha"] + row["beta"])
@@ -259,6 +267,21 @@ class CortexLearner:
 
     def reward_strategy(self, name: str, accepted: bool) -> None:
         self.bandit.reward(name, accepted)
+
+    def calibration_note(self, p: float,
+                         min_observations: int = 5) -> Optional[str]:
+        """The USER-VISIBLE calibration sentence for a route scored p:
+        'routes scored like this one were right ~92% of the time (25
+        decisions)' — the observed acceptance rate of this confidence
+        bucket, surfaced instead of kept internal. None when the bucket
+        has too few observations to say anything honest."""
+        bucket = confidence_bucket(p)
+        n = self.calibration.observations(bucket)
+        if n < min_observations:
+            return None
+        rate = self.calibration.bucket_mean(bucket)
+        return (f"routes scored like this one were right "
+                f"~{round(rate * 100)}% of the time ({n} decisions)")
 
     def calibrated_confidence(self, p: float) -> float:
         """Posterior-mean acceptance probability for this softmax band —

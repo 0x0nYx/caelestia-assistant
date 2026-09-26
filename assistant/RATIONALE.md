@@ -808,6 +808,27 @@ untouched beside it as the deterministic view). Thin data is labelled
 `insufficient-data` and invents no numbers (BOCPD's own n ≥ 4 floor
 does the gating); the whole path is deterministic.
 
+**1.4 discriminative re-ranker.** `cortex/reranker.py` mirrors the
+slot_tagger's structural template exactly: an averaged pairwise
+max-margin perceptron (Rosenblatt 1958's update over Herbrich,
+Graepel & Obermayer 2000's pairwise ranking formulation; Collins 2002
+averaging) over the router's OWN per-candidate signal components —
+`RouteResult.features` already carries lex/sem/fuzz/noun/cue/coverage,
+so no second feature implementation exists. Supervision comes only
+from local routing history, with the slot_tagger's rules verbatim:
+approved rows give one constraint per competitor (the accepted surface
+must outrank what the router scored alongside it), rejected rows give
+nothing, a surface the router never scored fabricates no constraint.
+The gate is the repo's ONE uncertainty mechanism: top1-vs-top2 margin
+→ the same fixed-scale logistic class → `ConformalCalibrator.verdict`;
+untrained model, single candidate, below-threshold confidence, or no
+calibration data all return the router's OWN ranking unchanged with
+the reason attached — the re-ranker adds preference, it never guesses.
+Like the slot_tagger, it ships as a library + gated entry point with
+persistence into learned-state JSON; the live pipeline is untouched
+(that wiring is the maintainer's call once the calibrator stream for
+this signal accumulates), deterministic end to end, no I/O.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

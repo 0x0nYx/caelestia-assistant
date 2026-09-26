@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Discriminative re-ranker: `cortex/reranker.py` — an averaged pairwise
+  max-margin perceptron (Rosenblatt 1958 / Herbrich et al. 2000 /
+  Collins 2002) over the router's own per-candidate signal features,
+  trained only on local approved routing history, gated by the
+  conformal calibrator with the router's ranking as the honest
+  fallback; ships library-first like the slot tagger, live pipeline
+  untouched.
 - BOCPD drift on routing accuracy: `cortex report` now also feeds the
   example log's rolling hit-rate through the existing
   `genius.data.bocpd` primitive (Adams & MacKay 2007) — a real shift in

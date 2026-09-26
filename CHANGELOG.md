@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The format follows
   every decision through each source module's own entry point (no new
   approval logic, no new write path; plan applies stay dry-run without
   `--write`).
+- Unified `why` explainer: `caelestia-assist why [<id>|--engine ...]`
+  walks back through whichever engine produced the last surfaced item
+  (diagnostics rule citations, router path + conformal interval,
+  settings consequences, brain posteriors, wizard AHP/TOPSIS) and
+  renders each engine's own explanation output in one consistent
+  shape — templated, never synthesized.
 
 ## [0.1.0] — 2026-09-26 — initial baseline
 

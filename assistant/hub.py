@@ -11,6 +11,7 @@
   caelestia-assist chat | route "text"              learned cortex routing (confirmation-gated)
   caelestia-assist cortex report|recall|...         learning/memory dashboard
   caelestia-assist inbox list|approve|reject        unified pending-decisions inbox (four sources)
+  caelestia-assist why [<id>|--engine ...]          one explainer over every engine's own output
   caelestia-assist do "anything"                    genius: universal intelligence layer
   caelestia-assist genius <command> ...             direct domain access (math/stats/...)
   caelestia-assist agent "goal" [--simulate]        agentic orchestrator (consent-gated)
@@ -39,6 +40,7 @@ from .brain import cli as brain_cli
 from . import capabilities as capabilities_mod
 from .cortex import cli as cortex_cli
 from .cortex import inbox as cortex_inbox
+from .cortex import explain_unified as cortex_explain
 from .diagnostics import cli as diagnostics_cli
 from .genius import cli as genius_cli
 from .issues import cli as issues_cli
@@ -71,6 +73,9 @@ ROUTES = {
     # the unified pending-decisions inbox: one ranked view over the
     # ledger, gap clusters, the pending plan and agent consents
     "inbox": (cortex_inbox.main, False),
+    # one `why` over every engine's own explanation output (walks back
+    # through whichever engine produced the last surfaced item)
+    "why": (cortex_explain.main, False),
     # genius: the universal intelligence layer (its own subcommands;
     # `do` is the one-word front door)
     "do": (genius_cli.main, False),

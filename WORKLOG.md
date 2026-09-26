@@ -566,3 +566,41 @@ final WORKLOG summary entry lists every sub-item outcome.
   without goal), and the no-write guarantees (unproposed-gap reject
   writes nothing; dry-run leaves the plan pending; reject never
   executes the agent graph).
+
+### Phase 1.2 — unified `why` explainer — SHIPPED
+
+- Grep-first result: `settings/explain.py` owns the settings read-only
+  explanations; `genius/metacog.py` owns rule induction/clustering.
+  No module walks back across engines — genuinely new, and neither
+  existing explainer is touched.
+- New `assistant/cortex/explain_unified.py`: ONE structured shape
+  {engine, headline, lines, citations, confidence} for all five
+  engines, every string lifted from the producing module's own output
+  (templating, not synthesizing):
+  * diagnostics -> `engine.diagnose`'s own verdict, rule id/title, fix
+    lines, references, confidence;
+  * cortex -> `dispatch.render_answer`'s own chat-card lines + the
+    conformal calibrator's own reason/guarantee sentence for the
+    route's score (its own "insufficient calibration data" honesty
+    when there is no data);
+  * settings -> `settings.explain.explain`'s own answer + cites +
+    provenance hop strings when a ledger is available;
+  * brain -> `calibrate.acceptance_rate`'s own posteriors over the
+    ledger (per-kind rows + the calibration-note sentence shape);
+  * wizard -> `settings.wizard.render` output byte-for-byte, headline
+    from the winner's TOPSIS closeness.
+- Walk-back: `why` (no id) explains the NEWEST ledger record (the last
+  surfaced action with a durable record) through the engine its kind
+  names (settings -> settings adapter with the diff's own file/calls;
+  ontology_gap -> cortex; drift_* -> brain); `why <id>` accepts the
+  inbox id space (ledger:/gap:/plan:/agent: — plan items render the
+  cache's own summary() and contract line; agent items render the
+  engine's own simulate "would" strings).
+- Hub: `why` verb added. Read-only module: writes nothing anywhere.
+- Tests: `assistant/cortex/tests/test_explain_unified.py` — 17 cases,
+  one per source engine plus walk-back, consistent rendering, and CLI
+  (wizard engine, last-action JSON, inbox-id).
+- Flakiness note: one full-suite run during this sub-item reported a
+  single failure that never reproduced across three subsequent full
+  runs (buffered and unbuffered, 1339 OK each) and never surfaced a
+  test name; recorded here rather than hidden.

@@ -746,6 +746,33 @@ final WORKLOG summary entry lists every sub-item outcome.
   signer outranks disjoint one), empty-history honesty, the
   never-auto-skip invariant, event-log bound.
 
+### Phase 4 — governance artifacts — SHIPPED (three commits)
+
+- 4.1 `docs/UPSTREAM_CASE.md`: the explicit argument for the
+  classical/deterministic layer over a bundled 200-500MB partial-
+  English small LLM for a config-editing use case on low-end hardware.
+  Quotes ISS-120.md VERBATIM where relevant (0x0nYx's 200-300M
+  parameters / "100M for learning English" / "greater than 500mbs"
+  download-overhead comments; 0xSolanaceae's Apertus exploration,
+  "can't ship the model bundled with the shell", and the explicit
+  backlog statement) — attribution preserved, no paraphrase-from-
+  memory. Content of ISS-120.md untouched (citation-pinned, read-
+  only).
+- 4.2 `docs/LICENSING_OPEN_QUESTION.md`: states plainly that the
+  shipped AGPLv3 relicense (CHANGELOG 0.1.0) combines against
+  upstream shell/'s GPL-3.0-or-later; that the combination is
+  permitted under GPLv3 section 13 but has NOT been confirmed with
+  upstream; and that NO PR should reference AGPL-covered files until
+  a human resolves it. The document resolves nothing itself and is
+  explicitly marked as not attempting to.
+- 4.3 `docs/PR_SURFACE_PLAN.md`: PROPOSES (does not execute) the
+  narrowed upstream-first set — the settings/ #120 core plus the
+  two-tier sidebar dispatch gate, in that order — while keeping
+  genius/, brain/, brain/personal/ and devflow/ as this repo's own
+  standalone scope, given issue #120 is confirmed backlogged per the
+  captured corpus. Gated on the licensing question by construction.
+
+
 ### Phase 3.3 — personal prediction calibration — SHIPPED
 
 - Grep-first result: brain/calibrate.py is the routing-confidence

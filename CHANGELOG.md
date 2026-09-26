@@ -21,6 +21,12 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Governance docs: `docs/UPSTREAM_CASE.md` (the classical-layer vs
+  bundled-small-LLM argument, quoting the issue #120 corpus
+  verbatim), `docs/LICENSING_OPEN_QUESTION.md` (the AGPLv3-vs-GPLv3
+  upstream combination question, explicitly left open for a human),
+  and `docs/PR_SURFACE_PLAN.md` (a proposed, not-executed narrowed
+  upstream-first surface).
 - Personal prediction calibration (`brain/personal/selfcal.py`): an
   opt-in Brier-score ledger (Brier 1950) over the user's own STATED
   predictions with explicit resolution — certainty claims rejected

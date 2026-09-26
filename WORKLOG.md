@@ -638,3 +638,38 @@ final WORKLOG summary entry lists every sub-item outcome.
   collectors (engine output byte-unchanged), and the convenience path
   with mocked retrieval (merge only via mapping; scan join; no-map
   means no join).
+
+### Phase 2.1 — closed-loop resource throttle — SHIPPED
+
+- Grep-first result: dreamtime.py decided only IF a window opens
+  (eligible) and which jobs fit (schedule); telemetry.py was
+  read-only/on-demand with no consumer loop. No existing controller —
+  extended dreamtime.py in place, no parallel scheduler.
+- New in `assistant/brain/dreamtime.py`: `CadenceController` — a PI
+  loop (Astrom & Hagglund 1995 citation in the docstring) with
+  conditional-integration anti-windup and explicit actuator limits,
+  observing diagnostics/telemetry.py's READ-ONLY snapshots DURING a
+  run and adjusting the scan/brain batch cadence (minutes between
+  runs) to hold a configurable CPU ceiling.
+- Conservative defaults: ceiling 25% (BELOW eligible()'s own
+  max_load=30 gate, so braking starts before eligibility would lapse),
+  base cadence 15 min, floor 5 min (never hammers even on a cold box),
+  cap 240 min (beyond that it is a scheduling decision, not a
+  throttle decision). Pinned by test.
+- Telemetry is INJECTABLE: the controller takes a `source` callable —
+  tests pass fixture dicts shaped like `read_loadavg()`, the live
+  caller passes `telemetry.snapshot`. NOTHING in the module touches
+  /proc itself. An unavailable or OSError-failing probe is an honest
+  no-op: the cadence holds, observations do not advance — the loop
+  never brakes on a broken sensor.
+- `os.cpu_count()` (pure read) normalizes load1 into percent; the lint's
+  FORBIDDEN_OS_ATTRS (system/popen/exec*/spawn*/fork) are untouched.
+- No new write path: the controller returns numbers and state dicts;
+  the runner honors them.
+- Tests: `assistant/brain/tests/test_dreamtime_throttle.py` — 15
+  cases: exact loop math (hand-computed steady state 183.75 min under
+  sustained 100% load on 2 cores, anti-windup cap), relaxation to the
+  floor, at-ceiling hold, fixture-source injection, unavailable and
+  failing probes as no-ops, over_ceiling flag, conservative-default
+  pins, constructor rejection of out-of-range values, and an
+  eligible()-semantics regression pin.

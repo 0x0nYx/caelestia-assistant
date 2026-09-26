@@ -21,6 +21,12 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Closed-loop resource throttle (brain/dreamtime.py): a PI cadence
+  controller (anti-windup bounded, actuator-limited) reads the
+  telemetry layer's read-only /proc+/sys snapshots during batch runs
+  and holds the scan/brain cadence under a conservative, configurable
+  CPU ceiling (default 25%, below the window-eligibility gate) —
+  fixture-injectable telemetry, no new write path, no scheduler.
 - Evidence fusion for troubleshooting (`diagnostics/fusion.py`):
   weighted-Bayes combination (log-odds opinion pool, Genest & Zidek
   1986) of the diagnostics rules', retrieval BM25's and scan's

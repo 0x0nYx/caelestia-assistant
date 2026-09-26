@@ -406,6 +406,57 @@ def cmd_sys(args, out) -> int:
         return 1
 
 
+def _fsbrain_halflife_default() -> float:
+    """fsbrain.DEFAULT_HALFLIFE_DAYS, imported lazily so the parser's
+    default can never drift from the module's own constant."""
+    from .fsbrain import DEFAULT_HALFLIFE_DAYS
+    return DEFAULT_HALFLIFE_DAYS
+
+
+def cmd_fsbrain(args, out) -> int:
+    """fsbrain: read-only filesystem second-brain analyses."""
+    from ..brain import state as brain_state
+    from . import fsbrain
+    try:
+        if args.action == "stale":
+            res = fsbrain.staleness_report(args.path, top=args.top,
+                                           half_life_days=args.half_life)
+        elif args.action == "dupes":
+            res = fsbrain.metadata_near_duplicates(args.path,
+                                                   threshold=args.distance)
+        elif args.action == "graph":
+            roots = list(args.paths or []) if args.paths else [args.path]
+            roots = [r for r in roots if r]
+            if not roots:
+                raise ValueError("graph needs at least one directory or file")
+            res = fsbrain.knowledge_graph(roots, top_terms=args.top)
+        elif args.action == "filetype":
+            if args.correct:
+                # one correction: read features, append to the bounded
+                # docs in brain state, persist through the atomic save —
+                # the same discipline every learner uses.
+                state = brain_state.load()
+                doc = fsbrain.record_correction(args.path, args.correct)
+                state = fsbrain.append_correction(state, doc)
+                brain_state.save(state)
+                res = {"corrected": args.path, "type": doc["label"],
+                       "n_docs": len(state[fsbrain.DOCS_KEY]),
+                       "note": "correction recorded; future unknowns of "
+                               "this byte shape will rank it"}
+            else:
+                state = brain_state.load() \
+                    if Path(brain_state.DEFAULT_STATE).exists() else {}
+                classifier = fsbrain.load_filetype_classifier(state)
+                res = fsbrain.infer_filetype(args.path, classifier=classifier)
+        else:
+            raise ValueError(f"unknown fsbrain action {args.action!r}")
+    except (ValueError, OSError) as exc:
+        print(f"genius fsbrain: {exc}", file=sys.stderr)
+        return 1
+    _print(res, args.json)
+    return 0
+
+
 def cmd_history(args, out) -> int:
     try:
         parsed = sysintel.parse_shell_history(args.file)
@@ -753,6 +804,22 @@ def build_parser() -> argparse.ArgumentParser:
     gr.add_argument("--rows", default="", help="comma numbers for assign")
     gr.add_argument("--costs", default="", help="';'-separated rows for assign")
 
+    fb = sp("fsbrain", cmd_fsbrain,
+            help="filesystem second-brain: stale/dupes/graph/filetype")
+    fb.add_argument("action", choices=["stale", "dupes", "graph", "filetype"])
+    fb.add_argument("path", nargs="?", default=None,
+                    help="directory (stale/dupes) or file (filetype)")
+    fb.add_argument("paths", nargs="*", default=None,
+                    help="directories/notes for graph")
+    fb.add_argument("--top", type=int, default=15, help="rows kept (default 15)")
+    fb.add_argument("--half-life", type=float,
+                    default=_fsbrain_halflife_default(),
+                    help="frecency half-life in days (default 30)")
+    fb.add_argument("--distance", type=int, default=3,
+                    help="SimHash Hamming threshold (default 3)")
+    fb.add_argument("--correct", default=None, metavar="TYPE",
+                    help="filetype: teach the fallback classifier this type")
+
     op_ = sp("optimize", cmd_optimize, help="anneal/hillclimb/genetic/pareto/ternary")
     op_.add_argument("action",
                      choices=["anneal", "hillclimb", "genetic", "pareto", "ternary"])
@@ -786,7 +853,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     subcommands = {"do", "math", "solve", "calc", "stats", "matrix", "prob",
                    "logic", "decide", "tree", "data", "text", "qa", "summarize",
                    "classify", "palette", "gen", "sys", "history", "plan",
-                   "graphs", "optimize", "report", "learn"}
+                   "graphs", "optimize", "fsbrain", "report", "learn"}
     if argv and not argv[0].startswith("-") and argv[0] not in subcommands:
         argv = ["do"] + argv
     args = parser.parse_args(argv)

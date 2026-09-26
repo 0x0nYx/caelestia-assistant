@@ -45,3 +45,84 @@ Phase 1 in order: 1.1 hub verb-tolerant routing, 1.2 generalized DELEGATE
 auto-run in `cortex/cli.py`, 1.3 `agent` delegate category, 1.4 sidebar
 dispatch bridge local-vs-cloud. Regression tests for each. RATIONALE.md
 entry. Then Phase 2 items in the prompt's stated order (2.6 last).
+
+### Phase 1 — SHIPPED (commit 5043d9b)
+
+**1.1 hub verb-tolerant routing** — `assistant/hub.py`:
+- Unmatched first token: unique ROUTES verb within edit distance 2 →
+  "did you mean: <verb> (distance N)" on stderr, exit 1, never executed
+  (ties and <5-char tokens abstain). Reuses
+  `cortex/lexicon.py:levenshtein` — no second implementation.
+- Otherwise the whole argv is free text →
+  `cortex cli route` one-shot (read-only). Bare `help`/`-h`/`--help`
+  still prints usage; "help me ..." is free text. Leading `--` honored.
+
+**1.2 generalized DELEGATE auto-run** — new `assistant/cortex/delegate.py`
+(one table of read-only runners: genius/diagnose/search/brain/issue),
+wired into BOTH sites in `cortex/cli.py` (chat REPL + one-shot route),
+consistent with the existing genius branch. Failure degrades to the
+"try:" hint (kept as fallback, with a note). JSON mode emits
+`{"verdict": "DELEGATE", "delegate": <cat>, <cat>: <payload>}`.
+
+**1.3 agent delegate category** — `cortex/router.py`: "agent" surface
+doc (archetype vocab, disjoint from brain's note vocab) + `AGENT_SEQ_RE`
+sequencing floor 0.84 in PATTERN_BOOSTS. `cortex/pipeline.py`:
+`agent_shaped()` (sequencing grammar + boundary crossing, checked BEFORE
+the compound split shreds the sequence) → DELEGATE agent whole; per-clause
+branch extended with "agent". Runner calls `agent.cli.main --simulate`
+only — the execute/consent path is unreachable from conversation.
+
+**1.4 sidebar dispatch bridge** — `cortex/dispatch.py`: runnable
+DELEGATEs answer LOCALLY (inline answer = sidebar bubble +
+`delegate_payload`; no gap logged). Only non-runnable delegates or
+FAILED inline runs hand off (`delegate:<surface>-inline-failed`).
+The QML itself needed NO change — the local-vs-cloud decision already
+lives in cortex.dispatch (per its own architecture rule); AiAssistant.qml
+renders outcome.action/answer as before. Verified by bridge tests per
+category (`assistant/cortex/tests/test_dispatch.py`).
+
+RATIONALE.md: new §10 with the full design rationale + safety
+accounting. No settings tools / QML paths / doc anchors touched → no new
+citations claimed. ALLOWED_IMPORTS.txt untouched (io/contextlib already
+allowed); selfcheck green.
+
+Live regression output (abridged; full run below):
+
+```
+test_unknown_command_is_free_text_not_an_error ... ok
+test_typo_verb_gets_did_you_mean_not_a_guess ... ok
+test_ambiguous_typo_does_not_guess ... ok
+test_suggest_verb_tie_abstains ... ok
+test_help_with_more_words_is_free_text ... ok
+test_sequenced_goal_delegates_to_agent ... ok
+test_more_multi_step_phrases_delegate_to_agent ... ok
+test_single_step_goal_shape_delegates_to_agent ... ok
+test_pure_settings_sequence_stays_compound ... ok
+test_simultaneous_conjunction_is_not_agent_shaped ... ok
+test_note_taking_vocabulary_stays_brain ... ok
+test_inline_{genius,diagnose,search,brain,issue,agent}_* ... ok   (6)
+test_inline_run_failure_keeps_the_hint_fallback ... ok
+test_inline_delegate_json_shape ... ok
+test_chat_repl_inline_delegate ... ok
+test_delegate_answers_locally_inline ... ok
+test_non_runnable_delegate_still_hands_off ... ok
+test_hand_off_deduupes_by_shape_and_counts ... ok   (re-pinned, same-shape phrases)
+test_bridge_dispatch_{genius,diagnose,search,brain,issue,agent}_local ... ok (6)
+Ran 1076 tests in 50.4s — OK (skipped=5)     [baseline was 1049]
+bash tests/test_assistant.sh → passed: 10 failed: 0
+python3 -m assistant.hub selfcheck → OK
+```
+
+Three pre-existing tests pinned the OLD behavior Phase 1 explicitly
+changes and were updated (not deleted) to pin the NEW behavior:
+`test_unknown_command_exits_2` → free-text-not-error;
+`test_delegate_hands_off_with_delegate_category` → local-inline + a
+non-runnable-delegate stub guard; `test_hand_off_dedupes...` → same-shape
+phrases (the old pair produced two different gap categories, one of
+which now answers locally).
+
+Definition-of-done spot check (live):
+- `caelestia-assist make my bar thinner` → PROPOSED CHANGE (setBarScale)
+- `caelestia-assist chatt` → "did you mean: chat (distance 1)"
+- all six delegate categories answer inline via `route "<phrase>"`
+- `tell me about quantum chromodynamics` → still cloud (router-abstain)

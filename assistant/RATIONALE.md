@@ -325,6 +325,59 @@ the agent stays simulated. Interaction edges touched: none against the
 shipped shell — no settings tool, QML property path, or doc anchor was
 changed, so no new citations are claimed.
 
+## 11. The filesystem second-brain (genius/fsbrain.py)
+
+Issue #120's "second brain" direction needs a filesystem intelligence
+layer that is honest about being classical. Four analyses, each a
+generalization or reuse of machinery that already shipped:
+
+- **Staleness/entropy**: `sysintel.analyze_history`'s frecency formula
+  (`1 + 0.5^(age/half_life)`) generalized from shell-history event
+  positions to `stat()` event times (mtime = write, atime = read);
+  directory entropy is Shannon bits over the category mix. A
+  tidy-style REPORT — propose-only, never moves or deletes anything
+  (`brain.tidy`'s journaled apply/rollback path stays the only mover).
+- **Near-duplicates**: metadata fingerprints (name/suffix/size-bucket/
+  mtime-day) through `scan.simhash` with its own digit masking, then
+  the crawler's banding trick (Manku, Das & Sarma 2007) for candidate
+generation — O(n) buckets, not O(n²) pairs — and Hamming ≤ 3
+  verification at `scan.simhash`'s documented operating point.
+- **Knowledge graph**: TF-IDF words (`brain.textmine.keywords`, corpus
+  = the other docs — the extractor's own semantics) plus RAKE phrases
+  (`genius.language.rake_keywords`), an unweighted co-occurrence graph
+  built THROUGH `brain.personal.graph.Graph` so its PageRank and
+  label-propagation communities run verbatim — no second
+  implementation of either, no embeddings, nothing trained.
+- **File-type inference**: the classic magic table through
+  `scan.ac`'s Aho-Corasick automaton, offset-anchored so a "PK" deep
+  in a text file never claims zip; misses fall to an
+  online-correctable multinomial Naive Bayes
+  (`brain.naive_bayes.NaiveBayes`) over byte features that starts
+  EMPTY and learns only from user corrections — persisted as a
+  bounded list of reviewable docs (features + human label) in the
+  brain state, never a model blob.
+
+**Event-driven watching — deliberately NOT shipped.** The §5 invariant
+(reactivity must be event-driven, never a sleep-loop) was audited
+first: the codebase contains zero sleep-loops and zero pollers (every
+scan is a user-invoked one-shot; steady-state idle RSS is zero because
+nothing is resident). The prompt's suggested primitive — "inotify via
+stdlib os/select" — was then measured before being trusted:
+`select()` on a directory fd is ALWAYS reported readable on this
+platform (verified live: an untouched directory selects ready
+immediately), so any watch built on it degrades into a getdents poll
+loop — the exact pattern §5 forbids. The real inotify(7) route needs
+`ctypes`, which ALLOWED_IMPORTS.txt rejects by name. The honest answer
+is no watcher at all: nothing in this design needs one, and a fake
+"event-driven" loop that secretly polls would violate the invariant it
+claims to satisfy. Recorded in Known gaps below.
+
+Safety accounting: read-only analyses (tests compare directory bytes
+before/after); bounded walks (the sysintel max-files discipline); one
+write path — filetype corrections persisted through the brain state's
+existing atomic save, bounded at 500 docs. No new imports beyond the
+existing allow-list; no interaction edges against the shipped shell.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).
@@ -342,6 +395,15 @@ changed, so no new citations are claimed.
 
 - Doc anchors are normalized to exact GitHub slugs — every rule anchor
   resolves to a real `TROUBLESHOOTING.md` heading.
+- **Filesystem event watching (fsbrain)**: no stdlib-legal event source
+  exists on this platform — `select()` on directory fds always reports
+  ready (measured), and `ctypes` (the only stdlib route to inotify(7))
+  is rejected by name in ALLOWED_IMPORTS.txt. If a resident watch ever
+  becomes a real requirement, the honest options are a quarantined
+  ctypes inotify wrapper (a per-module allow-list exception in the
+  documented quarantine pattern) or a short-lived watcher subprocess
+  per §2 — both deliberate design decisions, not implementation
+  details, and neither is needed by anything shipped today.
 - The import scan cannot, in principle, catch aliasing/getattr evasion; the
   operative guarantee is that the reviewed code contains none (grep-verified)
   plus the allow-list as a tripwire.

@@ -939,6 +939,28 @@ snapshot every other consumer uses, and battery capacity is
 deliberately excluded from the metric vector (a cyclic quantity, not a
 drift signal — documented).
 
+**Phase 3 — brain self-learning (2026-09-27)**
+
+**3.1 hierarchical partial pooling.** `brain/pooling.py` is the ONE
+shared utility the operating prompt asked for: every new
+preference/bandit posterior added from here on starts from the
+population's hierarchical prior (Efron & Morris 1975) instead of the
+flat Beta(1,1). Method-of-moments hyperparameters — pooled mean mu0,
+between-arm variance tau², concentration k0 = mu0(1-mu0)/tau² capped
+at full pooling when the arms agree and floored at one pseudocount —
+all deterministic, all hand-checkable (the test pins k0 = 50/7 exactly).
+Honesty accounting: the prior's own mass never counts as evidence; arms
+without observed evidence are LISTED, never fabricated into the pool; a
+pool with no evidence anywhere honestly degenerates to the flat prior
+and says so (`is_flat`); the new prior is
+Beta(k0·mu0, k0·(1-mu0)) with a stated 0.5 Jeffreys floor so an extreme
+pool cannot produce an improper prior — a documented rule of the
+estimator, not a silent clamp of user data; `shrunk_mean` reports each
+arm's shrinkage weight, which visibly decays as its own evidence grows.
+Pure, deterministic, JSON-round-trippable; the first consumer is this
+backlog's own 3.4 timing bandit (its arms are seeded from the existing
+proposal bandit's pooled statistics rather than flat).
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

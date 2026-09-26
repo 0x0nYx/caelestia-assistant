@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Hierarchical partial pooling: `brain/pooling.py` — the shared
+  Efron-Morris (1975) utility; new preference/bandit posteriors seed
+  from the pooled statistics of similar existing arms
+  (method-of-moments mu0/k0/tau², hand-checkable, deterministic)
+  instead of the flat Beta(1,1), with no-evidence pools honestly
+  staying flat.
 - Robust telemetry baseline: `diagnostics/robust_baseline.py` +
   `archetypes.telemetry_drift` — a robust Mahalanobis distance
   (median/MAD scale, Leys et al. 2013; Mahalanobis 1936) over the

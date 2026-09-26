@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- BOCPD drift on routing accuracy: `cortex report` now also feeds the
+  example log's rolling hit-rate through the existing
+  `genius.data.bocpd` primitive (Adams & MacKay 2007) — a real shift in
+  routing accuracy is flagged with a reported changepoint probability,
+  the same honest report-not-action shape as telemetry drift.
 - Undo-weighted calibration: settings undo records gain a PII-safe
   `quick` flag (reverted while still the head of the bounded undo
   ring); `fold_undo_negatives` weighs an approve-then-quick-undo at

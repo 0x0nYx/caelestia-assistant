@@ -793,6 +793,21 @@ fold exactly as before. Both two existing record-shape pins were
 updated (not deleted) to pin the new shape, the same discipline the
 previous session used when behavior explicitly changed.
 
+**1.3 BOCPD drift on routing accuracy.** The example log's rolling
+hit-rate (acceptance over overlapping 5-outcome windows, arrival
+order — the same series shape the numeric telemetry feeds its
+detectors) now runs through `genius.data.bocpd` (Adams & MacKay 2007),
+the ONE existing BOCPD primitive — lazily imported exactly the way
+`dispatch.py` lazily imports the k-means, and pinned by a spy test so
+a second implementation cannot quietly appear. A real shift in routing
+accuracy is therefore flagged the same honest way a shift in CPU load
+is: the changepoint probability is REPORTED with its threshold and the
+segment means before/after travel with it, nothing acts on it (a
+report, not an action — `drift_check`'s halves heuristic stays
+untouched beside it as the deterministic view). Thin data is labelled
+`insufficient-data` and invents no numbers (BOCPD's own n ≥ 4 floor
+does the gating); the whole path is deterministic.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Gap-cluster tool-template stubs: `cortex gaps --draft-stubs`
+  drafts a reviewable markdown stub (name, cue words, TODO body) for
+  each dense, ledger-unaddressed gap cluster — never registered, never
+  wired into the dispatcher, never clobbered once a human edits it.
 - agent exponential-build: baseline recorded on branch
   `agent/exponential-build` before any feature work — 1,297 tests OK
   (skipped=12), `selfcheck` OK, gen_adapter byte-identity OK.

@@ -47,6 +47,15 @@ a LEDGER PROPOSAL (kind ``ontology_gap``) — never an automatically-added
 tool. The ledger's approve/reject is the whole interaction, exactly like
 every other proposal in the system.
 
+TOOL-TEMPLATE STUBS (§5.5, exponential-build 1.1): a dense, UNADDRESSED
+gap cluster can additionally be drafted into a reviewable stub file
+(name, cue words, a TODO body) by ``select_stub_candidates`` + the CLI's
+explicit ``--draft-stubs`` flag — a candidate scaffold for a future
+local tool that is never registered in the router, never wired into
+this dispatcher, never executed, and never clobbered once a human has
+edited it. The functions here stay PURE (no I/O): the CLI owns writing
+the files, exactly as it owns writing state.
+
 Read-only except the state buckets and the ledger proposals it is given;
 this module executes nothing and writes no files itself.
 """
@@ -54,6 +63,7 @@ this module executes nothing and writes no files itself.
 from __future__ import annotations
 
 import math
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -64,7 +74,9 @@ from .session import SessionState
 from .vectorize import tokenize
 
 __all__ = ["GAPS_KEY", "MAX_GAPS", "query_shape", "log_gap", "dispatch",
-           "cluster_gaps", "propose_gap_cluster", "propose_gap_clusters"]
+           "cluster_gaps", "propose_gap_cluster", "propose_gap_clusters",
+           "tool_template_slug", "tool_template_stub_text",
+           "select_stub_candidates"]
 
 # The gap bucket: same discipline as cortex_review (bounded, newest-first,
 # deduped by shape). Gaps are lower-frequency events than review candidates,
@@ -446,3 +458,84 @@ def propose_gap_clusters(state: Dict[str, Any], ledger,
         if pid is not None:
             pids.append(pid)
     return {"proposals": pids, "summary": summary}
+
+
+# ---------------------------------------------------------------------------
+# Tool-template stub drafting (exponential-build 1.1). Pure helpers only:
+# the CLI's explicit --draft-stubs flag turns the selected candidates into
+# reviewable .md files; nothing here registers, wires, or executes anything.
+# ---------------------------------------------------------------------------
+
+def tool_template_slug(label: str) -> str:
+    """A filesystem-safe slug for a cluster label: lowercase, non-
+    alphanumerics collapsed to underscores, trimmed. Deterministic (a
+    pure function of the label, which is itself the cluster's modal
+    shape), so the same cluster always drafts the same stub filename."""
+    stem = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+    return stem or "unnamed_cluster"
+
+
+def tool_template_stub_text(candidate: Dict[str, Any],
+                            drafted_at: str) -> str:
+    """The full markdown text of one tool-template stub (pure). The stub
+    names itself DRAFT, cites the evidence that produced it, lists the
+    cue words, and leaves a TODO body — it becomes a tool only if a
+    human writes the named classical algorithm behind it (author/year
+    citation required, the same discipline every existing module
+    follows). Until then the requests keep falling through honestly."""
+    cues = ", ".join(candidate["tokens"][:SHAPE_TOKENS])
+    name = tool_template_slug(candidate["label"])
+    return "\n".join([
+        f"# tool-template: {name}",
+        "",
+        f"status: DRAFT — auto-drafted from a cortex gap cluster on "
+        f"{drafted_at};",
+        "  NOT registered in the router, NOT wired into the dispatcher,",
+        "  NOT executable by anything. It becomes a tool only if a human",
+        "  writes the named classical algorithm behind it (author, year",
+        "  citation required, same discipline as every existing module).",
+        "",
+        "## Evidence (why this cluster qualifies)",
+        "",
+        f"- {candidate['support']} request(s) shaped like "
+        f"\"{candidate['label']}\" fell through to the cloud tier",
+        f"- category: {candidate['category']}; purity "
+        f"{candidate['purity']}; {candidate['shapes']} distinct phrasing(s)",
+        "",
+        "## Proposed surface",
+        "",
+        f"- name: {name}",
+        f"- cue words: {cues}",
+        "",
+        "## Body",
+        "",
+        "TODO: implement this tool as a named classical algorithm with a",
+        "citation in its docstring (author, year). Until that module",
+        "exists, these requests keep falling through honestly instead of",
+        "being guessed at.",
+        "",
+    ])
+
+
+def select_stub_candidates(state: Dict[str, Any], ledger=None,
+                           **kwargs: Any) -> Dict[str, Any]:
+    """Qualifying clusters that are still UNADDRESSED — the ledger holds
+    NO item at all (pending, approved, or rejected) for the cluster's
+    ``gap-cluster:<label>`` target. Once the ledger has the cluster, the
+    ledger flow IS the address, and a stub alongside it would stack a
+    second review surface on the same need. Reuses ``cluster_gaps``
+    unchanged (same support/purity floors, same clustering); only the
+    candidate filtering is new. Never mutates state, never writes,
+    never registers — the caller decides what happens with the list."""
+    summary = cluster_gaps(state, **kwargs)
+    targets: set = set()
+    if ledger is not None:
+        targets = {p.get("target") for p in ledger.items
+                   if isinstance(p, dict)}
+    addressed: List[Dict[str, Any]] = []
+    unaddressed: List[Dict[str, Any]] = []
+    for cand in summary["candidates"]:
+        target = f"gap-cluster:{cand['label']}"
+        (addressed if target in targets else unaddressed).append(cand)
+    return {"summary": summary, "unaddressed": unaddressed,
+            "addressed": addressed}

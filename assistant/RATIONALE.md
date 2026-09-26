@@ -743,6 +743,36 @@ answers would require loading the file. The settings optimizer keeps the
 optimizer that could write directly would be the most dangerous code in the
 repository.
 
+## 19. Exponential-build sessions (safety accounting per shipped sub-item)
+
+*(One shared section for the second exponential-build run; one dated
+subsection per phase, appended as sub-items ship. Each paragraph is the
+safety accounting the operating prompt requires before a sub-item may
+commit.)*
+
+### Phase 1 — cortex routing intelligence (2026-09-27)
+
+**1.1 gap-cluster → tool-template stubs.** `cortex gaps` gains an
+explicit `--draft-stubs` flag: a dense cluster (the same support ≥ 3 /
+purity ≥ 0.6 floors the clustering always had) that the ledger holds NO
+item for — pending, approved, or rejected; the ledger flow IS the
+address — can be drafted into a reviewable `.md` stub (name, cue words,
+TODO body) under `~/.local/state/caelestia-brain/tool_templates/`
+(`--stubs-dir` overrides). Safety accounting: the drafting functions in
+`cortex/dispatch.py` are pure (the module still writes no files itself —
+the CLI owns the write, exactly as it owns state writes); the stub
+format is markdown, so nothing can import or execute it; the stub
+marks itself DRAFT and is never registered in the router, never wired
+into the dispatcher, never added to the registry (pinned by test); an
+existing stub file is never clobbered (it may carry human edits —
+pinned by test); a draft-only run writes no ledger and does not mutate
+the learned state (pinned by test); selection runs before `--propose`
+files its proposals so one run can do both without the drafter and the
+ledger disagreeing about what is addressed. The stub says plainly what
+the project says everywhere else: the requests keep falling through
+honestly until a human writes the named classical algorithm behind the
+template.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Robust telemetry baseline: `diagnostics/robust_baseline.py` +
+  `archetypes.telemetry_drift` — a robust Mahalanobis distance
+  (median/MAD scale, Leys et al. 2013; Mahalanobis 1936) over the
+  machine's own numeric telemetry as read-only config_hygiene
+  evidence; degenerate and missing coordinates excluded and named,
+  thin evidence refused, chi-square p-value reported with caveats.
 - Commit-risk score: `python3 -m assistant.devflow risk --source F <
   log.txt` — McCabe cyclomatic complexity (McCabe 1976, stdlib ast) x
   recency-decayed churn from `git log --numstat` text (reuses the

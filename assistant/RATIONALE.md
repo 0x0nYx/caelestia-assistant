@@ -917,6 +917,28 @@ half (risk stays None, churn still reported) rather than scoring
 garbage; the whole thing is a report for the human's review — nothing
 gates, nothing blocks, nothing executes.
 
+**2.6 robust Mahalanobis telemetry baseline.**
+`diagnostics/robust_baseline.py` + `agent/archetypes.telemetry_drift`
+(one more read-only evidence source for the config_hygiene
+archetype): center = coordinate-wise median, scale = 1.4826 x MAD
+(Leys, Klein, Bernard & Laurent 2013), distance = Mahalanobis with
+that diagonal robust scatter (Mahalanobis 1936), p-value tail from the
+EXISTING `stats.chi2_sf` primitive. Why robust: a mean/variance
+baseline is poisoned by exactly the outliers it is supposed to catch —
+pinned by a test where one poisoned history row moves a mean-based
+center but not the median. Honesty accounting: degenerate coordinates
+(MAD = 0, the metric never moved) are excluded and NAMED, never given
+a fake scale; missing sample coordinates (no battery, no thermal zone)
+are excluded and counted, never imputed; fewer than half the baseline
+coordinates present in a sample is a REFUSAL, not an extrapolation;
+thin history (< 8 rows) is refused up front; the chi-square p-value is
+reported with its independence/normality caveat attached ("reported
+not worshipped"); the archetype hook is evidence-only — nothing acts
+on the verdict, the live path is the same one-shot /proc+/sys read-only
+snapshot every other consumer uses, and battery capacity is
+deliberately excluded from the metric vector (a cyclic quantity, not a
+drift signal — documented).
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

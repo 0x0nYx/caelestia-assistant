@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   settings consequences, brain posteriors, wizard AHP/TOPSIS) and
   renders each engine's own explanation output in one consistent
   shape — templated, never synthesized.
+- Dimensional/units algebra (`genius/units.py`, wired into the genius
+  dispatcher): SI unit parsing, prefixes, derived and accepted non-SI
+  units, dimension-checked arithmetic and conversion — mismatched
+  dimensions are an explicit error, never silently coerced; affine
+  temperature converts but refuses arithmetic.
 - Reputation-weighted lexicon trust (`cortex/lexicon_diff.py`): an
   EigenTrust-style advisory score (Kamvar et al. 2003) over each
   signer's keep/rollback history and boosted-tool overlap, shown at

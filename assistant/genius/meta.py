@@ -42,6 +42,12 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
         "what is", "calculate", "compute", "evaluate", "how much is",
         "+", "*", "^", "sqrt", "sin", "cos", "log", "percent of",
     ],
+    "units": [
+        "convert", "units", "in metres", "in meters", "in km", "in cm",
+        "to kilometres", "to kilometers", "to cm", "to miles", "how many cm",
+        "how many metres", "how many meters", "in inches", "in feet",
+        "unit conversion", "in si units",
+    ],
     "solve_equation": [
         "solve", "root of", "zero of", "find x", "equation", "= 0",
         "intersects", "when does",
@@ -137,6 +143,8 @@ _STRUCTURAL_RE = {
     "solve_equation": re.compile(r"\bsolve\b"),
     "color_palette": re.compile(r"\b(?:palette|accent color|contrast)\b"),
     "plan_goal": re.compile(r"\b(?:how do i|steps to|plan to|break down)\b"),
+    "units": re.compile(r"\bconvert\b|\b\d+(?:\.\d+)?\s*[A-Za-zµ°%]+\s*"
+                        r"(?:to|in)\s+[A-Za-zµ°%]+\b"),
 }
 
 # When an interrogative shape fires, plain arithmetic evaluation is the
@@ -146,6 +154,7 @@ _STRUCTURAL_PENALTY = {
     "calculus": {"math_eval": 2.5},
     "logic": {"math_eval": 2.5},
     "solve_equation": {"math_eval": 2.0},
+    "units": {"math_eval": 2.5},
 }
 
 
@@ -302,7 +311,15 @@ def _quoted_or_rest(text: str, marker: str) -> str:
 def _run_domain(domain: str, text: str) -> Dict[str, Any]:
     """Dispatch with parameter extraction. Returns result dict."""
     low = text.lower()
+    if domain == "units":
+        from . import units as units_mod
+        return units_mod.handle(text)
     if domain == "math_eval":
+        # unit-ful arithmetic ("3 km + 200 m") is the units engine's to
+        # answer — dimension checks the plain evaluator cannot make
+        from . import units as units_mod
+        if units_mod.looks_unitful(text):
+            return units_mod.handle(text)
         expr = _extract_expression(text)
         if not expr:
             raise ValueError("could not find an arithmetic expression in the request")

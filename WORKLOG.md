@@ -745,3 +745,42 @@ final WORKLOG summary entry lists every sub-item outcome.
   rollback negative signal, tool-overlap propagation (correlated
   signer outranks disjoint one), empty-history honesty, the
   never-auto-skip invariant, event-log bound.
+
+### Phase 2.4 — dimensional/units algebra — SHIPPED
+
+- Grep-first result: no units/dimension module anywhere in genius/ or
+  the tree; mathengine is unit-free by design ("percent / unit-free
+  arithmetic helpers"). Genuinely new — built, then wired through the
+  EXISTING dispatcher pattern.
+- New `assistant/genius/units.py`:
+  * the seven SI base dimensions as integer exponent vectors; SI
+    prefixes (longest-first split; "kg" registered directly per the
+    SI Brochure; "mol" never splits); coherent derived units (N, J,
+    W, Pa, V, F, ohm, ...); accepted non-SI (min, h, day, g, t, L,
+    eV, kWh, bar, atm, in, ft, mi); compound units ("m/s^2",
+    "km*h^-1"); cited to the BIPM SI Brochure 9th ed. 2019;
+  * dimension-checked arithmetic via precedence climbing: + and -
+    demand EQUAL dimensions and keep the left unit for display; * and
+    / compose; ^ takes a dimensionless integer; a MISMATCH is an
+    explicit UnitsError ("refusing to silently coerce — rejected,
+    never clamped", the settings convention);
+  * affine temperature (degC/degF) converts but refuses arithmetic
+    (offsets do not multiply) — documented, tested;
+  * JSON-serialisable results carrying SI values AND a display pair
+    only when the surviving unit resolves (prefix+base like km
+    included); composed names never fabricated into registries.
+- Wiring (matched to meta.py's own dispatch pattern): a `units`
+  domain (cues + structural regex + math_eval penalty), plus an
+  interception in math_eval via `looks_unitful` so unit-ful
+  arithmetic ("3 km + 200 m") reaches the units engine before plain
+  arithmetic. `looks_unitful` deliberately EXCLUDES bare "%" so
+  "15% of 80" still belongs to mathengine's percent path (regression
+  pinned by the existing integration tests, which caught the first
+  draft's overreach).
+- No new write path, no new imports beyond the allow-list (math, re,
+  typing).
+- Tests: `assistant/genius/tests/test_units.py` — 22 cases: parsing
+  (prefixes, compounds, mol, kg), conversion incl. affine
+  temperature, mismatch rejections, arithmetic composition, meta
+  wiring (own domain, interception, honest mismatch errors,
+  percent-path untouched), determinism.

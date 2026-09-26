@@ -330,3 +330,48 @@ the real sandbox state path) was found and fixed with it.
 
 28 tests -> 1297 green; selfcheck + bash harness green. RATIONALE §17.
 Phases 3 (maintenance audit) and 4 (version reset) next.
+
+### Phase 3 — maintenance pass (this commit)
+
+**3.1 Citations re-verified (live)** — all 277 tools' C++ declaration
+lines against the checkout (test_registry, green); the interaction
+edges' claimed_content needles against the checkout
+(test_consequences, green); gen_adapter --verify: tools.json is
+byte-identical to the cpp-headers adapter's output. GUARDS PROVEN to
+fire: injecting `import subprocess` into plans.py failed selfcheck;
+pointing the bar-scale edge citation at a wrong line failed the edge
+guard. Both restored, both green.
+
+**3.2 Consistency** — error style audited (uniform `error: ...` to
+stderr, non-zero exit); dead imports removed (consequences: deque,
+tool_by_path; dbus_surface: Sequence); dbus catalog_lines (exported,
+unwired) now renders in the capabilities card when dbus_surface is on.
+
+**3.3 Dev-process language cleaned from user-facing surfaces** —
+README: "Issue #120 Phase 3"/"phase 3" milestone language replaced by
+functional descriptions; hub.py --help docstring "(phase 1 routing
+fix)" cleaned; cortex review/lexicon subcommand help strings cleaned.
+Engineering docs (RATIONALE, WORKLOG, source comments) keep their
+phase provenance deliberately — that is the audit trail.
+Dead-code check: no dead functions across the phase 1-2 modules
+(public, private, and __all__ exports all referenced; the chat
+"try:" hint is a LIVE fallback pinned by its own test, not dead).
+
+**3.4 Test coverage** — 1297 tests (baseline at session 1: 1049);
+selfcheck + bash harness green; violation-catching proven live (above).
+
+**3.5 Docs rewritten for coherence** — README: layer table extended
+(genius 17 domains with the new algorithms, settings plan cache +
+what-if, cortex LinUCB/Elo, agent archetypes + capability manifest),
+new "conversational front door" section, safety contract gained the
+two quarantined subprocess carve-outs disclosure + the no-auto-merge
+rule, usage examples for chat/what-if/fsbrain/lexicon/capabilities,
+test badge 922 -> 1297, gen_adapter --verify in Development.
+RATIONALE: orphaned duplicate "## 5. Round three" essay (mis-
+numbered, trailing) renumbered §18 and relocated before the closing
+sections; stale "no commits, no branches" claim corrected to the
+actual state (committed per-phase history, pushed to the fork);
+known-gaps gained the live-notification-observation entry.
+CHANGELOG rewrite is Phase 4 (the v0.1 collapse).
+
+Suite 1297 green; selfcheck + bash harness green.

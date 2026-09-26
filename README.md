@@ -6,7 +6,7 @@ No language model in the critical path. No training. No network in the offline c
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-922%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-1297%20passing-brightgreen)
 ![LLM required](https://img.shields.io/badge/LLM%20required-none-success) *(offline core)*
 
 ---
@@ -22,11 +22,11 @@ A shell-side assistant organized as **ten cooperating layers**, each replaceable
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
 | Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief — with the personal-PKM tools split out into an opt-in subpackage |
-| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default); a CART readability tree (Breiman et al. 1984) reports its agreement with the fitted logistic model before any promotion decision |
-| Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, compositional slot-grammar recovery for paraphrases |
-| Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system | 18-domain meta-router over stdlib engines |
+| Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default); a CART readability tree (Breiman et al. 1984) reports its agreement with the fitted logistic model before any promotion decision; a LinUCB contextual bandit (Li et al. 2010) ranks presets by context, and a shared Elo + Bradley-Terry primitive ranks anything compared pairwise |
+| Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, compositional slot-grammar recovery for paraphrases; a session-scoped pending-plan cache that composes follow-up requests, and a what-if consequence view over a cited cross-key interaction table |
+| Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system, files | 17-domain meta-router over stdlib engines: A*/Dijkstra, Edmonds-Karp max-flow/min-cut, label-propagation communities, branch-and-bound + tabu search, resource-contention scheduling over AC-3, NCD compression similarity, BOCPD changepoints, plus a filesystem second-brain (staleness scoring, SimHash near-dups, PageRank knowledge graph, byte-signature file typing) |
 | Scan | `assistant/scan/` | "Scan this 2 GB journal on a 4 GB laptop" | Aho-Corasick + Bloom + Count-Min + HyperLogLog + reservoir + Page-Hinkley + SimHash near-dup fingerprints, one pass, bounded RAM; opt-in KL sketch-divergence novelty detection over every line (including the unmatched ones) |
-| Agent | `assistant/agent/` | "Clean my downloads, then make the shell minimal" | HTN goal decomposition → DAG → simulate → per-node consent → observe & learn |
+| Agent | `assistant/agent/` | "Clean my downloads, then make the shell minimal" | HTN goal decomposition → DAG → simulate → per-node consent → observe & learn; five goal archetypes (config hygiene, package audit, log triage, notification triage, screenshot diff) with a per-install capability manifest |
 
 ### The brain layer (a partial inventory)
 
@@ -48,7 +48,11 @@ The two halves share the generic utility libraries (`nlp.py`, `minhash.py`,
 
 Natural-language → **Intent Parser → Structured Tool Calls → validated application**. Every one of the 277 tools carries its C++ declaration citation, its shipped Nexus control, and its live QML reader. Out-of-range values are **rejected, never clamped**. Multi-change plans get preview-then-confirm. A bounded 12-entry undo history is kept. The assistant never edits `shell.json` except through the explicitly-requested `--apply` gate with a backup written first. The same registry powers the in-shell QML service (`shell/services/SettingsTools.qml`), asserted byte-identical against `tools.json` by a unittest.
 
-Issue #120 Phase 3 ("optimization profiles") ships as `assistant/settings/optimize.py`: five scored objective profiles (gaming / battery / minimal / comfort / accessibility), Pareto-frontier trade-off analysis across profiles, simulated-annealing and coordinate-descent preset synthesis, and AC-3 constraint propagation that refuses contradictory requests with reasons instead of half-applying them.
+The optimization profiles (`assistant/settings/optimize.py`) ship five scored objective profiles (gaming / battery / minimal / comfort / accessibility), Pareto-frontier trade-off analysis across profiles, simulated-annealing and coordinate-descent preset synthesis, and AC-3 constraint propagation that refuses contradictory requests with reasons instead of half-applying them. The what-if mode (`settings --what-if REQUEST|PRESET`, or a "what if …" turn in chat) projects a plan through a small, hand-curated, citation-backed table of KNOWN cross-key interactions — derived effects you did not ask for, constraint conflicts, and reversibility — before you consent to anything; every edge's cited file:line is re-verified against the checkout by test.
+
+### The conversational front door
+
+`caelestia-assist "make my bar thinner"` works directly: an unknown first verb is free text routed through the cortex one-shot, and a near-miss verb ("chatt") gets a "did you mean" prompt instead of a hard error. Inside `caelestia-assist chat`, follow-up requests compose against a session-scoped **pending plan** ("make the bar thinner", "and the dock smaller", "apply these changes") — later instruction wins per tool, the composed list re-validates through the standard planner, a refused apply leaves the changes pending, and "never mind" discards. Requests shaped like multi-step goals route to the agent's simulated plan; diagnosis, search, genius, brain and issue questions run inline in the same turn instead of printing a hint.
 
 ### The in-shell AI sidebar — optional, user-keyed cloud tier
 
@@ -83,8 +87,9 @@ Enforced in code, not policy — by an AST lint (`assistant/diagnostics/schema_l
 
 - **Never executes anything.** Suggested commands are inert strings prefixed `SUGGESTED_NOT_EXECUTED:` with a risk tier (`READ_ONLY < STATE_CHANGING < PRIVILEGED < DESTRUCTIVE`). Destructive suggestions are withheld outright.
 - **No network in the offline core** except an explicitly enabled, loopback-only, single-attempt local Ollama call in the optional generative layer. Non-loopback hosts are rejected before connecting. The one other network surface is the in-shell AI sidebar (`shell/`) — an opt-in, user-keyed cloud chat tier whose calls go only to the provider the user configured, on requests the user initiated (see its section above); its state-changing tool calls are all gated (allow-list, preview, explicit confirm) before anything runs.
-- **No executor imports** (`subprocess`, `socket`, `shutil`, `ctypes`, … are rejected by name), no `os.system`/`os.popen` attribute calls, no auto-exec rule keys.
+- **No executor imports** (`subprocess`, `socket`, `shutil`, `ctypes`, … are rejected by name), no `os.system`/`os.popen` attribute calls, no auto-exec rule keys — with exactly two quarantined, named carve-outs, each pinned by test: `agent/pkgprobe.py` (read-only package-manager queries) and `settings/dbus_surface.py` (kwriteconfig6 / kscreen-doctor / powerprofilesctl / KWin scripting). Both are OFF by default behind a per-install capability kill-switch (a file edit — never a request), spawn only fixed argument arrays, and carry per-command undo records where the tool supports revert. Every other module keeps the zero-tolerance rule.
 - **Write paths are enumerated**: `settings/applier.py` (behind `--apply`/consent, backup first, bounded undo), the brain's proposal ledger (approve/reject only), the agent's journaled tidy moves (rollback-able), and learned-state JSON files. Nothing else writes.
+- **No auto-merge of external data.** Community lexicon diffs are reviewable text you import explicitly (`cortex lexicon import`), capped and warned, with one-command rollback — and signing/verification happens with YOUR external tool (minisign/sq/GPG), never inside the assistant.
 - **Honest verdicts everywhere**: `AMBIGUOUS` asks, `ABSTAIN` refuses, `NOT_FOUND` undo refuses to guess, out-of-range is rejected not clamped, thin evidence is labeled thin.
 
 ## Install & use
@@ -108,18 +113,28 @@ caelestia-assist scan ~/.local/state/caelestia-shell.log
 caelestia-assist settings "make my bar thinner"
 caelestia-assist settings "make everything minimal" --apply
 
+# The verbless front door + conversational composition
+caelestia-assist "make my bar thinner"     # free text, one-shot answer
+caelestia-assist chat                      # then: "and the dock smaller", "what if", "apply these changes"
+
+# What-if: consequences BEFORE consent (cited cross-key interactions)
+caelestia-assist settings --what-if "gaming"
+
 # Misspelled a tool name? Bounded edit distance finds it
 caelestia-assist settings --tool setBarPositin   # -> did you mean setBarPosition?
 
-# Optimization profiles (issue #120 phase 3)
+# Optimization profiles + setup wizard (AHP+TOPSIS over the shipped presets)
 caelestia-assist genius optimize pareto --help
-
-# Setup wizard (issue #120 phase 3): AHP+TOPSIS over the shipped presets
 caelestia-assist settings --wizard --answers 2,3,2,3,3,2
 
 # Config health lint + wallpaper palette (inert suggestions only)
 caelestia-assist settings --lint
 caelestia-assist settings --wallpaper-palette ~/Pictures/wall.png
+
+# The filesystem second-brain (propose-only, nothing moves)
+caelestia-assist genius fsbrain stale ~/Downloads
+caelestia-assist genius fsbrain dupes ~/Documents
+caelestia-assist genius fsbrain graph ~/notes
 
 # One-shot telemetry snapshot (read-only /proc + /sys file reads)
 python3 -m assistant.diagnostics.telemetry
@@ -130,6 +145,13 @@ caelestia-assist cortex review list
 # Local-ontology gaps: what fell through to the cloud sidebar, clustered
 caelestia-assist cortex gaps            # read-only summary
 caelestia-assist cortex gaps --propose  # ledger proposals, never auto-applied
+
+# Federated lexicon sharing (sign/verify OUTSIDE, with your own tool)
+caelestia-assist cortex lexicon export           # the reviewable diff
+caelestia-assist cortex lexicon import < diff     # capped, warned, rollback-able
+
+# The per-install capability manifest (kill-switches, file-edit only)
+caelestia-assist capabilities
 
 # The second brain
 caelestia-assist brief                       # today on one deterministic page
@@ -161,8 +183,9 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 922 tests, ~1 min
+python3 -m unittest discover -s . -p "test_*.py"   # 1297 tests, ~1 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
+python3 -m assistant.settings gen_adapter --verify # registry byte-identity guard
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the import-policy contract and the discipline for adding tools to the settings registry. Design rationale (why rules-first, why BM25 over embeddings, why nothing is trained) lives in [`assistant/RATIONALE.md`](assistant/RATIONALE.md); the settings layer's full specification in [`assistant/settings/DESIGN.md`](assistant/settings/DESIGN.md).

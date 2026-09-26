@@ -97,6 +97,16 @@ def render() -> str:
     for name in sorted(DEFAULTS):
         state = "on " if current.get(name) else "off"
         lines.append(f"  [{state}]  {name}")
+    # The DBus surface's command catalog: the reviewable one-line-per-
+    # command listing, shown when the capability is on (the operator
+    # can see exactly what can spawn without reading the module).
+    if current.get("dbus_surface"):
+        try:
+            from .settings.dbus_surface import catalog_lines
+            lines.append("")
+            lines.extend("  " + line for line in catalog_lines())
+        except Exception:
+            pass  # the catalog listing is best-effort, never fatal
     if current.get("_source") != "defaults+user":
         lines.append("")
         lines.append("  (defaults in effect — the user file has not "

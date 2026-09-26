@@ -22,7 +22,6 @@ untouched.
 
 from __future__ import annotations
 
-from collections import deque
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 __all__ = ["EDGES", "project", "render"]
@@ -149,7 +148,7 @@ def project(ops: Sequence[Dict[str, Any]],
     ops = [dict(op) for op in ops]
     derived: List[Dict[str, Any]] = []
 
-    from .registry import tool_by_path, tool_by_name
+    from .registry import tool_by_name
 
     def path_of(tool_name: str) -> Optional[str]:
         spec = tool_by_name(str(tool_name))

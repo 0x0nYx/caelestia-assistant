@@ -713,6 +713,36 @@ skew routing toward wrong tools, bounded by the AMBIGUOUS/consent
 gates); generation is a build-time developer act — the runtime
 registry loader is untouched and never executes generator code.
 
+## 18. Agency without autonomy creep (the agent, scan, and optimizer design)
+
+*(Written in the round that first shipped the agent layer; kept verbatim — the design holds.)*
+
+The agent (`assistant/agent/`) was designed against the failure mode the
+layers above exist to prevent: an "AI that does things" that quietly does
+them wrong. Three choices follow from that. First, decomposition is
+hierarchical and deterministic (HTN methods over cue-classified goals), and
+the graph is *projected* (`--simulate`) before anything runs — the plan is
+an artifact the user reads, not a hidden process. Second, consent is
+per-node and structural: a node above READ_ONLY risk carries
+`consent_required=True` and the engine refuses to run it without a True
+from the caller; there is no "trust me" flag, and no PRIVILEGED or
+DESTRUCTIVE node type exists at all — that work stays an inert suggested
+string. Third, learning observes outcomes (accepted / refused / failed /
+skipped) through the same ledger-shaped signal every other learner uses, so
+the agent gets better at proposing exactly what you approve — and the
+preference model, conformal layer, and drift detector make that improvement
+auditable instead of mystical.
+
+The scan layer exists because the honest bottleneck on a low-end machine is
+memory, not intelligence: Aho-Corasick makes signature scanning O(stream)
+regardless of rule count, and the probabilistic structures (Bloom, Count-Min,
+HLL, reservoir) give provable-bounds answers under fixed RAM where exact
+answers would require loading the file. The settings optimizer keeps the
+#120 contract intact — Pareto fronts and AC-3 constraint propagation
+*propose*, the planner *validates*, the applier *gates* — because an
+optimizer that could write directly would be the most dangerous code in the
+repository.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).
@@ -722,14 +752,24 @@ registry loader is untouched and never executes generator code.
   patches (`AiAssistant.qml`) and adds (`SettingsTools.qml`) — both left as
   unreviewed, separately-reviewable diffs for the maintainer's own pass; the
   four troubleshooting layers touch no shipped shell code at all.
-- No push, no pull request, no issue filed: the work is a local, unreviewed
-  checkout on top of `dev` — untracked `assistant/`, `tests/test_assistant.sh`
-  and the two shell-file changes, no commits, no branches.
+- No push to upstream, no pull request, no issue filed: this branch
+  is pushed to the fork for the maintainer to review — the work is
+  committed (git history intact, one commit per phase, WORKLOG.md
+  recording every session), never squashed, never force-pushed, and
+  the maintainer's accept/reject decision stays theirs.
 
 ## Known gaps left for human review
 
 - Doc anchors are normalized to exact GitHub slugs — every rule anchor
   resolves to a real `TROUBLESHOOTING.md` heading.
+- **Live notification observation** (the notification-triage archetype
+  is a PURE classifier of event records): watching notifications live
+  would need the DBus surface, which now exists
+  (`settings/dbus_surface.py`, quarantined, kill-switched OFF) but
+  carries no notification-listening command — adding one is a
+  reviewable catalog diff plus the maintainer sign-off the DBus
+  proposal's own escalation demands. Until then the archetype works
+  only on records the user hands it.
 - **Filesystem event watching (fsbrain)**: no stdlib-legal event source
   exists on this platform — `select()` on directory fds always reports
   ready (measured), and `ctypes` (the only stdlib route to inotify(7))
@@ -760,31 +800,3 @@ registry loader is untouched and never executes generator code.
   `GlobalConfig` property assignments; the offline CLI writes the watched
   file), and which one Caelestia wants is a design call that belongs to the
   maintainer, not to this branch.
-
-## 5. Round three: agency without autonomy creep
-
-The agent (`assistant/agent/`) was designed against the failure mode the
-layers above exist to prevent: an "AI that does things" that quietly does
-them wrong. Three choices follow from that. First, decomposition is
-hierarchical and deterministic (HTN methods over cue-classified goals), and
-the graph is *projected* (`--simulate`) before anything runs — the plan is
-an artifact the user reads, not a hidden process. Second, consent is
-per-node and structural: a node above READ_ONLY risk carries
-`consent_required=True` and the engine refuses to run it without a True
-from the caller; there is no "trust me" flag, and no PRIVILEGED or
-DESTRUCTIVE node type exists at all — that work stays an inert suggested
-string. Third, learning observes outcomes (accepted / refused / failed /
-skipped) through the same ledger-shaped signal every other learner uses, so
-the agent gets better at proposing exactly what you approve — and the
-preference model, conformal layer, and drift detector make that improvement
-auditable instead of mystical.
-
-The scan layer exists because the honest bottleneck on a low-end machine is
-memory, not intelligence: Aho-Corasick makes signature scanning O(stream)
-regardless of rule count, and the probabilistic structures (Bloom, Count-Min,
-HLL, reservoir) give provable-bounds answers under fixed RAM where exact
-answers would require loading the file. The settings optimizer keeps the
-#120 contract intact — Pareto fronts and AC-3 constraint propagation
-*propose*, the planner *validates*, the applier *gates* — because an
-optimizer that could write directly would be the most dangerous code in the
-repository.

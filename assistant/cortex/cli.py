@@ -602,8 +602,8 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                            help="record the suggestion as a pending LEDGER proposal "
                                 "(still needs ledger approve to write)")
     review_p = sub.add_parser("review", help="batch-review near-threshold phrases "
-                                              "(issue #120 phase 4.3: logged, never "
-                                              "silently learned)")
+                                              "(logged, never silently "
+                                              "learned)")
     review_p.add_argument("action", nargs="?", default="list",
                           choices=["list", "label", "dismiss"])
     review_p.add_argument("arg1", nargs="?", default="",
@@ -628,8 +628,8 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                         help="minimum modal-shape coverage (default 0.6, the "
                              "workspace.py floor)")
     lex_p = sub.add_parser("lexicon", help="federated, opt-in, signed "
-                                            "lexicon-diff sharing (phase 2.6: "
-                                            "export/import/forget; no network, "
+                                            "lexicon-diff sharing "
+                                            "(export/import/forget; no network, "
                                             "no auto-merge — verify signatures "
                                             "with YOUR external tool)")
     lex_p.add_argument("action", choices=["export", "import", "forget",

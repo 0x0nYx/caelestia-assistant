@@ -15,7 +15,7 @@
   caelestia-assist agent "goal" [--simulate]        agentic orchestrator (consent-gated)
   caelestia-assist api < request.json               JSON bridge for the brain (QML/IPC)
 
-Verbless front door (phase 1 routing fix): a first token that matches no
+Verbless front door: a first token that matches no
 verb above is no longer a hard error. A token within edit distance 2 of
 exactly one verb gets a "did you mean" prompt (the settings layer's own
 correction style — never a silent guess); anything else is treated as

@@ -392,3 +392,73 @@ $HOME, none tracked in the repo — confirmed nothing in-tree was
 modified by the reset).
 
 Suite 1297 green; selfcheck green.
+
+### Final summary — 2026-09-26 (session 2 completion)
+
+**Definition of Done — ALL PHASES SHIPPED:**
+
+- Phase 1 (routing fix): SHIPPED, commit 5043d9b — verbless front
+  door, generalized inline delegation (all six categories), agent
+  delegate, sidebar dispatch bridge; regression tests in
+  test_cortex_pipeline / test_dispatch; output above.
+- Phase 2: ALL SEVEN ITEMS SHIPPED — 2.1 fsbrain (1b51183), 2.2 new
+  genius domains (7901ac4), 2.3 agent archetypes + capabilities
+  (2e21af5), 2.4 self-learning (e11020b), 2.5 plan cache + 2.7 what-if
+  (8d4468d), 2.7 dbus surface (df3d271), 2.6 lexicon-diff + generation
+  adapter (13c1cfa). NONE BLOCKED.
+- Phase 3 (maintenance audit): SHIPPED, 9771184 — citations
+  re-verified live, guards proven to fire, consistency + dead-code
+  audit, milestone language cleaned from user-facing surfaces, docs
+  rewritten coherent.
+- Phase 4 (version reset): SHIPPED, 09d522e — CHANGELOG collapsed to
+  the single v0.1 initial baseline, all version strings reset to
+  0.1.0, git history NOT rewritten, user runtime state NOT touched.
+
+**Final verification (all run against HEAD 09d522e):**
+- python3 -m unittest discover: **1297 tests, OK (skipped=1)**
+  [baseline at session start: 1049]
+- python3 -m assistant.hub selfcheck: **OK**
+- bash tests/test_assistant.sh: **passed 10, failed 0**
+- python3 -m assistant.settings gen_adapter --verify: **OK —
+  tools.json byte-identical to the adapter's output**
+- Count pins: 277 tools, group tallies, quarantine set, capability
+  posture, genius domains — all pinned green.
+
+**INVARIANT CHECK (the eight, each verified at HEAD):**
+1. Python stdlib only in assistant/ core: HELD — ALLOWED_IMPORTS
+   unchanged except the documented bz2 addition (2.2, named exception,
+   cited); import policy clean (selfcheck).
+2. No subprocess/socket/os.system in the default path: HELD — exactly
+   two quarantined modules (pkgprobe, dbus_surface), both OFF by
+   default behind capability kill-switches, pinned by tests in three
+   suites; every other module zero-tolerance.
+3. Every write: dry-run -> plan -> consent -> backup -> bounded undo:
+   HELD — the applier spine unchanged; the plan cache composes but
+   re-validates through the standard planner and the consent gate;
+   dbus writes carry per-command undo records; no new write path
+   exists outside the enumerated set.
+4. No training/fine-tuning/embeddings; all intelligence is named
+   classical algorithms with citations: HELD — LinUCB (Li et al.
+   2010), feature hashing (Weinberger et al. 2009), BOCPD (Adams &
+   MacKay 2007), Edmonds-Karp (1972), tabu search (Glover 1986),
+   Elo/Bradley-Terry — all cited in docstrings and RATIONALE.
+5. No resident daemon; event-driven; idle RSS ~0: HELD — one-shot
+   CLI + bridge processes only; the fsbrain watcher finding (select()
+   always ready, ctypes banned) documented as a known gap, no poller
+   shipped; zero sleep-loops in the tree.
+6. Registry/citation discipline: HELD — 277 tools' citations verified
+   against the checkout; the interaction-edge table citation-guarded;
+   byte-identity green; uncited claims remain lint errors.
+7. No auto-merge of community/external data: HELD — lexicon import is
+   an explicit, capped, warned, rollback-able user command; imports
+   land as supervision and review candidates, never auto-applied.
+8. OUT OF SCOPE stayed out: HELD — no OCR (screenshot diff is pixel
+   hashing), no auto-execution above READ_ONLY without consent
+   (agent nodes stay per-node consented; dbus run_write requires the
+   caller's explicit consent), no federated auto-learning (sharing is
+   reviewable text with external signing).
+
+**Branch state:** 12 commits on main ahead of origin/main
+(9a28465 -> 09d522e), 59 files changed, +10,031/-976. Working tree
+clean. Issue #120 checked at session start (OPEN, 14 comments, last
+updated 2026-09-25T17:34:30Z; snapshot's core facts still match).

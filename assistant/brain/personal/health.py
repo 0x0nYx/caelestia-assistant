@@ -35,3 +35,28 @@ def score(note_id, age_days, orphan_ids, dup_ids, survival_curve=None, horizon=3
 def rank_notes(notes_meta):
     """notes_meta: [dict as returned by score()]. Worst health first."""
     return sorted(notes_meta, key=lambda r: r["score"])
+
+# ---------------------------------------------------------------------------
+# Uncertainty labeling (exponential-build-4 H): the health score
+# subtracts point penalties from a survival PROBABILITY that itself
+# comes from a Kaplan-Meier curve of unknown sample size — the score
+# is a point estimate, and this is the explicit label saying what
+# uncertainty model it does NOT carry.
+# ---------------------------------------------------------------------------
+
+
+def uncertainty_label(survival_curve=None) -> str:
+    """The honest label for the score's uncertainty. With a survival
+    curve, the p_revisit estimate carries the curve's own sampling
+    noise, which this module does NOT model (no Greenwood variance is
+    computed here) — said plainly. Without a curve, the staleness
+    penalty is a deterministic age threshold: no uncertainty because
+    there is no estimate."""
+    if survival_curve is not None:
+        return ("no uncertainty model available for this score: the "
+                "survival probability's sampling noise (Greenwood "
+                "variance) is not propagated into the penalties — "
+                "treat small score differences as noise")
+    return ("no uncertainty model available for this score: the "
+            "penalties are deterministic thresholds, not estimates — "
+            "no interval applies and none is needed")

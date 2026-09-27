@@ -1,5 +1,6 @@
 """Tests for the quarantined DBus surface (phase 2.7's DBus half,
-proposals/2026-09-26-c-dbus-surface.md).
+the former proposals/2026-09-26-c-dbus-surface.md, pruned once
+implemented — the design lives in the module docstring and history).
 
 The proposal's own verification plan, as unit tests:
 

@@ -1,7 +1,8 @@
 """brain.ranking — the shared pairwise ranking primitive (phase 2.4).
 
 Generalizes the already-specified Elo/Bradley-Terry preset ranking
-(proposals/2026-09-26-c-elo-preset-ranking.md) to ANY pairwise
+(the former proposals/2026-09-26-c-elo-preset-ranking.md, pruned
+in exponential-build-3 Phase 2 once implemented) to ANY pairwise
 comparison of named items — presets AND agent-proposed plans both
 consume this ONE module:
 

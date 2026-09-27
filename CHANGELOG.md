@@ -6,154 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-- Sidebar fsbrain summary: `caelestia_genius_fsbrain_summary` (bridge op `genius_fsbrain_summary`) — the read-only staleness report only; the tidy mover is never reachable from the sidebar.
-- Sidebar optimizer preview: `caelestia_genius_optimize` (bridge op `optimize_recommend`) — Pareto/AC-3 profile ranking, read-only preview only.
-- Sidebar units tool: `caelestia_genius_units` (bridge op `genius_units`) — dimension-checked conversion and arithmetic on-device; mismatched dimensions rejected, never coerced.
-- Sidebar graphs tool: `caelestia_genius_graphs` joins the sidebar registry (bridge op `genius_graphs`) — Dijkstra/MST/Hungarian assignment over JSON inputs, read-only; A* stays CLI-only (its heuristic is a function, not data).
-- Disk-backed bounded-memory search index: `retrieval cli disk-index
-  ROOT --out DIR --ceiling MB` + `disk-search` — an external-merge-
-  sort inverted index over arbitrary folder trees (heapq.merge runs,
-  metadata-only query path, same BM25 as the in-memory index), with
-  the RAM footprint MEASURED in the build report rather than asserted.
-- Attention-aware timing: `brain/timing.py` ranks WHEN (never WHAT) a
-  proposal should surface — Thompson sampling over time buckets seeded
-  from the pooled prior (3.1), weighted by the rhythm engine's
-  activity z-scores and historical decision latency, with Holt-trend
-  deferral advice; nothing surfaces automatically.
-- Regret audit: `brain/regret.py` — every Beta bandit's cumulative
-  reward is now compared against the best-fixed-arm-in-hindsight
-  baseline in the periodic reports (`cortex report`, `brain
-  calibration`), with the estimate caveat printed, not claimed.
-- Off-policy evaluation gate: `brain ope SWITCH` replays the
-  approve/reject ledger through a candidate kill-switch policy with an
-  importance-weighted estimator (Dudik/Langford/Li 2011 framing) and
-  prints the estimated accept rate with support/coverage accounting —
-  evidence only, it writes nothing and flips nothing.
-- Hierarchical partial pooling: `brain/pooling.py` — the shared
-  Efron-Morris (1975) utility; new preference/bandit posteriors seed
-  from the pooled statistics of similar existing arms
-  (method-of-moments mu0/k0/tau², hand-checkable, deterministic)
-  instead of the flat Beta(1,1), with no-evidence pools honestly
-  staying flat.
-- Robust telemetry baseline: `diagnostics/robust_baseline.py` +
-  `archetypes.telemetry_drift` — a robust Mahalanobis distance
-  (median/MAD scale, Leys et al. 2013; Mahalanobis 1936) over the
-  machine's own numeric telemetry as read-only config_hygiene
-  evidence; degenerate and missing coordinates excluded and named,
-  thin evidence refused, chi-square p-value reported with caveats.
-- Commit-risk score: `python3 -m assistant.devflow risk --source F <
-  log.txt` — McCabe cyclomatic complexity (McCabe 1976, stdlib ast) x
-  recency-decayed churn from `git log --numstat` text (reuses the
-  diffstat parser; no subprocess), tiered low/medium/high at stated
-  thresholds; a report, never a gate.
-- Resolution syllogism checker: `genius/logic.py::syllogism_check`
-  decides 'is this argument valid' for the categorical fragment by
-  refuting premises + negated conclusion with binary resolution
-  (Robinson 1965) — empty clause = valid, saturation = invalid, both
-  with derivation evidence; the meta logic domain routes
-  therefore-shaped arguments when every clause parses.
-- NCD file/folder resemblance: `genius fsbrain resemble FILE
-  --folders D1,D2,...` answers "which folder does this file most
-  resemble" via the existing NCD primitive (Li et al. 2004) — read-
-  only, bounded deterministic sampling, empty folders skipped and
-  named, truncation reported, full ranking returned.
-- Stdlib CSV expression domain: `genius data --csv ... --expr ...`
-  evaluates named-column expressions (arithmetic, comparisons, Kleene
-  and/or/not, stats.py aggregates) over a user-supplied CSV/TSV via an
-  ast node whitelist — eval never called, unavailable cells never
-  coerced, out-of-range quantile rejected not clamped.
-- Tiny inductive program synthesis: `genius synth` (Gulwani 2011,
-  FlashFill-style) induces a string transformation from 2-3
-  before/after examples over a tiny explainable DSL — every example
-  must verify exactly, anything else abstains; the only executable-
-  looking output is an inert SUGGESTED_NOT_EXECUTED mv line.
-- Discriminative re-ranker: `cortex/reranker.py` — an averaged pairwise
-  max-margin perceptron (Rosenblatt 1958 / Herbrich et al. 2000 /
-  Collins 2002) over the router's own per-candidate signal features,
-  trained only on local approved routing history, gated by the
-  conformal calibrator with the router's ranking as the honest
-  fallback; ships library-first like the slot tagger, live pipeline
-  untouched.
-- BOCPD drift on routing accuracy: `cortex report` now also feeds the
-  example log's rolling hit-rate through the existing
-  `genius.data.bocpd` primitive (Adams & MacKay 2007) — a real shift in
-  routing accuracy is flagged with a reported changepoint probability,
-  the same honest report-not-action shape as telemetry drift.
-- Undo-weighted calibration: settings undo records gain a PII-safe
-  `quick` flag (reverted while still the head of the bounded undo
-  ring); `fold_undo_negatives` weighs an approve-then-quick-undo at
-  4 beta units vs a plain reject's 1 — posterior 2/7 vs 1/3 — while
-  slow undos and old logs keep the plain weight.
-- Gap-cluster tool-template stubs: `cortex gaps --draft-stubs`
-  drafts a reviewable markdown stub (name, cue words, TODO body) for
-  each dense, ledger-unaddressed gap cluster — never registered, never
-  wired into the dispatcher, never clobbered once a human edits it.
-- agent exponential-build: baseline recorded on branch
-  `agent/exponential-build` before any feature work — 1,297 tests OK
-  (skipped=12), `selfcheck` OK, gen_adapter byte-identity OK.
-- Unified pending-decisions inbox: `caelestia-assist inbox
-  list|ranked|approve|reject` — one ranked view over ledger proposals,
-  gap clusters, the pending plan and agent consent nodes, dispatching
-  every decision through each source module's own entry point (no new
-  approval logic, no new write path; plan applies stay dry-run without
-  `--write`).
-- Unified `why` explainer: `caelestia-assist why [<id>|--engine ...]`
-  walks back through whichever engine produced the last surfaced item
-  (diagnostics rule citations, router path + conformal interval,
-  settings consequences, brain posteriors, wizard AHP/TOPSIS) and
-  renders each engine's own explanation output in one consistent
-  shape — templated, never synthesized.
-- Governance docs: `docs/UPSTREAM_CASE.md` (the classical-layer vs
-  bundled-small-LLM argument, quoting the issue #120 corpus
-  verbatim), `docs/LICENSING_OPEN_QUESTION.md` (the AGPLv3-vs-GPLv3
-  upstream combination question, explicitly left open for a human),
-  and `docs/PR_SURFACE_PLAN.md` (a proposed, not-executed narrowed
-  upstream-first surface).
-- Personal prediction calibration (`brain/personal/selfcal.py`): an
-  opt-in Brier-score ledger (Brier 1950) over the user's own STATED
-  predictions with explicit resolution — certainty claims rejected
-  rather than clamped, double resolution refused, nothing inferred
-  from unstated behavior; a distinct personal-only instance
-  (brain/calibrate.py untouched).
-- Backlink suggestion blend (`brain/personal/linkrec.py`): the
-  Adamic-Adar graph signal combined with TF-IDF cosine similarity from
-  the shared textmine engine (new public `tfidf_vectors`/`cosine`
-  seam) on one saturated scale, with honest via labels and the
-  minhash-Jaccard cold-start fallback retained.
-- Habit/completion correlation mining
-  (`brain/personal/correlate.py`): point-biserial (Tate 1954) and
-  Yates-corrected chi-square tests between caller-supplied habit
-  signals and task completion — framed correlational-never-causal,
-  thin evidence labeled thin, missing signals skipped not imputed.
-- Dimensional/units algebra (`genius/units.py`, wired into the genius
-  dispatcher): SI unit parsing, prefixes, derived and accepted non-SI
-  units, dimension-checked arithmetic and conversion — mismatched
-  dimensions are an explicit error, never silently coerced; affine
-  temperature converts but refuses arithmetic.
-- Reputation-weighted lexicon trust (`cortex/lexicon_diff.py`): an
-  EigenTrust-style advisory score (Kamvar et al. 2003) over each
-  signer's keep/rollback history and boosted-tool overlap, shown at
-  import time — strictly advisory: the explicit per-diff review
-  requirement never auto-skips.
-- Structured slot tagger (`cortex/slot_tagger.py`): an averaged
-  structured perceptron (Collins 2002) layered ON TOP of the
-  compositional slot grammar, trained only from local approved history
-  through the grammar's own labels, gated by the conformal calibrator —
-  low confidence or no calibration data falls back to the existing
-  grammar/char-ngram path with the reason attached.
-- Closed-loop resource throttle (brain/dreamtime.py): a PI cadence
-  controller (anti-windup bounded, actuator-limited) reads the
-  telemetry layer's read-only /proc+/sys snapshots during batch runs
-  and holds the scan/brain cadence under a conservative, configurable
-  CPU ceiling (default 25%, below the window-eligibility gate) —
-  fixture-injectable telemetry, no new write path, no scheduler.
-- Evidence fusion for troubleshooting (`diagnostics/fusion.py`):
-  weighted-Bayes combination (log-odds opinion pool, Genest & Zidek
-  1986) of the diagnostics rules', retrieval BM25's and scan's
-  independently produced evidence into one ranked diagnosis with
-  per-source contributions — read-only downstream consumer, abstains
-  instead of inventing votes, rejects out-of-range inputs instead of
-  clamping, merges hypotheses only through an explicit caller map.
+### Added — exponential-build-3
+
+- Reasoning primitives: Rete forward chaining over matched rules (Forgy 1982) and Dung abstract argumentation (1995) in `diagnostics/rette.py` / `argumentation.py`; Case-Based Reasoning cycle (retain = a ledger proposal) and structure-mapping analogy (Gentner 1983) in `retrieval/cbr.py` / `structure_mapping.py`.
+- No-LLM learning: Kneser-Ney smoothed n-grams as the never-override SymSpell fallback (Kneser & Ney 1995; Chen & Goodman 1999) in `brain/kneser_ney.py`; ADWIN drift consensus with Page-Hinkley (Bifet & Gavaldà 2007) in `cortex/adwin.py`; hierarchical meta-bandit over recommendation engines (`brain/meta_bandit.py`); Laplace-DP lexicon-diff export (`cortex/dp.py`, `--dp` on `cortex lexicon export`).
+- Program synthesis: `genius synth` scaled from 2-3 to 2-32 examples via version-space intersection (Gulwani 2011); Angluin L* regex induction (`genius/angluin.py`, 1987 — target mode never claims equivalence beyond its conformance set); macro capture/replay of APPROVED settings sequences (`settings/macros.py`; every replay needs `--apply` + `--confirm`, single-change macros included).
+- Personal link-graph views: time-decay edge weights and edge-strength PageRank, HITS hubs/authorities (Kleinberg 1999), NMF topic extraction (Lee & Seung 1999) — `personal graph` / `personal topics`.
+- Shell/system intelligence: PrefixSpan launch-sequence mining (Pei et al. 2001) with `launch_pattern` ledger proposals (`brain/sequences.py`); predictive battery/thermal advice (Holt 1957 trend + BOCPD regime change, iid-residual intervals labeled indications) via `cortex power`; inotify proactive triggering documented as a proposal only (`proposals/2026-09-27-c-inotify-proactive.md`).
+- Community direction: signed rule packs (`rulepack export|import|...` — payload-hash integrity + the built-ins' own safety gates; imported packs are review data, never live); the synthetic-fixture framework `assistant/fixtures.py` (contributors need no caelestia-kde installation); opt-in engine telemetry (`cortex telemetry` — coverage/accuracy only, Laplace-DP export).
+- Interaction polish: `settings --threeway` (current vs proposal vs undo-restore value per touched key); idle-cadence preference invitations (frequency-capped, surfaced in `settings --rank`, answered by `--prefer`); the ABSTAIN top-2 score gap in `caelestia-assist why`.
+
+### Added — earlier builds (condensed)
+
+- Unified pending-decisions inbox (`caelestia-assist inbox`) and unified `why` explainer; evidence fusion for troubleshooting (Genest & Zidek 1986); closed-loop resource throttle (PI cadence controller, `brain/dreamtime.py`); structured slot tagger (Collins 2002, conformal-gated); reputation-weighted lexicon trust (Kamvar et al. 2003, advisory only).
+- Personal PKM: prediction calibration (Brier 1950, `personal/selfcal.py`), backlink blend (Adamic-Adar + TF-IDF), habit/completion correlation mining (Tate 1954, correlational-never-causal); dimensional/units algebra (`genius/units.py` — mismatched dimensions are errors, never coercions).
+- Genius layer: inductive string synthesis, CSV expression domain (ast whitelist, eval never called), NCD file/folder resemblance, resolution syllogism checker (Robinson 1965), dimensional algebra, disk-backed bounded-memory search index (measured, not asserted, RAM), graphs/units/optimize/fsbrain-summary sidebar tools (read-only; A* stays CLI-only).
+- Learning/audit: regret-vs-best-fixed audit (travels with its estimate caveat), off-policy evaluation gate (`brain ope`, IPS replay), attention-aware timing, hierarchical partial pooling (Efron & Morris 1975, flat-stays-flat), BOCPD drift on routing accuracy, undo-weighted calibration (PII-safe `quick` flag), pairwise re-ranker (conformal-gated, library-first), gap-cluster tool-template stubs, robust telemetry baseline (Leys et al. 2013).
+- Governance docs: `docs/UPSTREAM_CASE.md`, `docs/LICENSING_OPEN_QUESTION.md` (left open), `docs/PR_SURFACE_PLAN.md`; commit-risk score (`devflow risk`, McCabe 1976).
 
 ## [0.1.0] — 2026-09-26 — initial baseline
 

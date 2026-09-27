@@ -1,6 +1,8 @@
 """settings.consequences — what-if consequence-graph mode (phase 2.7).
 
-Implements proposals/2026-09-26-c-whatif-consequences.md as specified:
+Implements the former proposals/2026-09-26-c-whatif-consequences.md
+(pruned in exponential-build-3 Phase 2 once implemented — this
+docstring carries the design) as specified:
 a HAND-CURATED, citation-backed table of KNOWN cross-key interactions in
 the shell's own code; a bounded, cycle-safe projection over a candidate
 op list; the existing AC-3 conflict check extended to see induced

@@ -140,16 +140,23 @@ class HistoryTests(unittest.TestCase):
 
     def test_cli_undo_smoke(self) -> None:
         from assistant.settings import cli
+        import io
+        import contextlib
         self._apply("bar.scale", 1.4)
-        rc = cli.main(["--undo", "--file", str(self.target)])
-        self.assertEqual(rc, 0)
-        # the apply created the key on an empty file; undo removes it.
-        self.assertIsNone(self._read("bar.scale"))
-        # and the EFFECTIVE value (file + default) reads back as 1.0:
-        from assistant.settings.explain import explain as explain_fn
-        self.assertIn("set to 1 ", explain_fn("bar.scale", self.target)["answer"])
-        rc = cli.main(["--history", "--file", str(self.target)])
-        self.assertEqual(rc, 0)
+        # capture stdout: a test that leaks CLI renders into the
+        # runner's output hides real failures (fixed in
+        # exponential-build-3 Phase 2's hygiene pass)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = cli.main(["--undo", "--file", str(self.target)])
+            self.assertEqual(rc, 0)
+            # the apply created the key on an empty file; undo removes it.
+            self.assertIsNone(self._read("bar.scale"))
+            # and the EFFECTIVE value (file + default) reads back as 1.0:
+            from assistant.settings.explain import explain as explain_fn
+            self.assertIn("set to 1 ",
+                          explain_fn("bar.scale", self.target)["answer"])
+            rc = cli.main(["--history", "--file", str(self.target)])
+            self.assertEqual(rc, 0)
 
 
 if __name__ == "__main__":

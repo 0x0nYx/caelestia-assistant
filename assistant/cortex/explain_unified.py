@@ -375,12 +375,6 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--json", action="store_true")
 
 
-def _default_ledger() -> Path:
-    import pathlib
-    return (pathlib.Path.home()
-            / ".local/state/caelestia-brain/ledger.json")
-
-
 def main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(
@@ -401,7 +395,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     _add_common(ap)
     args = ap.parse_args(argv)
 
-    ledger_path = args.ledger or _default_ledger()
+    from ..brain.cli import DEFAULT_LEDGER  # the canonical path
+    ledger_path = Path(args.ledger) if args.ledger else DEFAULT_LEDGER
     state = brain_state.load(args.state) if args.state else {}
 
     if args.engine:

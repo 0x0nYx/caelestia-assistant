@@ -33,7 +33,7 @@ first-occurrence suffixes, and the ranked output sorts by
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 __all__ = ["prefixspan", "day_sequences", "mine_launch_patterns",
            "propose_patterns"]

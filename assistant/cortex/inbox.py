@@ -449,17 +449,12 @@ def _add_common(p: argparse.ArgumentParser) -> None:
                    help="target shell.json for plan-item applies")
 
 
-def _default_ledger() -> Path:
-    import pathlib
-    return (pathlib.Path.home()
-            / ".local/state/caelestia-brain/ledger.json")
-
-
 def _build(ledger: Optional[str], state: Optional[str],
            pending_plan: Optional[str]) -> Inbox:
     state_path = Path(state) if state else (
         brain_state.resolve_path() if state is None else None)
-    return Inbox(ledger or _default_ledger(),
+    from ..brain.cli import DEFAULT_LEDGER  # the canonical path
+    return Inbox(ledger or DEFAULT_LEDGER,
                  state_path,
                  Path(pending_plan) if pending_plan else None)
 

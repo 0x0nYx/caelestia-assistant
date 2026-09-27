@@ -1,5 +1,7 @@
 """cortex.lexicon_diff — federated, opt-in, signed lexicon-diff sharing
-(phase 2.6, proposals/2026-09-26-c-lexicon-diff-sharing.md).
+(phase 2.6; the former proposals/2026-09-26-c-lexicon-diff-
+sharing.md, pruned in exponential-build-3 Phase 2 once
+implemented).
 
 The shareable artifact is a plain-text, reviewable list of
 ``phrase -> tool`` mappings a user's cortex has learned (reroute

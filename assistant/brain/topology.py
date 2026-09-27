@@ -114,16 +114,10 @@ def collect_deltas(target: FileTarget) -> List[Dict[str, Any]]:
     return deltas
 
 
-def _walk_leaves(node: Any, prefix: str = "") -> List[tuple]:
-    leaves: List[tuple] = []
-    if isinstance(node, dict):
-        for key, value in node.items():
-            path = f"{prefix}.{key}" if prefix else str(key)
-            if isinstance(value, dict):
-                leaves.extend(_walk_leaves(value, path))
-            else:
-                leaves.append((path, value))
-    return leaves
+# since exponential-build-3 Phase 2 the leaf walker is the ONE
+# implementation in settings/lint.py::flatten_leaves (the repo's own
+# MinHash scan caught this file's identical private copy)
+from ..settings.lint import flatten_leaves as _walk_leaves
 
 
 def observe(target: FileTarget, state_path: str,

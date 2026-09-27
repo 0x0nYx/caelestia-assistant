@@ -81,14 +81,20 @@ _NOOP_GATES = (
 )
 
 
-def _walk_leaves(node: Any, prefix: str = "") -> List[tuple]:
-    """Flatten a nested JSON object to [(dotted_path, value)]."""
+def flatten_leaves(node: Any, prefix: str = "") -> List[tuple]:
+    """Flatten a nested JSON object to [(dotted_path, value)].
+
+    Public since exponential-build-3 Phase 2: brain/topology.py
+    flattened the same shape with its own identical private walker
+    (found by the repo's own MinHash scan) — this is the one
+    implementation now (brain importing from settings is the
+    precedented direction: brain/service.py::settings_bridge)."""
     leaves: List[tuple] = []
     if isinstance(node, dict):
         for key, value in node.items():
             path = f"{prefix}.{key}" if prefix else str(key)
             if isinstance(value, dict):
-                leaves.extend(_walk_leaves(value, path))
+                leaves.extend(flatten_leaves(value, path))
             else:
                 leaves.append((path, value))
     return leaves
@@ -127,7 +133,7 @@ def lint(config: Dict[str, Any], specs: Optional[List[Any]] = None) -> List[Dict
     findings: List[Dict[str, Any]] = []
 
     non_tool_paths = _known_non_tool_paths(specs)
-    leaves = _walk_leaves(config)
+    leaves = flatten_leaves(config)
 
     # Pass 1: per-leaf registry checks.
     for path, value in leaves:

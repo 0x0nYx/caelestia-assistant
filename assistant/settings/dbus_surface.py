@@ -1,5 +1,7 @@
 """settings.dbus_surface — the quarantined, opt-in DBus surface
-(proposals/2026-09-26-c-dbus-surface.md, phase 2.7's DBus half).
+(the former proposals/2026-09-26-c-dbus-surface.md, pruned in
+exponential-build-3 Phase 2 once implemented — this docstring and
+git history carry the design).
 
 THE QUARANTINE (the pkgprobe pattern, second module): this is one of
 exactly TWO modules in ``assistant/`` permitted to import

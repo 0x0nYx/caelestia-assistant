@@ -33,7 +33,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ..settings import history as settings_history
 from ..settings import planner as settings_planner
@@ -41,7 +41,7 @@ from ..settings import presets as settings_presets
 from ..settings.cli import default_target
 from ..settings.explain import ExplainError as SettingsExplainError
 from ..settings.explain import explain as settings_explain
-from ..settings.registry import ToolSpec, tool_by_name
+from ..settings.registry import tool_by_name
 from . import compound as compound_mod
 from .compound import CompoundResult, route_compound
 from .learn import CortexLearner
@@ -53,7 +53,6 @@ from .router import (
     RouteResult,
     RouterState,
     DEFAULT_STATE,
-    route,
 )
 from .session import SessionState, turn as session_turn
 

@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import (baysnet, creative, data, decision, language, linalg, logic,
+from . import (creative, data, decision, language, linalg, logic,
                markov, mathengine, metacog, probability, stats, sysintel,
                tasks)
 from . import meta as genius_meta

@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import hashlib
 import random
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence
 
 from .dp import laplace_noise
 

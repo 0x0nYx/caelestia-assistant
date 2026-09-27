@@ -550,7 +550,8 @@ the network.
   is a pure module serialized through the session dict the bridge
   already round-trips; bounded at 12 ops.
 - **The consequence view** (`settings/consequences.py`, phase 2.7 per
-  proposals/2026-09-26-c-whatif-consequences.md): a HAND-CURATED,
+  the former proposals/2026-09-26-c-whatif-consequences.md,
+  pruned once implemented): a HAND-CURATED,
   citation-backed table of five KNOWN cross-key interactions in the
   shell's own code (transparency-off flips blur off; blur is inert
   without transparency; bar scale clamps at 0.6 at render time; dodge
@@ -596,7 +597,8 @@ the clean exit.
 ## 16. The DBus surface (phase 2.7's DBus half, quarantined)
 
 `settings/dbus_surface.py` implements the proposal
-(proposals/2026-09-26-c-dbus-surface.md) with the quarantine the
+(the former proposals/2026-09-26-c-dbus-surface.md, pruned
+  once implemented) with the quarantine the
 proposal itself demands: the second (and only other) module permitted
 to import `subprocess`, through the per-module carve-out
 `_QUARANTINED_IMPORTS` in `diagnostics/schema_lint.py` — pinned to

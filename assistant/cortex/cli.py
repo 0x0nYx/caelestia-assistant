@@ -677,6 +677,26 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                             "so the same diff noised twice is reproducible "
                             "— reproducible noise is NOT independent "
                             "across exports; pass any int for fresh noise)")
+    pw = sub.add_parser("power", help="predictive battery/thermal advice "
+                                      "(read-only; caller-supplied series, "
+                                      "inert suggestions)")
+    pw.add_argument("--battery", default=None, metavar="P,P,...",
+                    help="battery capacity series in percent, uniformly "
+                         "spaced (e.g. 80,78,76,74)")
+    pw.add_argument("--thermal", default=None, metavar="M,M,...",
+                    help="thermal zone series in millidegrees C, uniformly "
+                         "spaced")
+    pw.add_argument("--battery-minutes", type=float, default=30.0,
+                    metavar="MIN",
+                    help="minutes between battery samples (default 30)")
+    pw.add_argument("--thermal-minutes", type=float, default=5.0,
+                    metavar="MIN",
+                    help="minutes between thermal samples (default 5)")
+    pw.add_argument("--low", type=float, default=20.0, metavar="PCT",
+                    help="battery low threshold in percent (default 20)")
+    pw.add_argument("--high", type=float, default=85000.0, metavar="MC",
+                    help="thermal high threshold in millidegrees C "
+                         "(default 85000 = 85 C)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -700,6 +720,82 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         brain_state.save(state)
         print(f"memory decay half-life set to {args.days} days "
               "(affects recall weighting from now on; history untouched)")
+        return 0
+
+    if args.cmd == "power":
+        # exponential-build-3 E2: read-only advisory over caller-
+        # supplied series. Suggestions are INERT SUGGESTED_NOT_EXECUTED
+        # strings; nothing writes, nothing executes.
+        from . import power_advisor
+        battery = thermal = None
+        try:
+            if args.battery is not None:
+                battery = [float(x) for x in args.battery.split(",")
+                           if x.strip()]
+            if args.thermal is not None:
+                thermal = [float(x) for x in args.thermal.split(",")
+                           if x.strip()]
+        except ValueError:
+            print("error: --battery/--thermal need comma-separated "
+                  "numbers", file=sys.stderr)
+            return 2
+        if battery is None and thermal is None:
+            print("error: pass --battery P,P,... and/or --thermal M,M,... "
+                  "(telemetry series are caller-supplied; no persistent "
+                  "sampler ships yet — sample with the on-demand probes "
+                  "and pass the series)", file=sys.stderr)
+            return 2
+        try:
+            if battery is not None:
+                report_b = power_advisor.advise_battery(
+                    battery, sample_minutes=args.battery_minutes,
+                    low_pct=args.low)
+            if thermal is not None:
+                report_t = power_advisor.advise_thermal(
+                    thermal, sample_minutes=args.thermal_minutes,
+                    high_mc=args.high)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        halves = []
+        if battery is not None:
+            halves.append(("battery", report_b))
+        if thermal is not None:
+            halves.append(("thermal", report_t))
+        for title, r in halves:
+            print(f"{title}:")
+            if not r.get("available"):
+                print(f"  {r['reason']}")
+                continue
+            if title == "battery":
+                print(f"  level {r['level']:g}%, trend "
+                      f"{r['trend_pct_per_hour']:+.2f}%/h"
+                      + (" (charging)" if r["charging"] else ""))
+                if r["minutes_to_low"] is not None:
+                    print(f"  projected to reach "
+                          f"{r['low_threshold_pct']:g}% in ~"
+                          f"{r['minutes_to_low'] / 60:.1f} h")
+            else:
+                print(f"  level {r['level_mc'] / 1000:.1f} C, trend "
+                      f"{r['trend_mc_per_sample'] / 1000:+.2f} C/sample")
+                if r["minutes_to_high"] is not None:
+                    print(f"  projected to reach "
+                          f"{r['high_threshold_mc'] / 1000:.0f} C in ~"
+                          f"{r['minutes_to_high']:.0f} min")
+            path = "; ".join(
+                f"{f['point']} [{f['low']}, {f['high']}]"
+                for f in r["forecast"][:3])
+            print(f"  forecast: {path} ... ({r['interval_note']})")
+            cp = r["changepoint"]
+            if cp.get("recent"):
+                print("  changepoint: RECENT regime change — "
+                      "trend extrapolation is built on mixed history")
+            elif cp.get("checked"):
+                print(f"  changepoint: {cp['note']}")
+            else:
+                print(f"  changepoint: {cp['note']}")
+            if r.get("suggestion"):
+                print(f"  {r['suggestion']}")
         return 0
 
     if args.cmd == "lexicon":

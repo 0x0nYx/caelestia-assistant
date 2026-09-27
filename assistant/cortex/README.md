@@ -187,3 +187,31 @@ row-level DP*; the opt-in `presence_keep` subsampling amplifies but
 does not change that label. The default seed derives from the diff's
 content id (reproducible noise — NOT independent across exports; the
 tradeoff is stated in `cortex/dp.py`'s docstring, which the tests pin).
+
+## Predictive power advice (`power_advisor.py`)
+
+Holt 1957 trend extrapolation over caller-supplied battery/thermal
+series, with the internals the forecast library discards: one-step
+residuals (for the iid-residual normal interval — an indication, never
+a calibrated prediction interval, and labeled as such), the final
+level/trend pair, and an Adams & MacKay 2007 BOCPD changepoint check
+over the series' first differences (a drain-regime change is a mean
+shift in the deltas). The point forecasts are cross-checked
+byte-identical against `brain/forecast.py::holt` by test — the
+duplicated recursion cannot drift.
+
+Two calibration choices are load-bearing and documented in the module:
+the BOCPD observation variance is estimated from the pre-shift
+baseline half (the default whole-series estimate is contaminated by
+the shift it should reveal — a blatant −2→−20 drain step scores
+p=0.17 under the default and p=1.0 under the baseline estimate), and
+the thermal variance floor is 1 °C² because a sharper floor makes the
+Gaussian underflow on gross shifts and MISS them entirely.
+
+Every suggestion is an inert `SUGGESTED_NOT_EXECUTED` string naming
+the preset preview command (`settings --preset battery-saver` /
+`--preset minimal`) — this module applies nothing; charging series get
+"no drain estimate" instead of a negative time-to-low; already-past
+thresholds are said out loud; thin series (<4 samples) abstain;
+out-of-range values are refused. Surface: `caelestia-assist cortex
+power --battery P,P,... --thermal M,M,...` (read-only).

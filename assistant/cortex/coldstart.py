@@ -47,6 +47,13 @@ SCHEMA = "caelestia-coldstart/1"
 STATE_KEY = "community_priors"
 DEFAULT_EPSILON = 1.0
 _FLAT_FLOOR = 1.0
+#: the prior CEILING per arm (pseudo-observations). An imported prior is
+#: EVIDENCE, not a verdict: past this mass the "prior" would dominate
+#: any amount of the user's own lived evidence, which is the hostile-
+#: artifact failure mode the build-4 adversarial sweep caught (an
+#: unbounded beta could permanently silence an arm). Clipped down and
+#: reported — standard DP post-processing either way.
+_MAX_PRIOR_MASS = 1000.0
 
 
 def export_priors(arms: Dict[str, List[float]], epsilon: float,
@@ -106,15 +113,21 @@ def import_priors(artifact: Dict[str, Any],
                 f"arm {name!r} lacks numeric alpha/beta: {exc}") from exc
         a0, b0 = target_arms.get(name, [_FLAT_FLOOR, _FLAT_FLOOR])
         clipped = False
+        capped = False
         if alpha < _FLAT_FLOOR:
             alpha, clipped = _FLAT_FLOOR, True
         if beta < _FLAT_FLOOR:
             beta, clipped = _FLAT_FLOOR, True
+        if alpha > _MAX_PRIOR_MASS:
+            alpha, capped = _MAX_PRIOR_MASS, True
+        if beta > _MAX_PRIOR_MASS:
+            beta, capped = _MAX_PRIOR_MASS, True
         target_arms[name] = [round(alpha, 4), round(beta, 4)]
         report.append({"arm": name,
                        "prior": [round(float(a0), 4), round(float(b0), 4)],
                        "imported": [round(alpha, 4), round(beta, 4)],
-                       "clipped_to_flat_floor": clipped})
+                       "clipped_to_flat_floor": clipped,
+                       "capped_at_prior_ceiling": capped})
     return {"epsilon": epsilon, "arms": report,
             "note": "evidence with provenance: the artifact's epsilon "
                     "and clipping are recorded; flat priors remain the "

@@ -10,7 +10,11 @@ Nothing in this module writes, executes, or deletes anything. It reads:
   * disk usage hotspots: recursive size aggregation with a depth cut
     and the biggest-wins tree
   * log files: Drain-style template mining (token masking -> template
-    clustering -> frequency z-scores for template-level anomalies)
+    clustering -> frequency z-scores for template-level anomalies;
+    exponential-build-4 adds the streaming fixed-depth DRAIN TREE
+    proper — diagnostics/drain.py, wired in front of the rule
+    engine — this function remains the batch z-score view; the two
+    are different mechanisms, not duplicates)
   * JSON configs: duplicate keys, type oddities, NaN/Infinity,
     deep-shadowed settings
 

@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added — exponential-build-4
+
+- Automatic log understanding: streaming Drain log-template mining (He, Zhu, He & Lyu, ICSM 2017) in `diagnostics/drain.py`, wired in front of the rule engine — a NO_MATCH/AMBIGUOUS diagnosis now templates the lines no signature matched (recurrence counts, caller-supplied first-seen dates, bounded capacity with honest overflow), rendered in `diagnose` reports and the `why` explainer with the explicit note that Drain clusters shapes, not causes.
+
 ### Added — exponential-build-3
 
 - Reasoning primitives: Rete forward chaining over matched rules (Forgy 1982) and Dung abstract argumentation (1995) in `diagnostics/rette.py` / `argumentation.py`; Case-Based Reasoning cycle (retain = a ledger proposal) and structure-mapping analogy (Gentner 1983) in `retrieval/cbr.py` / `structure_mapping.py`.

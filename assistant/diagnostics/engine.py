@@ -402,7 +402,12 @@ def diagnose(text: str, rules: Optional[List[Dict[str, Any]]] = None, top: int =
         result["settings_tools"] = settings_tools_for_rule(result["rule"])["tools"]
 
     if not ranked:
-        return {"verdict": "NO_MATCH", "candidates": [], "top": None}
+        result = {"verdict": "NO_MATCH", "candidates": [], "top": None}
+        # exponential-build-4 A: lines no signature matched are TEMPLATED
+        # (Drain, He et al. 2017) instead of silently discarded — shapes,
+        # not causes, for a human to consider turning into a real rule.
+        from . import drain
+        return drain.augment_diagnosis(result, normalized)
 
     if len(ranked) == 1:
         margin: Optional[int] = None
@@ -423,6 +428,16 @@ def diagnose(text: str, rules: Optional[List[Dict[str, Any]]] = None, top: int =
         "top": ranked[0],
         "margin": margin,
     }
+
+
+def _drain_lines(diagnosis: Dict[str, Any]) -> List[str]:
+    """exponential-build-4 A: the Drain template block for the report,
+    rendered only when the augment step actually attached templates."""
+    from . import drain
+    unmatched = diagnosis.get("unmatched_templates")
+    if not unmatched:
+        return []
+    return drain.render_unmatched_lines(unmatched)
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +502,8 @@ def render_report(diagnosis: Dict[str, Any]) -> str:
     verdict = diagnosis["verdict"]
     if verdict == "NO_MATCH":
         lines.append("Verdict: NO known signature matched.")
+        lines.append("")
+        lines.extend(_drain_lines(diagnosis))
         lines.append("")
         lines.append("Honest next steps instead of a guess:")
         lines.append("  1. Enable Debug Mode (Nexus -> About -> Advanced), reproduce, then run:")

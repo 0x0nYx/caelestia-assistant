@@ -168,6 +168,8 @@ python3 -m assistant.devflow todo ~/my-checkout               # TODO/FIXME triag
 # Any task, no chat needed
 caelestia-assist do "solve x^2 - 2 = 0"
 caelestia-assist do "summarize this: $(cat notes/foo.md)"
+caelestia-assist genius calc --antiderivative "x*exp(x)"          # SYMBOLIC integration (table+parts+u-sub; verified; not Risch)
+caelestia-assist genius calc --ode "y" --ode-method rk45 --tol 1e-8   # adaptive Dormand-Prince 4(5)
 caelestia-assist genius graphs dijkstra '{"a":{"b":4,"c":1},"c":{"b":2},"b":{}}' --source a
 
 # The agent

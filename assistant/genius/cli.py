@@ -106,11 +106,16 @@ def cmd_calc(args, out) -> int:
         elif args.taylor:
             _print(mathengine.taylor(args.taylor, around=args.at,
                                      order=args.order), args.json)
+        elif args.antiderivative:
+            _print(mathengine.symbolic_integrate(args.antiderivative),
+                   args.json)
         elif args.ode:
             _print(mathengine.ode_solve(args.ode, args.x0, args.y0,
-                                        args.end, args.h, method=args.ode_method), args.json)
+                                        args.end, args.h, method=args.ode_method,
+                                        tol=args.tol), args.json)
         else:
-            print("genius calculus: pick --derivative/--integral/--taylor/--ode",
+            print("genius calculus: pick --derivative/--integral/--antiderivative"
+                  "/--taylor/--ode",
                   file=sys.stderr)
             return 2
         return 0
@@ -827,8 +832,13 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--y0", type=float, default=1.0)
     q.add_argument("--end", type=float, default=1.0)
     q.add_argument("--h", type=float, default=0.01)
-    q.add_argument("--ode-method", default="rk4", choices=["euler", "rk4"],
+    q.add_argument("--ode-method", default="rk4", choices=["euler", "rk4", "rk45"],
                    dest="ode_method")
+    q.add_argument("--tol", type=float, default=1e-6,
+                   help="rk45 error tolerance (adaptive Dormand-Prince)")
+    q.add_argument("--antiderivative", dest="antiderivative",
+                   help="bounded SYMBOLIC integration (table + parts + "
+                        "u-substitution; verified; not Risch)")
 
     q = sp("stats", cmd_stats, help="descriptive statistics on numbers")
     q.add_argument("nums")

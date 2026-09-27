@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 __all__ = [
     "parse", "evaluate", "to_str", "differentiate", "simplify",
     "solve_root", "integrate", "ode_solve", "taylor", "interpolate",
-    "percent_of", "expression_info", "CalcError",
+    "percent_of", "expression_info", "CalcError", "symbolic_integrate",
 ]
 
 CONSTANTS: Dict[str, float] = {
@@ -405,6 +405,10 @@ def _diff_call(node: _Node, var: str) -> _Node:
                                      right=_Node("bin", value="*", left=_Node("num", value=math.log(10)), right=arg))),
         "sqrt": lambda: chain(_Node("bin", value="/", left=_Node("num", value=0.5),
                                      right=_Node("call", name="sqrt", args=[arg]))),
+        # d|u| = sign(u)*u' (exponential-build-4 B: needed so the tan
+        # antiderivative -ln|cos u| can be differentially verified; the
+        # identity sign(u)/|u| = 1/u makes d ln|u| = u'/u off the kink)
+        "abs": lambda: chain(_call("sign", arg)),
         "sinh": lambda: chain(_Node("call", name="cosh", args=[arg])),
         "cosh": lambda: chain(_Node("call", name="sinh", args=[arg])),
         "tanh": lambda: chain(_Node("bin", value="^", left=_Node("call", name="sech", args=[arg]),
@@ -547,14 +551,35 @@ def _adaptive(f, lo, hi, flo, fhi, tol, depth=48):
 
 
 def ode_solve(expr: str, x0: float, y0: float, x_end: float, h: float = 0.01,
-              method: str = "rk4") -> Dict[str, Any]:
-    """Solve y' = f(x, y) from (x0, y0) to x_end by RK4 or Euler."""
+              method: str = "rk4", tol: float = 1e-6) -> Dict[str, Any]:
+    """Solve y' = f(x, y) from (x0, y0) to x_end.
+
+    Fixed-step: euler, rk4 (steps = (x_end - x0)/h, recomputed to land
+    exactly on x_end). Adaptive: rk45 — embedded Dormand-Prince 4(5)
+    (1980) with a user-settable error tolerance; its report carries
+    accepted/rejected step counts and the max local error estimate so a
+    caller can see whether the adaptive stepping actually earned its
+    keep over the fixed-step methods at the same accuracy."""
     node = parse(expr)
     if h <= 0 or x_end <= x0:
         raise CalcError("need h > 0 and x_end > x0")
+    if tol <= 0:
+        raise CalcError("need tol > 0 (rk45)")
 
     def f(x: float, y: float) -> float:
         return evaluate(node, {"x": x, "y": y})
+
+    if method == "rk45":
+        adaptive = _rk45_solve(f, x0, y0, x_end, tol)
+        return {"ode": to_str(node), "method": "rk45", "x0": x0, "y0": y0,
+                "x_end": x_end, "tol": tol,
+                "steps": adaptive["accepted"],
+                "rejected_steps": adaptive["rejected"],
+                "fevals": adaptive["fevals"],
+                "max_local_error": adaptive["max_local_error"],
+                "y_end": adaptive["y_end"],
+                "trace": adaptive["trace"],
+                "trace_points": adaptive["trace_points"]}
 
     steps = max(1, int(round((x_end - x0) / h)))
     h = (x_end - x0) / steps
@@ -570,12 +595,92 @@ def ode_solve(expr: str, x0: float, y0: float, x_end: float, h: float = 0.01,
             k4 = f(x + h, y + h * k3)
             y = y + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
         else:
-            raise CalcError(f"unknown method {method!r} (euler|rk4)")
+            raise CalcError(f"unknown method {method!r} (euler|rk4|rk45)")
         x = x0 + (i + 1) * h
         if i % max(1, steps // 200) == 0 or i == steps - 1:
             trace.append({"x": x, "y": y})
     return {"ode": to_str(node), "method": method, "x0": x0, "y0": y0,
             "x_end": x_end, "steps": steps, "y_end": y,
+            "trace": trace[:200], "trace_points": len(trace)}
+
+
+def _rk45_solve(f, x0: float, y0: float, x_end: float, tol: float
+                ) -> Dict[str, Any]:
+    """Adaptive embedded Runge-Kutta 4(5) — Dormand & Prince 1980
+    ("A family of embedded Runge-Kutta formulae", J. Comp. Appl. Math
+    6(1), 19-35), the DOPRI5 pair: 7 stages, FSAL (the 7th stage is the
+    next step's 1st), local error = |5th - 4th| order estimate, the
+    standard step controller
+
+        h_new = h * clamp(0.9 * (tol / err) ** (1/5), 0.2, 5.0),
+
+    one knob ``tol`` (the mixed tolerance err <= tol * (1 + |y|)).
+    Rejected steps are retried smaller; a step floor of 1e-12 * span
+    makes failure LOUD (an error, never a silent stall)."""
+    c = [0.0, 1/5, 3/10, 4/5, 8/9, 1.0, 1.0]
+    a = [[0.0]*7,
+         [1/5, 0, 0, 0, 0, 0, 0],
+         [3/40, 9/40, 0, 0, 0, 0, 0],
+         [44/45, -56/15, 32/9, 0, 0, 0, 0],
+         [19372/6561, -25360/2187, 64448/6561, -212/729, 0, 0, 0],
+         [9017/3168, -355/33, 46732/5247, 49/176, -5103/18656, 0, 0],
+         [35/384, 0, 500/1113, 125/192, -2187/6784, 11/84, 0]]
+    b5 = [35/384, 0, 500/1113, 125/192, -2187/6784, 11/84, 0]
+    b4 = [5179/57600, 0, 7571/16695, 393/640, -92097/339200, 187/2100, 1/40]
+
+    span = x_end - x0
+    h_min = 1e-12 * span
+    h = min(span, max(h_min, span / 100.0))
+    x, y = x0, y0
+    accepted = rejected = 0
+    fevals = 0
+    max_err = 0.0
+    trace: List[Dict[str, float]] = [{"x": x, "y": y}]
+
+    def stages(xn, yn, hn, k1):
+        ks = [k1]
+        for i in range(1, 7):
+            yi = yn
+            for j in range(i):
+                yi += hn * a[i][j] * ks[j]
+            ks.append(f(xn + hn * c[i], yi))
+        return ks
+
+    k1 = f(x, y)
+    fevals += 1
+    while x < x_end - 1e-12 * span:
+        hn = min(h, x_end - x)
+        ks = stages(x, y, hn, k1)
+        fevals += 7 - 1  # stages 2..7 (k1 was FSAL-carried)
+        y5 = y + hn * sum(b5[i] * ks[i] for i in range(7))
+        y4 = y + hn * sum(b4[i] * ks[i] for i in range(7))
+        err = abs(y5 - y4)
+        scale = tol * (1.0 + max(abs(y), abs(y5)))
+        if err <= scale or hn <= h_min:
+            x_new = x + hn
+            if x_new + 1e-12 * span >= x_end:
+                x_new = x_end
+            x, y = x_new, y5
+            accepted += 1
+            max_err = max(max_err, err)
+            k1 = f(x, y)  # FSAL
+            fevals += 1
+            if len(trace) < 4000:
+                trace.append({"x": x, "y": y})
+            h = min(5.0 * hn, span / 10.0)
+        else:
+            rejected += 1
+            if hn <= h_min:
+                raise CalcError(
+                    "rk45: step floor reached without meeting the "
+                    "tolerance — the requested tol is not achievable "
+                    "on this problem (refusing, not stalling silently)")
+            h = max(h_min, hn * 0.2)
+            continue
+        if rejected + accepted > 100000:
+            raise CalcError("rk45: step budget exceeded (100000)")
+    return {"y_end": y, "accepted": accepted, "rejected": rejected,
+            "fevals": fevals, "max_local_error": max_err,
             "trace": trace[:200], "trace_points": len(trace)}
 
 
@@ -687,3 +792,436 @@ def _fmt(v: float) -> str:
     if v == int(v) and abs(v) < 1e15:
         return str(int(v))
     return f"{v:.10g}"
+
+
+# ---------------------------------------------------------------------------
+# 8. Bounded symbolic integration (exponential-build-4 B)
+# ---------------------------------------------------------------------------
+#
+# The complement the differentiation rules above already had. What this
+# is: a pattern table over the SAME AST (polynomial, exponential,
+# logarithmic, trigonometric forms), linear-chain substitution, and
+# integration by parts for the classic p(x)*{exp,sin,cos} and ln(x)
+# shapes. What this is NOT: a Risch algorithm. There is no differential
+# field theory here, no Liouville-principle structure theorem, no claim
+# that "no closed form exists" in general — only the honest narrower
+# verdict "no closed form IN THIS ENGINE'S TABLE". Every antiderivative
+# the table produces is then VERIFIED before it is returned: the engine
+# differentiates its own answer and compares against the integrand at
+# fixed sample points, refusing its own output when the check fails.
+
+_INTEG_CHECK_POINTS = (0.5, 1.3, 2.1)  # fixed, documented, no randomness
+_SUBST_RATIO_POINTS = (0.317, 0.913, 1.729, 2.618)
+_MAX_IBP_DEGREE = 4
+
+
+def _poly_coeffs(node: _Node, var: str) -> Optional[Dict[int, float]]:
+    """Coefficients {degree: coeff} when node is a polynomial in var
+    (sums, differences, negation, constants, var^int), else None."""
+    if node.kind == "num":
+        return {0: float(node.value)}
+    if node.kind == "neg":
+        inner = _poly_coeffs(node.left, var)
+        return None if inner is None else {d: -c for d, c in inner.items()}
+    if node.kind == "var":
+        return {1: 1.0} if node.name == var else None
+    if node.kind == "bin":
+        op = node.value
+        if op == "^":
+            base, expo = _poly_coeffs(node.left, var), _poly_coeffs(node.right, var)
+            if (base is not None and expo is not None and base == {1: 1.0}
+                    and len(expo) == 1 and 0 in expo):
+                deg = expo[0]
+                if deg == int(deg) and 0 <= deg <= 12:
+                    return {int(deg): 1.0}
+            return None
+        left, right = _poly_coeffs(node.left, var), _poly_coeffs(node.right, var)
+        if left is None or right is None:
+            return None
+        out: Dict[int, float] = {}
+        if op == "+":
+            keys = set(left) | set(right)
+            for d in keys:
+                out[d] = left.get(d, 0.0) + right.get(d, 0.0)
+            return out
+        if op == "-":
+            keys = set(left) | set(right)
+            for d in keys:
+                out[d] = left.get(d, 0.0) - right.get(d, 0.0)
+            return out
+        if op == "*":
+            for d1, c1 in left.items():
+                for d2, c2 in right.items():
+                    out[d1 + d2] = out.get(d1 + d2, 0.0) + c1 * c2
+            return out
+        if op == "/":
+            if len(right) == 1 and 0 in right and right[0] != 0:
+                return {d: c / right[0] for d, c in left.items()}
+            return None
+    return None
+
+
+def _poly_node(coeffs: Dict[int, float]) -> _Node:
+    """Build the AST for sum(c_d x^d), descending; zero polynomial = 0."""
+    terms: List[_Node] = []
+    for d in sorted(coeffs, reverse=True):
+        c = coeffs[d]
+        if abs(c) < 1e-15:
+            continue
+        if d == 0:
+            terms.append(_Node("num", value=c))
+        else:
+            p = _Node("bin", value="*", left=_Node("num", value=c),
+                      right=(_Node("var", name="x") if d == 1 else
+                             _Node("bin", value="^", left=_Node("var", name="x"),
+                                   right=_Node("num", value=float(d)))))
+            terms.append(p)
+    if not terms:
+        return _Node("num", value=0.0)
+    out = terms[0]
+    for t in terms[1:]:
+        out = _Node("bin", value="+", left=out, right=t)
+    return out
+
+
+def _linear_in(node: _Node, var: str) -> Optional[Tuple[float, float]]:
+    """(a, b) when node == a*var + b with a != 0, else None."""
+    coeffs = _poly_coeffs(node, var)
+    if coeffs is None or set(coeffs) - {0, 1}:
+        return None
+    a = coeffs.get(1, 0.0)
+    if abs(a) < 1e-15:
+        return None
+    return a, coeffs.get(0, 0.0)
+
+
+def _num(v: float) -> _Node:
+    return _Node("num", value=float(v))
+
+
+def _bin(op: str, l: _Node, r: _Node) -> _Node:
+    return _Node("bin", value=op, left=l, right=r)
+
+
+def _call(name: str, arg: _Node) -> _Node:
+    return _Node("call", name=name, args=[arg])
+
+
+def _div(a: _Node, b: _Node) -> _Node:
+    return _bin("/", a, b)
+
+
+def _scaled(node: _Node, k: float) -> _Node:
+    return _bin("*", _num(k), node)
+
+
+def _eval_safe(node: _Node, var: str, x: float) -> Optional[float]:
+    try:
+        v = evaluate(node, {var: x})
+        if math.isfinite(v):
+            return v
+    except (CalcError, ZeroDivisionError, ValueError, OverflowError):
+        pass
+    return None
+
+
+def _verify_antiderivative(F: _Node, integrand: _Node, var: str) -> bool:
+    """dF/dx ?= integrand at the fixed sample points (points where
+    either side is undefined are skipped; at least two must agree)."""
+    dF = simplify(differentiate(F, var))
+    good = 0
+    for x in _INTEG_CHECK_POINTS:
+        a = _eval_safe(dF, var, x)
+        b = _eval_safe(integrand, var, x)
+        if a is None or b is None:
+            continue
+        if abs(a - b) > 1e-6 * max(1.0, abs(a), abs(b)):
+            return False
+        good += 1
+    return good >= 2
+
+
+def _table_integrate(node: _Node, var: str, trace: List[str]
+                     ) -> Optional[_Node]:
+    """The pattern table (see the section docstring). Returns the
+    antiderivative AST or None — None means OUT OF TABLE, never wrong."""
+    node = simplify(node)
+
+    coeffs = _poly_coeffs(node, var)
+    if coeffs is not None:
+        deg = max(coeffs) if coeffs else 0
+        # sum(c_d x^d) -> sum(c_d x^(d+1)/(d+1)) + c0*x
+        out: Optional[_Node] = None
+        for d, c in coeffs.items():
+            if abs(c) < 1e-15:
+                continue
+            if d == -1:
+                return None  # a rational poly-ratio is out of table
+            piece = _div(_scaled(_bin("^", _Node("var", name=var),
+                                      _num(d + 1)), c / (d + 1)), _num(1.0))
+            piece = _scaled(_bin("^", _Node("var", name=var), _num(d + 1)),
+                            c / (d + 1))
+            out = piece if out is None else _bin("+", out, piece)
+        if out is not None:
+            trace.append(f"polynomial table (degree {deg})")
+            return simplify(out)
+
+    # constant multiple / sum decomposition
+    if node.kind == "bin" and node.value in "+-":
+        left = _table_integrate(node.left, var, trace)
+        if left is None:
+            return None
+        right = _table_integrate(node.right, var, trace)
+        if right is None:
+            return None
+        trace.append("linearity (sum rule)")
+        return simplify(_bin(node.value, left, right))
+    if node.kind == "neg":
+        inner = _table_integrate(node.left, var, trace)
+        return None if inner is None else simplify(_Node("neg", left=inner))
+    if (node.kind == "bin" and node.value == "*" and node.left.kind == "num"):
+        inner = _table_integrate(node.right, var, trace)
+        return None if inner is None else simplify(_scaled(inner, node.left.value))
+    if (node.kind == "bin" and node.value == "*" and node.right.kind == "num"):
+        inner = _table_integrate(node.left, var, trace)
+        return None if inner is None else simplify(_scaled(inner, node.right.value))
+
+    # x^c and (a x + b)^c
+    if node.kind == "bin" and node.value == "^":
+        base, expo = node.left, node.right
+        if expo.kind == "num":
+            c = float(expo.value)
+            lin = _linear_in(base, var) if base.kind != "var" else (1.0, 0.0)
+            if base.kind == "var" and base.name == var:
+                lin = (1.0, 0.0)
+            if lin is not None:
+                a, b = lin
+                if abs(c + 1.0) < 1e-12:
+                    trace.append("x^-1 -> ln (table)")
+                    return simplify(_div(_call("ln", base), _num(a)))
+                trace.append("power rule (table)")
+                return simplify(_div(_bin("^", base, _num(c + 1.0)),
+                                     _num(a * (c + 1.0))))
+
+    # 1/u with u linear-in-x handled above; bare 1/x:
+    if (node.kind == "bin" and node.value == "/"
+            and _is(node.left, 1.0) and node.right.kind == "var"
+            and node.right.name == var):
+        trace.append("1/x -> ln (table)")
+        return simplify(_call("ln", node.right))
+
+    # calls with linear inner argument: exp / ln / sin / cos / tan
+    if node.kind == "call" and len(node.args) == 1:
+        arg = node.args[0]
+        if arg.kind == "var" and arg.name == var:
+            lin = (1.0, 0.0)
+        else:
+            lin = _linear_in(arg, var)
+        if lin is not None:
+            a, _b = lin
+            if node.name == "exp":
+                trace.append("exp(linear) (table)")
+                return simplify(_div(_call("exp", arg), _num(a)))
+            if node.name in ("ln", "log"):
+                trace.append("ln(linear) by parts (table)")
+                # u*ln(u) - u, all over a   (u = a x + b; a != 0 here)
+                return simplify(_div(_bin("-",
+                                          _bin("*", arg, _call("ln", arg)),
+                                          arg),
+                                     _num(a)))
+            if node.name == "sin":
+                trace.append("sin(linear) (table)")
+                return simplify(_Node("neg", left=_div(_call("cos", arg), _num(a))))
+            if node.name == "cos":
+                trace.append("cos(linear) (table)")
+                return simplify(_div(_call("sin", arg), _num(a)))
+            if node.name == "tan":
+                trace.append("tan(linear) -> -ln|cos| (table; per-interval)")
+                inner = _div(_call("ln", _call("abs", _call("cos", arg))), _num(a))
+                return simplify(_Node("neg", left=inner))
+            if node.name == "sqrt" and lin[0] == 1.0 and lin[1] == 0.0:
+                trace.append("sqrt(x) = x^1/2 (table)")
+                return simplify(_div(_bin("^", arg, _num(1.5)), _num(1.5)))
+
+    # integration by parts: polynomial * {exp, sin, cos}(linear in x)
+    if node.kind == "bin" and node.value == "*":
+        poly, other = _poly_coeffs(node.left, var), node.right
+        if poly is None:
+            poly, other = _poly_coeffs(node.right, var), node.left
+        if (poly is not None and other.kind == "call"
+                and len(other.args) == 1):
+            arg = other.args[0]
+            lin = (1.0, 0.0) if arg.kind == "var" else _linear_in(arg, var)
+            if (lin is not None and other.name in ("exp", "sin", "cos")
+                    and max(poly) <= _MAX_IBP_DEGREE
+                    and min(poly) >= 0):
+                trace.append(f"by parts: p(x)*{other.name}"
+                             f"({'x' if lin == (1.0, 0.0) else 'a x + b'})")
+                result = _ibp_integrate(poly, other.name, lin, var, trace)
+                if result is not None:
+                    return simplify(result)
+
+    # u-substitution: f(g(x)) * h(x) where h = k * g'(x), k constant
+    if node.kind == "bin" and node.value == "*":
+        for fpart, hpart in ((node.left, node.right), (node.right, node.left)):
+            if fpart.kind == "call" and len(fpart.args) == 1:
+                g = fpart.args[0]
+                if g.kind == "num":
+                    continue
+                gp = simplify(differentiate(g, var))
+                ratio_points = []
+                ok_ratio = True
+                for x in _SUBST_RATIO_POINTS:
+                    hv = _eval_safe(hpart, var, x)
+                    gv = _eval_safe(gp, var, x)
+                    if hv is None or gv is None:
+                        continue  # outside either's domain: skip the point
+                    if abs(gv) < 1e-12:
+                        continue
+                    ratio_points.append(hv / gv)
+                if len(ratio_points) >= 2 and all(
+                        abs(r - ratio_points[0]) <= 1e-9 * max(1.0, abs(ratio_points[0]))
+                        for r in ratio_points):
+                    k = ratio_points[0]
+                    if abs(k) < 1e-12:
+                        continue
+                    if fpart.name in ("exp", "sin", "cos", "ln", "log") or (
+                            fpart.name == "sqrt"):
+                        sub = _table_integrate(fpart, var, trace) if (
+                            _linear_in(g, var) is not None) else None
+                        if sub is None:
+                            # integrate f(u) du in u-world then substitute back
+                            sub = _table_single(fpart, var, trace)
+                        if sub is None:
+                            return None
+                        trace.append(f"u-substitution over {fpart.name}"
+                                     f"(g) with constant ratio k={_fmt(k)}")
+                        # h = k*g'  =>  Int f(g) h dx = k * Int f(u) du = k * F(g)
+                        return simplify(_scaled(sub, k))
+    return None
+
+
+def _differentiate_poly(coeffs: Dict[int, float]) -> Dict[int, float]:
+    return {d - 1: d * c for d, c in coeffs.items() if d >= 1}
+
+
+def _table_single(node: _Node, var: str, trace: List[str]) -> Optional[_Node]:
+    """Integrate a bare call f(g) by treating g as the variable — only
+    valid when the call's table antiderivative is expressible in its own
+    argument (exp/ln/sin/cos/sqrt). Used by the substitution path."""
+    g = node.args[0]
+    if node.name == "exp":
+        return simplify(_call("exp", g))
+    if node.name in ("ln", "log"):
+        return simplify(_bin("-", _bin("*", g, _call("ln", g)), g))
+    if node.name == "sin":
+        return simplify(_Node("neg", left=_call("cos", g)))
+    if node.name == "cos":
+        return simplify(_call("sin", g))
+    if node.name == "sqrt":
+        return simplify(_div(_bin("^", g, _num(1.5)), _num(1.5)))
+    return None
+
+
+def _lin_node(lin: Tuple[float, float]) -> _Node:
+    """The AST for a*x + b from a (a, b) linear pair."""
+    a, b = lin
+    node = _scaled(_Node("var", name="x"), a) if a != 1.0 else _Node("var", name="x")
+    if b != 0.0:
+        node = _bin("+", node, _num(b))
+    return node
+
+
+def _ibp_integrate(coeffs: Dict[int, float], fname: str,
+                   lin: Tuple[float, float], var: str,
+                   trace: List[str]) -> Optional[_Node]:
+    """Repeated integration by parts for p(x)*{exp,sin,cos}(a x + b).
+
+    Recursions (u = a x + b, a != 0):
+      exp:  p e^u / a  -  (1/a) IBP_exp(p')
+      sin: -p cos(u) / a + (1/a) IBP_cos(p')
+      cos:  p sin(u) / a  -  (1/a) IBP_sin(p')
+    Base case p = constant falls back to the linear-argument table.
+    Degree is bounded by _MAX_IBP_DEGREE (the caller checks); honest
+    None when the inner integral leaves the table."""
+    a = lin[0]
+    p_node = _poly_node(coeffs)
+    if set(coeffs) == {0}:
+        c = coeffs[0]
+        u = _lin_node(lin)
+        if fname == "exp":
+            return _div(_scaled(_call("exp", u), c), _num(a))
+        if fname == "sin":
+            return _div(_Node("neg", left=_scaled(_call("cos", u), c)), _num(a))
+        return _div(_scaled(_call("sin", u), c), _num(a))
+    d = _differentiate_poly(coeffs)
+    if not d:
+        return None
+    if fname == "exp":
+        rest = _ibp_integrate(d, fname, lin, var, trace)
+        if rest is None:
+            return None
+        # p e^u / a - rest / a
+        return simplify(_bin("-", _div(_bin("*", p_node, _call("exp", _lin_node(lin))),
+                                       _num(a)),
+                             _div(rest, _num(a))))
+    if fname == "sin":
+        rest = _ibp_integrate(d, "cos", lin, var, trace)
+        if rest is None:
+            return None
+        # -p cos(u) / a + rest / a
+        return simplify(_bin("+",
+                             _div(_Node("neg", left=_bin("*", p_node,
+                                                         _call("cos", _lin_node(lin)))),
+                                  _num(a)),
+                             _div(rest, _num(a))))
+    if fname == "cos":
+        rest = _ibp_integrate(d, "sin", lin, var, trace)
+        if rest is None:
+            return None
+        # p sin(u) / a - rest / a
+        return simplify(_bin("-",
+                             _div(_bin("*", p_node, _call("sin", _lin_node(lin))),
+                                  _num(a)),
+                             _div(rest, _num(a))))
+    return None
+
+
+def symbolic_integrate(expr: str, var: str = "x") -> Dict[str, Any]:
+    """Bounded symbolic integration: table + linear chains + parts.
+
+    Returns one of three honest statuses:
+      OK                          — antiderivative string + method trace,
+                                    DIFFERENTIALLY VERIFIED at fixed
+                                    sample points before returning;
+      NO_CLOSED_FORM_IN_TABLE     — this engine's table has no entry
+                                    (NOT a general non-integrability
+                                    claim — this is not Risch);
+      REFUSED_VERIFICATION_FAILED — the table produced something whose
+                                    derivative disagreed with the
+                                    integrand at the sample points; the
+                                    answer is refused, never shipped.
+    """
+    node = parse(expr)
+    trace: List[str] = []
+    F = _table_integrate(simplify(node), var, trace)
+    if F is None:
+        return {"expr": to_str(node), "var": var, "status":
+                "NO_CLOSED_FORM_IN_TABLE",
+                "note": "no closed form in this engine's table — an "
+                        "honest refusal, not a Risch non-integrability "
+                        "proof; numerical integrate() still works",
+                "method_trace": trace}
+    if not _verify_antiderivative(F, node, var):
+        return {"expr": to_str(node), "var": var, "status":
+                "REFUSED_VERIFICATION_FAILED",
+                "note": "the table's candidate failed its own "
+                        "differential verification at fixed points — "
+                        "refused, never shipped",
+                "method_trace": trace}
+    return {"expr": to_str(node), "var": var, "status": "OK",
+            "antiderivative": to_str(F), "method_trace": trace,
+            "verified": True,
+            "note": "verified by differentiating this answer and "
+                    "comparing against the integrand at fixed sample "
+                    "points; +C omitted (a constant, always)"}

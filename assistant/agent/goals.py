@@ -346,7 +346,7 @@ def decompose(text: str, clarify_hook: Optional[Any] = None) -> Dict[str, Any]:
     cp = longest_path_dag(dag_edges)
     order_index = {nid: i for i, nid in enumerate(ts["order"])}
     nodes.sort(key=lambda n: order_index.get(n["id"], 0))
-    return {
+    result = {
         "nodes": nodes,
         "order": ts["order"],
         "critical_path": cp.get("critical_path") or [],
@@ -356,3 +356,42 @@ def decompose(text: str, clarify_hook: Optional[Any] = None) -> Dict[str, Any]:
         "compound": len(parts) > 1,
         "consent_required": any(n["consent_required"] for n in nodes),
     }
+    # exponential-build-4 B: bounded model-check the goal DAG BEFORE it
+    # is shown — dead ends (task nodes with no dependents and no
+    # successors...) and unreachability of any node from the root,
+    # within the node count as the step bound. The transition graph is
+    # dependency-order: a node's successors are its dependents. The
+    # audit ABSTAINs loudly past its budget; a budget refusal never
+    # blocks the plan (it is an audit, not a gate) — recorded honestly.
+    try:
+        from ..genius import sat as sat_mod
+        graph = {nid: [] for nid in ts["order"]}
+        for a, b in dag_edges:
+            graph.setdefault(a, []).append(b)
+            graph.setdefault(b, [])
+        root = ts["order"][0] if ts["order"] else ""
+        if root and len(graph) <= 64:
+            audit = sat_mod.graph_audit(graph, root,
+                                        k=max(2, len(graph)),
+                                        node_budget=50_000)
+            # In a goal DAG a terminal node IS the goal, not a fault:
+            # deadlock states that are leaves (no dependents, nothing
+            # after them) are the plan's normal completion points. Only
+            # UNREACHABLE nodes are findings — and ABSTAIN stays loud.
+            successors = {a for a, _b in dag_edges}
+            leaves = [s for s in audit["deadlock_states"]
+                      if s not in successors]
+            real_deadlocks = [s for s in audit["deadlock_states"]
+                              if s in successors]
+            clean = (not audit["unreachable_within_k"]) and not real_deadlocks
+            result["reachability_audit"] = {
+                "status": "CLEAN" if clean else "FINDINGS",
+                "terminal_nodes": leaves,
+                "dead_ends_with_dependents": real_deadlocks,
+                "unreachable_within_k": audit["unreachable_within_k"],
+                "note": audit["note"],
+            }
+    except Exception as exc:  # the audit must never break the plan
+        result["reachability_audit"] = {"status": "ERROR",
+                                        "reason": f"{type(exc).__name__}: {exc}"}
+    return result

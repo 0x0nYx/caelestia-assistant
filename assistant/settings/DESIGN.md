@@ -2155,6 +2155,23 @@ for human review.
   bridge's default confidence reads the folded posterior — an undone
   change teaches the next proposal's confidence the same lesson a
   rejected proposal teaches.
+- **The macro store (exponential-build-3 C3):** `--macro-save NAME`
+  captures an APPROVED apply (an undo-history entry — never an
+  unapplied plan) as a named replayable template, stored as a bounded
+  FIFO `"macros"` list (`macros.py`, `MAX_MACROS = 16`) INSIDE the
+  same history file — the A3 precedent again: same `_save` atomic
+  path, same sibling path, the four-path write scope unchanged
+  (test_safety.py's directory snapshot still holds; the capture
+  leaves the target bytes untouched, pinned by test). Replay
+  (`--macro NAME`) emits plain planner ops (the `preset_ops` shape),
+  so it rides the ordinary plan/render path with no bespoke writer —
+  and it strengthens the gate: EVERY replay needs the second consent
+  (`--confirm` or the interactive y/N), single-change macros
+  included, because a replay's contents may no longer be in the
+  user's head. A replay records its own history entry (label
+  `"macro: NAME"`), so bounded undo works per replay; stale tool
+  names re-resolve against the live registry and error honestly
+  (blocked apply) rather than writing blindly.
 
 ## 15. Presets and the confirmation gate (`presets.py`, `cli.py`)
 

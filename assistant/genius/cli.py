@@ -719,10 +719,11 @@ def cmd_learn(args, out) -> int:
 
 
 def cmd_synth(args, out) -> int:
-    """Exponential-build 2.1: tiny inductive string-program synthesis
-    (Gulwani 2011, FlashFill-style) over 2-3 before/after examples.
-    Read-only: the only outputs are the rendered program, the transform
-    applied to a new string, and INERT SUGGESTED_NOT_EXECUTED mv lines —
+    """Exponential-build 2.1 + build-3 C1: inductive string-program
+    synthesis (Gulwani 2011, FlashFill-style; build-3 scaled it from
+    2-3 to 2-32 examples via version-space intersection). Read-only:
+    the only outputs are the rendered program, the transform applied
+    to a new string, and INERT SUGGESTED_NOT_EXECUTED mv lines —
     nothing is ever executed here."""
     from . import synth as synth_mod
     examples = []
@@ -793,11 +794,12 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("expr")
 
     q = sp("synth", cmd_synth,
-           help="induce a string transformation from 2-3 before/after "
-                "examples (FlashFill-style); output is a rendered program "
-                "+ INERT suggested mv lines, never executed")
+           help="induce a string transformation from 2-32 before/after "
+                "examples (FlashFill-style, version-space intersection); "
+                "output is a rendered program + INERT suggested mv lines, "
+                "never executed")
     q.add_argument("--example", action="append", default=[],
-                   help="BEFORE=AFTER pair (repeat 2-3 times)")
+                   help="BEFORE=AFTER pair (repeat 2-32 times)")
     q.add_argument("--apply", default=None,
                    help="apply the learned transformation to this string")
     q.add_argument("--renames", default=None,

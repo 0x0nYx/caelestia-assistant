@@ -74,9 +74,21 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(SynthError):
             synthesize([("a-b", "b_a")])
 
-    def test_four_examples_is_outside_the_contract(self):
+    def test_example_count_bounds(self):
+        # UPDATED for the exponential-build-3 version-space rewrite
+        # (Gulwani 2011): the OLD contract refused 4+ examples because
+        # enumeration blew up combinatorially; the rewrite intersects
+        # per-example version spaces, so the ceiling is now a hard
+        # budget (MAX_EXAMPLES=32) instead of a combinatorial cliff.
+        # 2..32 examples are in contract (four identical examples still
+        # induce the identity here), more is refused — same honesty,
+        # higher capacity, one updated pin.
+        four = synthesize([("a", "a")] * 4)
+        self.assertEqual(apply_program(four["program"], ["a"]), "a")
+        self.assertGreaterEqual(four["checked"], 4)
+        from assistant.genius import synth as _synth
         with self.assertRaises(SynthError):
-            synthesize([("a", "a")] * 4)
+            synthesize([("a", "a")] * (_synth.MAX_EXAMPLES + 1))
 
     def test_empty_strings_carry_no_signal(self):
         with self.assertRaises(SynthError):
@@ -153,3 +165,89 @@ class RenderTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VersionSpaceScaleTests(unittest.TestCase):
+    """exponential-build-3 C1: the version-space rewrite's scaling pins
+    (Gulwani 2011 — intersection of per-example spaces, never the
+    concrete cross product)."""
+
+    def test_ten_examples_verify_exactly_with_a_linear_footprint(self):
+        # The old enumeration's practical ceiling was 2-3 examples; the
+        # VS representation is linear in the example count. Ten examples
+        # over a three-stage reorder synthesize (the suite's own runtime
+        # is the speed evidence — a wall-clock assertion would be
+        # non-deterministic on slow CI and is deliberately NOT used;
+        # what IS pinned deterministically is the representation's
+        # arithmetic: the trace classes collapse 12 menu pieces into 8,
+        # every example's split space holds exactly ONE abstract split,
+        # and the ambiguity count 12 programs is computed by class-size
+        # products, never by enumerating a cross product).
+        examples = [(f"user-{i}-report.log", f"log-{i}-user")
+                    for i in range(10)]
+        result = synthesize(examples)
+        self.assertEqual(result["checked"], 10)
+        self.assertEqual(result["stages"], 3)
+        self.assertEqual(result["version_space"],
+                         {"pieces": 12, "trace_classes": 8,
+                          "programs": 12,
+                          "example_spaces": [1] * 10})
+        self.assertEqual(result["alternatives"], 11)
+        for before, after in examples:
+            self.assertEqual(apply_program(result["program"], [before]),
+                             after)
+        # determinism: byte-identical result on a second run
+        self.assertEqual(result, synthesize(examples))
+
+    def test_intersection_correct_where_enumeration_would_blow_up(self):
+        # Eight examples, three stages: the naive cross product of menu
+        # pieces at three stages is in the tens of millions; the VS
+        # search intersects instead. The 3-stage program (suffix after
+        # 2nd dash + '-' + between-dashes + '-' + prefix) must come out
+        # deterministically with the ambiguity count computed
+        # ARITHMETICALLY (nonzero: tail(2) coincides with
+        # suffix-after-2nd-dash on every example, by construction).
+        examples = [(f"aa{i}-bb{i % 3}-cc", f"cc-bb{i % 3}-aa{i}")
+                    for i in range(8)]
+        result = synthesize(examples)
+        for before, after in examples:
+            self.assertEqual(apply_program(result["program"], [before]),
+                             after)
+        self.assertTrue(result["ambiguous"])
+        self.assertGreaterEqual(result["alternatives"], 1)
+        # determinism: byte-identical result on a second run
+        self.assertEqual(result, synthesize(examples))
+
+    def test_budget_refusal_is_fast_and_honest(self):
+        # The budget paths (_MAX_SPLITS / _MAX_VS_NODES) must ABSTAIN
+        # quickly with the budget reason, not hang (the old
+        # implementation's failure mode). The budgets are forced low
+        # via the module constants (read at call time), so the refusal
+        # itself is exercised without a pathological fixture.
+        from unittest import mock
+        from assistant.genius import synth as synth_mod
+        examples = [(f"aa{i}-bb{i % 3}-cc", f"cc-bb{i % 3}-aa{i}")
+                    for i in range(4)]
+        with mock.patch.object(synth_mod, "_MAX_SPLITS", 0):
+            # any realized m>=2 split now exceeds the bound (this
+            # fixture has one), so the split-space refusal fires
+            with self.assertRaises(SynthError) as caught:
+                synthesize(examples)
+            self.assertIn("version-space bound", str(caught.exception))
+        with mock.patch.object(synth_mod, "_MAX_VS_NODES", 1):
+            # the very first expansion visit exceeds the node budget
+            with self.assertRaises(SynthError) as caught:
+                synthesize(examples)
+            self.assertIn("node budget", str(caught.exception))
+        # and a genuinely unexplainable pair (a full REVERSAL — no
+        # reorder in this DSL explains it) still abstains with the
+        # plain no-transformation reason, budget-free: the refusal is
+        # the honest no-candidate path, not a budget trip (the old
+        # implementation's failure mode on such inputs was a hang; the
+        # rewrite's is this deterministic refusal — completing this
+        # test at all within the suite is the speed evidence)
+        long_a = "-".join(f"{i:04d}" for i in range(60))
+        with self.assertRaises(SynthError) as caught:
+            synthesize([(long_a, long_a[::-1]),
+                        (long_a + "-x", long_a[::-1] + "x")])
+        self.assertIn("abstaining", str(caught.exception))

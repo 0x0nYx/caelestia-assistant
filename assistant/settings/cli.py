@@ -488,6 +488,36 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="non-interactive wizard answers, one 1-5 intensity per "
              "question, in the order --wizard prints them",
     )
+    gate2 = arg_parser.add_mutually_exclusive_group()
+    gate2.add_argument(
+        "--macro", metavar="NAME", default=None,
+        help="replay a saved macro (an APPROVED proposal sequence "
+             "captured earlier): dry-run plan by default; with --apply "
+             "it STILL needs --confirm or the interactive prompt — "
+             "every replay is re-approved, single-change macros "
+             "included",
+    )
+    gate2.add_argument(
+        "--macro-save", metavar="NAME", default=None,
+        help="capture the newest applied change (or --from-id ID, see "
+             "--history) as a named macro — a record of something you "
+             "already approved, stored in the history file's bounded "
+             "macro list (never the target file)",
+    )
+    gate2.add_argument(
+        "--macro-list", action="store_true",
+        help="read-only: list the saved macros and exit",
+    )
+    gate2.add_argument(
+        "--macro-delete", metavar="NAME", default=None,
+        help="delete one saved macro by name (an explicit command; "
+             "never a silent overwrite)",
+    )
+    arg_parser.add_argument(
+        "--from-id", type=int, default=None, metavar="ID",
+        help="with --macro-save: capture this history entry id instead "
+             "of the newest (see --history)",
+    )
     return arg_parser
 
 
@@ -542,6 +572,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         arg_parser.error("--group is only valid together with --list-tools")
     if args.undo is not None and args.undo_id is not None:
         arg_parser.error("--undo and --undo-id are mutually exclusive")
+    if args.from_id is not None and args.macro_save is None:
+        arg_parser.error("--from-id is only valid together with --macro-save")
 
     if args.list_presets:
         from . import presets as presets_mod
@@ -847,7 +879,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 print(f"  #{e['id']}  {e['at']}  {label}  "
                       f"({len(e.get('ops', []))} change(s))")
             print("")
-            print("undo with --undo (newest N) or --undo-id ID")
+            print("undo with --undo (newest N) or --undo-id ID; capture "
+                  "one as a replayable macro with --macro-save NAME "
+                  "(newest) or --from-id ID")
         return 0
 
     if args.undo is not None or args.undo_id is not None:
@@ -865,6 +899,112 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("")
         print(result.get("message", ""))
         return 0 if result.get("restored", True) else 1
+
+    if args.macro is not None:
+        # C3: replay a captured APPROVED proposal sequence. The ops are
+        # plain planner ops (presets.preset_ops shape), so the replay
+        # rides the ordinary plan/render path; the ONLY bespoke rule is
+        # STRONGER consent — every macro apply needs the second consent
+        # (--confirm or interactive y/N), single-change macros included,
+        # because a replay's contents may no longer be in the user's head.
+        from . import history as _history
+        from . import macros as macros_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            ops = macros_mod.macro_ops(target, args.macro)
+        except (macros_mod.MacroError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        try:
+            plan = planner.plan(ops, target)
+        except planner.PlannerError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        label = f"macro: {args.macro}"
+        if not args.apply:
+            print("\n".join(render_plan(plan, [], label, args.file,
+                                       False, None, None)))
+            return 0
+        confirmed, _why = _confirm_multi(plan, args)
+        if not confirmed:
+            print(
+                "macro replays always need confirmation (re-run with "
+                "--confirm, or answer the interactive prompt); nothing "
+                "was written",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            apply_result = applier.apply(plan, target, write=True,
+                                          label=label)
+        except applier.ApplierError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(render_plan(plan, [], label, args.file, True,
+                                   apply_result, None)))
+        return 0
+
+    if args.macro_save is not None:
+        # C3: capture an APPROVED apply from the bounded history. Writes
+        # only the history file's macros key (the A3 undo_log precedent
+        # — same _save atomic path, no new write surface, the target
+        # file is not touched).
+        from . import history as _history
+        from . import macros as macros_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            macro = macros_mod.save(target, args.macro_save,
+                                    args.from_id)
+        except (macros_mod.MacroError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"captured macro {macro['name']!r}: {len(macro['ops'])} "
+              f"change(s) from history entry #{macro['from_id']} "
+              f"(label {macro['label']!r})")
+        print("replay with --macro NAME (dry-run preview; --apply still "
+              "needs --confirm)")
+        return 0
+
+    if args.macro_list:
+        from . import history as _history
+        from . import macros as macros_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            saved = macros_mod.list_macros(target)
+        except (macros_mod.MacroError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(_header(False)))
+        print("")
+        if not saved:
+            print("no macros saved; capture an applied change with "
+                  "--macro-save NAME")
+        else:
+            print(f"saved macros (oldest capture first, "
+                  f"{len(saved)} of {macros_mod.MAX_MACROS} slots):")
+            for m in saved:
+                ops = ", ".join(f"{o['tool']}={o['value']!r}"
+                                for o in m.get("ops", []))
+                print(f"  {m['name']:<24} {len(m.get('ops', []))} "
+                      f"change(s) from #{m.get('from_id')}: {ops}")
+            print("")
+            print("replay with --macro NAME; every replay is re-approved "
+                  "(--apply + --confirm)")
+        return 0
+
+    if args.macro_delete is not None:
+        from . import history as _history
+        from . import macros as macros_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            result = macros_mod.delete(target, args.macro_delete)
+        except (macros_mod.MacroError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"deleted macro {result['deleted']!r} "
+              f"({result['ops']} change(s), captured from history entry "
+              f"#{result['from_id']})")
+        return 0
 
     if args.list_tools:
         # §5.1: --list-tools ignores TEXT (and writes nothing, ever).
@@ -911,7 +1051,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.text is None and args.calls is None:
         arg_parser.error(
             "TEXT is required unless --list-tools, --tool, --restore, --call, "
-            "--explain, --history, --undo or --lint is given"
+            "--explain, --history, --undo, --lint or a --macro* flag is given"
         )
 
     target = Path(args.file) if args.file else default_target()

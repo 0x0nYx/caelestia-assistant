@@ -697,6 +697,21 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     pw.add_argument("--high", type=float, default=85000.0, metavar="MC",
                     help="thermal high threshold in millidegrees C "
                          "(default 85000 = 85 C)")
+    tm = sub.add_parser("telemetry", help="engine coverage/accuracy "
+                                         "report; opt-in Laplace-DP export "
+                                         "(read-only, stdout only)")
+    tm.add_argument("--export", action="store_true",
+                    help="print the shareable artifact instead of the "
+                         "local report")
+    tm.add_argument("--dp", nargs="?", const=1.0, default=None,
+                    type=float, metavar="EPSILON",
+                    help="--export: pass the artifact through the Laplace "
+                         "noising pass (cortex/dp.py's mechanism; default "
+                         "epsilon 1.0 when the value is omitted)")
+    tm.add_argument("--dp-seed", type=int, default=None, metavar="SEED",
+                    help="--export --dp: noise seed (default: derived from "
+                         "the rows' content hash — reproducible, NOT "
+                         "independent across exports)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -796,6 +811,63 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                 print(f"  changepoint: {cp['note']}")
             if r.get("suggestion"):
                 print(f"  {r['suggestion']}")
+        return 0
+
+    if args.cmd == "telemetry":
+        # exponential-build-3 F3: coverage/accuracy-only engine metrics,
+        # opt-in Laplace-DP export via the B4 mechanism. Read-only.
+        from .. import capabilities
+        if not capabilities.enabled("engine_telemetry"):
+            print("error: engine_telemetry is disabled in the capability "
+                  "manifest (edit capabilities.json to enable; it cannot "
+                  "be enabled by a request)", file=sys.stderr)
+            return 1
+        from . import engine_telemetry
+        rows = engine_telemetry.metrics(learner)
+        if not rows:
+            print("no routed examples logged yet — nothing to report "
+                  "(the engine logs its own routed turns locally)")
+            return 0
+        if not args.export:
+            print("engine telemetry (coverage/accuracy only — no text, "
+                  "no phrases, no features leave this machine unless you "
+                  "--export)")
+            for row in rows:
+                thin = "  (thin)" if row["n"] < engine_telemetry.MIN_N \
+                    else ""
+                acc = "-" if row["accuracy"] is None \
+                    else f"{row['accuracy']:.2f}"
+                cov = "-" if row["coverage"] is None \
+                    else f"{row['coverage']:.2f}"
+                print(f"  {row['surface']:<28} n={row['n']:>3}  "
+                      f"decided={row['decided']:>3}  coverage={cov:<5} "
+                      f"accuracy={acc}{thin}")
+            print("export opt-in: telemetry --export [--dp EPSILON] "
+                  "(exact artifact is local read-back; --dp applies the "
+                  "Laplace mechanism per Dwork et al. 2006)")
+            return 0
+        date = datetime.now().strftime("%Y-%m-%d")
+        if args.dp is None:
+            sys.stdout.write(engine_telemetry.export_text(rows, date=date))
+            print("# (exact artifact — local read-back; use --dp for the "
+                  "shareable noised form)", file=sys.stderr)
+            return 0
+        try:
+            noised = engine_telemetry.noise_metrics(
+                rows, epsilon=args.dp, seed=args.dp_seed)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        sys.stdout.write(engine_telemetry.export_text(
+            noised["rows"], date=date, dp=noised))
+        print(f"# (dp) epsilon={noised['epsilon']:g}, "
+              f"seed={noised['seed']}: "
+              f"n floored at zero: {noised['n_floored_at_zero']}; "
+              f"rates clipped to [0,1]: {noised['p_clipped']}",
+              file=sys.stderr)
+        print("# (dp) composition: k sequential exports compose to roughly "
+              "k*epsilon (Dwork & Roth 2014) — the practical bound is how "
+              "often you export", file=sys.stderr)
         return 0
 
     if args.cmd == "lexicon":

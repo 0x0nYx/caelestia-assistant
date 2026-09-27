@@ -52,6 +52,18 @@ Every new module ships with tests pinning it to known values (a solved
 example, a brute-force cross-check, or a bound check). Tests must not
 require network, a display, or a KDE session.
 
+**Synthetic fixtures (`assistant/fixtures.py`).** You do not need a
+caelestia-kde installation to contribute: the shared fixture builders
+fabricate everything the readers read — shell-config trees (the
+canonical valid config plus the five fault variants), /proc + /sys
+telemetry snapshots, markdown vaults with pinned mtimes, and brain
+state / ledger files. Build your test world with
+`fixtures.shell_tree / telemetry_tree / vault / state_file /
+ledger_file` instead of hand-rolling temp files, so the no-install
+guarantee stays true by construction. Deterministic by design: the
+same builder calls produce byte-identical artifacts (pinned by
+`assistant/tests/test_fixtures.py`).
+
 ## Commits
 
 Small, focused commits; the subject line names the layer. Reference issues

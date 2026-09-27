@@ -42,6 +42,9 @@ DEFAULTS: Dict[str, bool] = {
     "lexicon_sharing": True,      # cortex lexicon export/import/forget (CLI,
                                   # offline, no network; import is an explicit
                                   # user command with rollback — phase 2.6)
+    "engine_telemetry": True,     # cortex engine coverage/accuracy report +
+                                  # opt-in Laplace-DP export (read-only,
+                                  # stdout only — exponential-build-3 F3)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

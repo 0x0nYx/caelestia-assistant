@@ -545,7 +545,114 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     sub.add_parser("selfcheck", help="validate rule files and the no-executor import policy")
 
+    rp = sub.add_parser("rulepack", help="the signed rule-pack format: "
+                                         "export/import/list/render "
+                                         "(signatures live in YOUR "
+                                         "external tool)")
+    rp.add_argument("action", choices=["export", "import", "list",
+                                       "render", "rules-d", "forget"])
+    rp.add_argument("target", nargs="?", default="",
+                    help="export: output path; import: pack path (or - "
+                         "for stdin); render/rules-d/forget: pack id")
+    rp.add_argument("--rulesets", default="",
+                    help="export: comma-separated rules.d stems")
+    rp.add_argument("--id", default="",
+                    help="export: the pack id (required)")
+    rp.add_argument("--signer", default="",
+                    help="import: the identity YOU verified with your own "
+                         "tool (recorded as a claim, never auto-trusted)")
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "rulepack":
+        # exponential-build-3 F1: the signed rule-pack surface. The
+        # module (diagnostics/rulepack.py) carries the full contract;
+        # this CLI is a thin router over it.
+        from . import rulepack
+        from ..brain import state as brain_state
+        if args.action == "export":
+            if not args.rulesets or not args.id:
+                print("error: rulepack export needs --rulesets A,B and "
+                      "--id NAME", file=sys.stderr)
+                return 2
+            try:
+                pack = rulepack.export_pack(
+                    Path(__file__).resolve().parent / "rules.d",
+                    [s.strip() for s in args.rulesets.split(",")
+                     if s.strip()], args.id)
+            except rulepack.RulePackError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+            text = json.dumps(pack, indent=2) + "\n"
+            if args.target in ("", "-"):
+                sys.stdout.write(text)
+            else:
+                Path(args.target).write_text(text, encoding="utf-8")
+                print(f"wrote pack {args.id!r} to {args.target} "
+                      "(sign it with YOUR external tool before sharing)")
+            return 0
+        if args.action == "import":
+            if not args.target:
+                print("error: rulepack import needs a pack path (or - "
+                      "for stdin)", file=sys.stderr)
+                return 2
+            raw = (sys.stdin.read() if args.target == "-"
+                   else Path(args.target).read_text(encoding="utf-8"))
+            state = brain_state.load()
+            existing = [rec.get("id") for rec in
+                        state.get(rulepack.STATE_KEY, []) or []]
+            try:
+                record = rulepack.import_pack(raw, existing,
+                                              signer=args.signer)
+            except rulepack.RulePackError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+            state.setdefault(rulepack.STATE_KEY, []).append(record)
+            brain_state.save(state)
+            print(f"imported pack {record['id']!r}: "
+                  f"{record['rule_count']} rule(s), integrity + safety "
+                  "verified; signer recorded as a CLAIM")
+            print("imported rules are review data, NOT live — see: "
+                  "caelestia-assist rulepack list / render")
+            return 0
+        if args.action == "list":
+            packs = rulepack.list_packs(brain_state.load())
+            if not packs:
+                print("no rule packs imported; import one with "
+                      "rulepack import FILE")
+                return 0
+            for rec in packs:
+                signer = rec.get("signer") or "(none recorded)"
+                print(f"  {rec['id']}: {rec['rule_count']} rule(s), "
+                      f"signer {signer!r}, payload sha256 "
+                      f"{str(rec.get('payload_sha256'))[:12]}")
+            return 0
+        if args.action in ("render", "rules-d"):
+            state = brain_state.load()
+            record = next(
+                (rec for rec in state.get(rulepack.STATE_KEY, []) or []
+                 if rec.get("id") == args.target), None)
+            if record is None:
+                print(f"error: no imported pack named {args.target!r}",
+                      file=sys.stderr)
+                return 1
+            if args.action == "render":
+                print(rulepack.render_pack(record))
+            else:
+                sys.stdout.write(rulepack.render_rules_d(record))
+            return 0
+        # forget
+        state = brain_state.load()
+        packs = state.get(rulepack.STATE_KEY, []) or []
+        kept = [rec for rec in packs if rec.get("id") != args.target]
+        if len(kept) == len(packs):
+            print(f"error: no imported pack named {args.target!r}",
+                  file=sys.stderr)
+            return 1
+        state[rulepack.STATE_KEY] = kept
+        brain_state.save(state)
+        print(f"forgot pack {args.target!r}")
+        return 0
 
     if args.cmd == "selfcheck":
         from . import schema_lint

@@ -215,3 +215,24 @@ the preset preview command (`settings --preset battery-saver` /
 thresholds are said out loud; thin series (<4 samples) abstain;
 out-of-range values are refused. Surface: `caelestia-assist cortex
 power --battery P,P,... --thermal M,M,...` (read-only).
+
+## Opt-in engine telemetry (`engine_telemetry.py`)
+
+Coverage/accuracy-only metrics over the router's own bounded example
+log — per surface: n, decided, accepted, rejected, coverage
+(decided/n), accuracy (accepted/decided). Abstains and clarifies
+count in n but NOT in decided (abstaining is the honest no-answer,
+not a wrong one); a surface with zero decided turns carries NO
+accuracy claim ("-", never 0.0). Nothing else can leave the machine
+through this module — no text, no phrases, no features — by
+construction.
+
+The opt-in export rides the B4 Laplace mechanism (`dp.py`): n and
+decided noised at sensitivity 1 (floored at 0), rates noised and
+clipped to [0,1], every row carrying an explicit `(dp: epsilon=X)`
+marker, and the exact vs noised artifacts are byte-distinct with
+different headers. Composition: k exports ~ k·epsilon (Dwork & Roth
+2014). Surface: `caelestia-assist cortex telemetry [--export]
+[--dp EPSILON] [--dp-seed N]`, behind the capability manifest's
+`engine_telemetry` flag (read-only, ON by default, one file edit to
+disable).

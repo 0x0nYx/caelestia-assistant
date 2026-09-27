@@ -59,6 +59,30 @@ class PlanCache:
 
     # -- composition ---------------------------------------------------------
 
+    def pending_labels(self) -> List[str]:
+        """Human-readable labels of the pending ops (tool names and raw
+        notes) — the candidate antecedents pronoun resolution walks
+        first, since the pending plan is the most recent context."""
+        labels: List[str] = []
+        for op in self.ops:
+            for key in ("raw", "note"):
+                # "tool" is deliberately excluded: a camelCase identifier
+                # is not an English antecedent a user could have meant
+                value = op.get(key)
+                if value:
+                    labels.append(str(value))
+        return labels
+
+    def resolve_turn(self, text: str) -> Dict[str, Any]:
+        """Cross-turn pronoun resolution (exponential-build-4 F):
+        'open firefox' then 'pin it' — the 'it' resolves against the
+        pending plan's labels first, then prior turns, Hobbs-style,
+        BEFORE the rewritten turn goes anywhere near a parser or the
+        planner. The rewritten text is what compose() should see; the
+        report is carried so the caller can show its work."""
+        from . import coref
+        return coref.resolve_turn(text, self.turns, self.pending_labels())
+
     def compose(self, new_ops: Sequence[Dict[str, Any]],
                 text: str = "") -> List[Dict[str, Any]]:
         """Merge the pending ops with a new turn's ops: same-tool ops are

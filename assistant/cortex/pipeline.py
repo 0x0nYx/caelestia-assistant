@@ -310,6 +310,12 @@ class CortexResult:
         self.candidates: List[Dict[str, Any]] = []
         self.session_note: str = ""
         self.strategy: str = ""
+        # exponential-build-3 G3: when a clause's ROUTER verdict was
+        # ABSTAIN with candidates (nothing cleared the bar, but the
+        # ranked list exists), the top-2 score gap rides here so the
+        # abstention can be explained with "how close the best guesses
+        # were" — first such clause wins (deterministic)
+        self.abstain_gap: Optional[Dict[str, Any]] = None
         self.learn_hook: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -335,6 +341,8 @@ class CortexResult:
             out["explain"] = self.explain_answer
         if self.history_plan is not None:
             out["history_plan"] = self.history_plan
+        if self.abstain_gap is not None:
+            out["abstain_gap"] = self.abstain_gap
         if self.learn_hook is not None:
             out["learn_hook"] = self.learn_hook
         return out
@@ -418,6 +426,20 @@ def process(
             "clause": clause.text, "surface": top.surface, "kind": top.kind,
             "score": top.score, "p": top.p,
         })
+        if (clause_route.verdict == "ABSTAIN"
+                and result.abstain_gap is None
+                and len(clause_route.candidates) >= 2):
+            # G3: the router abstained (nothing cleared min_score)
+            # but produced a ranking — keep the top-2 gap for the
+            # unified explainer
+            first, second = clause_route.candidates[0], clause_route.candidates[1]
+            result.abstain_gap = {
+                "clause": clause.text,
+                "top": first.surface, "top_score": round(first.score, 4),
+                "runner_up": second.surface,
+                "runner_up_score": round(second.score, 4),
+                "gap": round(first.score - second.score, 4),
+            }
 
         if clause.keep:
             notes.append(f"keep-clause honored (no change to {top.surface})")

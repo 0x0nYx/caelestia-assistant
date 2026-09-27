@@ -127,6 +127,17 @@ def explain_cortex(text: str, state: Optional[Dict[str, Any]] = None
     headline = f"{result.verdict}"
     if surface:
         headline += f" via {surface} (p={top.get('p')})"
+    # exponential-build-3 G3: on ABSTAIN, report the top-2 score gap —
+    # "no setting clearly matches" is more useful with "here is how
+    # close the best guesses were" (the router's own ranking, its own
+    # numbers; nothing new is computed here)
+    gap = getattr(result, "abstain_gap", None)
+    if result.verdict == "ABSTAIN" and gap:
+        lines.append(
+            f"top-2 gap at abstain: '{gap['top']}' scored "
+            f"{gap['top_score']:.3f} vs '{gap['runner_up']}' at "
+            f"{gap['runner_up_score']:.3f} (gap {gap['gap']:.3f}) — "
+            "neither cleared the routing bar")
     return {"engine": "cortex", "headline": headline, "lines": lines,
             "citations": citations, "confidence": result.confidence}
 

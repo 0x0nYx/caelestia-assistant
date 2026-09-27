@@ -4,6 +4,8 @@
     python3 -m assistant.settings --call NAME=VALUE [--call ...] [--apply] [--file PATH] [--json]
     python3 -m assistant.settings --list-tools [--group SLUG]
     python3 -m assistant.settings --tool NAME
+    python3 -m assistant.settings --threeway "REQUEST|PRESET" [--file PATH]
+        # read-only: current value vs proposal vs undo-restore value
     python3 -m assistant.settings --restore [--file PATH]
 
 Guarantees:
@@ -428,6 +430,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "assistant state, never to shell.json)",
     )
     arg_parser.add_argument(
+        "--threeway", metavar="TEXT", default=None,
+        help="read-only three-way diff view: for each setting the "
+             "request (or preset) would touch — the file's current "
+             "value, the proposal's value, and the value the undo "
+             "history would restore — so 'apply then undo' is never a "
+             "surprise; never writes",
+    )
+    arg_parser.add_argument(
         "--what-if", metavar="TEXT", default=None,
         help="read-only consequence view: plan the request (or a preset "
              "name) as a DRY RUN, then project it through the cited "
@@ -613,6 +623,76 @@ def main(argv: Optional[List[str]] = None) -> int:
                                    args.file, True, apply_result, None)))
         return 0
 
+    if args.threeway is not None:
+        # exponential-build-3 G1: the three-way diff view — current
+        # file value vs the current proposal vs the undo-log restore
+        # value, per touched key. Read-only: the parser/planner spine
+        # runs dry (plan only) and the history is only READ.
+        from . import history as history_mod
+
+        request = args.threeway
+        try:
+            parse = parser.parse(request)
+            ops = parse.get("ops") or []
+        except Exception:
+            ops = []
+        if not ops:
+            from . import presets as presets_mod
+            try:
+                ops = presets_mod.preset_ops(request)
+            except Exception:
+                ops = []
+        if not ops:
+            print(f"error: threeway could not plan {request!r} (use a "
+                  "request or a preset name)", file=sys.stderr)
+            return 1
+        target = Path(args.file) if args.file else default_target()
+        try:
+            plan = planner.plan(ops, target)
+        except planner.PlannerError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        entries = history_mod.entries(target)  # newest first
+        print("\n".join(_header(False)))
+        print("")
+        print(f"three-way view for {request!r} (read-only; nothing "
+              "is written):")
+        shown = 0
+        for entry in plan.get("entries", []):
+            if entry.get("error") or entry.get("no_op"):
+                continue
+            path = str(entry.get("path"))
+            current = entry.get("old", "(unset)")
+            proposed = entry.get("new")
+            record = next((e for e in entries
+                           if any(op.get("path") == path
+                                  for op in e.get("ops", []))), None)
+            print(f"  {path}:")
+            print(f"    now (file):          {current!r}")
+            print(f"    proposal:            {proposed!r}")
+            if record is not None:
+                op = next(op for op in record.get("ops", [])
+                          if op.get("path") == path)
+                restore = op.get("old")
+                label = record.get("label") or "(unlabelled)"
+                print(f"    undo would restore:  {restore!r}   "
+                      f"(history #{record.get('id')} {label!r}, "
+                      f"{record.get('at', '?')})")
+                if restore != current:
+                    print("    note: apply-then-undo lands on the "
+                          "restored value, NOT back on the current "
+                          "one")
+                else:
+                    print("    note: apply-then-undo returns exactly "
+                          "to the current value")
+            else:
+                print("    undo record:         none for this key "
+                      "(first change would create one)")
+            shown += 1
+        if not shown:
+            print("  the request resolves to no applicable changes")
+        return 0
+
     if args.what_if is not None:
         # Phase 2.7: the what-if consequence view — a DRY-RUN plan plus
         # the projection through the cited interaction table. Read-only:
@@ -681,7 +761,19 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         state = brain_state.load()
         rows = state.get("preset_comparisons") or []
+        # exponential-build-3 G2: surface a pending idle-time invitation
+        # BEFORE the empty-log early return — a fresh install's first
+        # invitation must be visible even with zero comparisons
+        from ..brain import preference_prompts
+        invite = preference_prompts.pending(state)
         if not rows:
+            if invite:
+                print("no pairwise comparisons recorded yet — but an "
+                      "idle-time invitation is waiting:")
+                print(f"  settings --prefer {invite.get('a')} "
+                      f"{invite.get('b')}  ({invite.get('reason')}; "
+                      f"invited {invite.get('at')})")
+                return 0
             print("no pairwise comparisons recorded yet; record one with "
                   "settings --prefer PRESET_A PRESET_B")
             return 0
@@ -697,6 +789,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         tau = report["agreement_kendall_tau"]
         if tau is not None:
             print(f"elo/bradley-terry order agreement (kendall tau): {tau}")
+        # exponential-build-3 G2: surface a pending idle-time invitation
+        if invite:
+            print(f"idle-time invitation pending: settings --prefer "
+                  f"{invite.get('a')} {invite.get('b')}  "
+                  f"({invite.get('reason')}; invited {invite.get('at')})")
         print("proposals only — nothing is applied; the planner/applier "
               "gates are untouched")
         return 0
@@ -744,8 +841,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         rows.append({"winner": winner, "loser": loser,
                      "at": datetime.now().isoformat(timespec="seconds")})
         state["preset_comparisons"] = rows[-200:]
+        # exponential-build-3 G2: if this comparison answers a pending
+        # idle-time invitation, consume it (either order counts)
+        from ..brain import preference_prompts
+        consumed = preference_prompts.answer(state, name_a, name_b)
         brain_state.save(state)
-        print(f"recorded: {winner} > {loser} (see settings --rank)")
+        suffix = " (this answers the pending idle-time prompt)" \
+            if consumed else ""
+        print(f"recorded: {winner} > {loser} (see settings --rank){suffix}")
         return 0
 
     if args.lint:

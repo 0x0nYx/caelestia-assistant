@@ -224,3 +224,21 @@ def dream_window(idle_minutes, on_ac_power, cpu_load_percent, jobs, budget_min):
     if not dream_eligible(idle_minutes, on_ac_power, cpu_load_percent):
         return {"eligible": False, "chosen": []}
     return {"eligible": True, "chosen": dream_schedule_jobs(jobs, budget_min)}
+
+
+def dream_preference_prompt(state_path, now=None):
+    """exponential-build-3 G2: the idle-cadence preference invitation.
+    One job a dream window may run: MAYBE record one pairwise
+    comparison prompt (frequency-capped at one per 7 days, one
+    unanswered at a time, 14-day expiry — brain/preference_prompts.py
+    carries the full contract). The invitation surfaces in
+    `settings --rank` and is answered by the ordinary `--prefer`,
+    which consumes it. Writes only through the existing brain-state
+    path."""
+    from datetime import datetime, timezone
+    from . import preference_prompts
+    now = now or datetime.now(timezone.utc)
+    state = st.load(state_path)
+    result = preference_prompts.maybe_prompt(state, now)
+    st.save(result["state"], state_path)
+    return {"prompt": result["prompt"], "reason": result["reason"]}

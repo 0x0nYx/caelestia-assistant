@@ -193,3 +193,18 @@ regret estimate is context-contamination-optimistic (the caveat
 travels on every report). Final verification: 1987 tests OK
 (skipped=12; baseline 1622, +365), selfcheck OK across every
 commit.
+
+## 2026-09-28 — branch unification (single-branch main)
+
+Per the operator's directive, all work now lives directly on main.
+agent/exponential-build-3 was merged into main (9562987, merge of
+unrelated histories; the content diff is empty — the v0.1.0 baseline
+snapshot 50cddea and the build-3 tip e861861 had identical trees), so
+main now carries the complete history: the original repo history,
+builds 1–2 (via PRs #1/#2), the eleven build-3 commits, and the v0.1.0
+baseline snapshot. The agent/exponential-build-3 branch was then
+retired (deleted, remote and local) — its tip is an ancestor of the
+merge commit, so nothing was lost. Archive tags kept:
+pre-v0.1-reset-3-archive (cf2eb6b) and v0.1.0-baseline-3 (50cddea).
+Verification on the unified main: 1987 tests OK (skipped=12),
+selfcheck OK, bash tests 10/0.

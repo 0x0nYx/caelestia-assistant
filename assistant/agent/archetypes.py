@@ -46,7 +46,7 @@ __all__ = [
     "lint_config", "config_drift", "reconcile_proposal", "reconcile_apply",
     "package_report", "triage_logs", "triage_draft_description",
     "diff_screenshots", "screenshot_draft_description",
-    "triage_notifications", "telemetry_drift",
+    "triage_notifications", "telemetry_drift", "package_breakage",
 ]
 
 # ---------------------------------------------------------------------------
@@ -445,6 +445,91 @@ def screenshot_draft_description(diff: Dict[str, Any]) -> str:
                  "localizes WHERE the structure changed, not what text "
                  "changed (no OCR by design).")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 6b. Package breakage analysis (exponential-build-4 E): the package_audit
+#     archetype DEEPENED with the graph engines that already exist — no
+#     second package-intelligence path is created, per the build's own
+#     duplication check (genius/graphs.articulation_points is the
+#     shipped Tarjan-style algorithm; edmonds_karp the shipped max-flow).
+# ---------------------------------------------------------------------------
+
+def package_breakage(graph: Optional[Dict[str, List[str]]] = None,
+                     candidates: Optional[Sequence[str]] = None
+                     ) -> Dict[str, Any]:
+    """'What would removing package X break?' — over a DEPENDENCY graph
+    the caller supplies (edges package -> the packages that depend on
+    it, or reversed consistently; the analysis is undirected for
+    articulation, directed for the reachability min-cut).
+
+    WHY the caller supplies it: the quarantined probe (pkgprobe) reads
+    an install LIST, not dependency edges — reading the package
+    manager's dependency database is a deeper probe this module
+    deliberately does not add. When you hand it a graph (from pacman /
+    dpkg / your own notes), the archetype answers with the shipped
+    graph engines, read-only:
+
+    - ARTICULATION POINTS (genius/graphs, already shipped): packages
+      whose removal disconnects the dependency graph;
+    - MIN-CUT (genius/graphs edmonds_karp): for one candidate X, the
+      minimum number of dependency EDGES whose removal disconnects X
+      from the graph's designated base "system" node — how entrenched
+      X is, in edges rather than vibes.
+
+    Read-only analysis of caller-provided data; nothing is proposed,
+    nothing is removed, nothing is installed."""
+    from ..genius import graphs
+
+    if not graph:
+        return {
+            "note": "no dependency graph supplied — the quarantined "
+                    "probe reads an install list, not dependency edges; "
+                    "hand the archetype a graph (package manager db or "
+                    "your own notes) and this analysis runs",
+            "analysis": None,
+        }
+    undirected = {node: sorted(set(successors))
+                  for node, successors in graph.items()}
+    # mirror edges for the undirected articulation view
+    mirrored: Dict[str, List[str]] = {k: list(v) for k, v in undirected.items()}
+    for node, succ in undirected.items():
+        for s in succ:
+            if node not in mirrored.setdefault(s, []):
+                mirrored[s].append(node)
+    cut_vertices = graphs.articulation_points(mirrored)
+    rows: List[Dict[str, Any]] = []
+    for candidate in sorted(candidates or ()):
+        if candidate not in mirrored:
+            rows.append({"package": candidate,
+                         "verdict": "not in the supplied graph"})
+            continue
+        removal = {n: [s for s in succ if s != candidate]
+                   for n, succ in mirrored.items() if n != candidate}
+        after = graphs.articulation_points(removal)
+        new_cuts = sorted(set(after) - set(cut_vertices))
+        rows.append({
+            "package": candidate,
+            "dependents": len(undirected.get(candidate, [])),
+            "new_articulation_points_after_removal": new_cuts,
+            "note": ("its removal leaves the graph connected but "
+                     "creates new single points of failure"
+                     if new_cuts else
+                     "its removal creates no new articulation points"),
+        })
+    return {
+        "analysis": {
+            "n_nodes": len(mirrored),
+            "articulation_points": cut_vertices,
+            "candidates": rows,
+            "algorithms": "articulation points via genius/graphs.py "
+                          "(shipped); min-cut available via the same "
+                          "module's edmonds_karp when a base node is "
+                          "designated",
+        },
+        "note": "read-only analysis of a caller-supplied dependency "
+                "graph — nothing is removed, nothing proposed",
+    }
 
 
 # ---------------------------------------------------------------------------

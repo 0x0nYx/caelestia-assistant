@@ -4,9 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/)-flavoured.
 
-## [Unreleased]
+## [0.2.0] — 2026-09-28 — exponential-build-4 baseline
 
-### Added — exponential-build-4
+The fourth build's contribution, one clean entry: eight feature
+groups, an adversarial verification pass, and the uncertainty
+hardening — on top of the [0.1.0] baseline and the build-3 additions
+condensed below it.
+
+### Added — exponential-build-4 (this entry's substance)
 
 - Automatic log understanding: streaming Drain log-template mining (He, Zhu, He & Lyu, ICSM 2017) in `diagnostics/drain.py`, wired in front of the rule engine — a NO_MATCH/AMBIGUOUS diagnosis now templates the lines no signature matched (recurrence counts, caller-supplied first-seen dates, bounded capacity with honest overflow), rendered in `diagnose` reports and the `why` explainer with the explicit note that Drain clusters shapes, not causes.
 - Deeper math/science: bounded symbolic integration (`mathengine.symbolic_integrate`, `genius calc --antiderivative`) — a pattern table over the existing AST (polynomial, exp, ln, trig, power-with-linear-inner), linear u-substitution with constant-ratio verification, integration by parts for `p(x)·{exp,sin,cos}` and `ln(x)` shapes, every antiderivative differentially verified at fixed sample points before shipping, honest `NO_CLOSED_FORM_IN_TABLE` verdicts (not a Risch algorithm); dual-number forward-mode automatic differentiation (`genius/autodiff.py`, Wengert 1964) with error-bar propagation for Group H; adaptive embedded Runge-Kutta 4(5) (Dormand & Prince 1980, `ode_solve --ode-method rk45 --tol`) with accepted/rejected step accounting; a bounded DPLL/CDCL-style SAT solver (`genius/sat.py` — unit propagation, pure literals, clause learning, hard node budget that ABSTAINs) with BMC reachability/deadlock auditing over finite-state graphs, wired as an additive audit into HTN goal decomposition (`agent/goals.py`) and the settings preset state graph (`settings/presets.py::transition_graph`).
@@ -17,7 +22,7 @@ All notable changes to this project are documented here. The format follows
 - Self-learning upgrades: conservative bandits (`cortex/conservative.py`, Wu, Shariff, Lattimore & Szepesvári, ICML 2016 — the safe-exploration floor over the strategy bandit's own Thompson sample and Beta state: a non-baseline strategy plays only when its UCB clears the balanced floor's LCB minus ε; the guarantee names its scope: distance from the BASELINE, high probability); Learn++.NSE (Elwell & Polikar, IEEE TNN 2011, `cortex/ensemble.py`) as the SELECTABLE smooth-drift alternative next to the ADWIN consensus (`drift_mode: "nse"` — a per-block logistic expert ensemble re-weighted by recent-window accuracy with a floor, never a reset), compared honestly on one stream via `compare_with_adwin` (no winner declared); stacked generalization (Wolpert 1992, `diagnostics/stacking.py`) — level-2 weights learned from labeled fusion history as drop-in replacements for the fixed pool's weights (chance-lift reliability, normalized to the pool total; the circular per-edge logistic is documented as a finding, not shipped), with a k-fold held-out Brier comparison per call.
 - Personal knowledge graph depth: Brandes-betweenness bridge notes (`personal graph` / `bridges` — Freeman 1977, Burt 1992 brokerage framing: high betweenness, unremarkable PageRank/authority, gated on strictly positive betweenness; a different signal from the existing importance views, presented as such); windowed topic drift (`personal drift` — the EXISTING ADWIN + Page-Hinkley consensus reused verbatim on a binary "mix held" signal conditioned from consecutive NMF topic-mix cosine similarity on one shared basis; per-snapshot NMF bases would be unsound and were caught by the tests); cloze-deletion flashcard drafts (`personal cards` / `cards-decide` — mechanical blank selection, every draft in the mandatory approve/reject queue, FSRS scheduling only after approval); Murphy 1973 calibration decomposition (`personal selfcal` — REL/RES/UNC with the finite-sample covariance residual shown, never folded away).
 
-### Added — exponential-build-3
+### Added — exponential-build-3 (condensed from its own [Unreleased] section)
 
 - Reasoning primitives: Rete forward chaining over matched rules (Forgy 1982) and Dung abstract argumentation (1995) in `diagnostics/rette.py` / `argumentation.py`; Case-Based Reasoning cycle (retain = a ledger proposal) and structure-mapping analogy (Gentner 1983) in `retrieval/cbr.py` / `structure_mapping.py`.
 - No-LLM learning: Kneser-Ney smoothed n-grams as the never-override SymSpell fallback (Kneser & Ney 1995; Chen & Goodman 1999) in `brain/kneser_ney.py`; ADWIN drift consensus with Page-Hinkley (Bifet & Gavaldà 2007) in `cortex/adwin.py`; hierarchical meta-bandit over recommendation engines (`brain/meta_bandit.py`); Laplace-DP lexicon-diff export (`cortex/dp.py`, `--dp` on `cortex lexicon export`).

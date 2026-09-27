@@ -8,7 +8,10 @@ dispatchers):
   registry's own schema (settings.lint + the brain's preference-posterior
   drift), proposing reconciliation only through consented ops
   (reset-to-default for type/range violations — the planner validates,
-  the applier gates, as always).
+  the applier gates, as always). Exponential-build 2.6 adds one more
+  read-only evidence source to this archetype: `telemetry_drift`, the
+  robust Mahalanobis baseline (median/MAD, Leys et al. 2013) over the
+  machine's own /proc+/sys telemetry — a report, nothing acts on it.
 - **package_audit**: the quarantined, opt-in package probe
   (agent.pkgprobe — capability-gated, fixed arg arrays, read-only)
   matched against a STATIC local keyword list. Deliberately NOT a CVE
@@ -43,7 +46,7 @@ __all__ = [
     "lint_config", "config_drift", "reconcile_proposal", "reconcile_apply",
     "package_report", "triage_logs", "triage_draft_description",
     "diff_screenshots", "screenshot_draft_description",
-    "triage_notifications",
+    "triage_notifications", "telemetry_drift",
 ]
 
 # ---------------------------------------------------------------------------
@@ -442,3 +445,44 @@ def screenshot_draft_description(diff: Dict[str, Any]) -> str:
                  "localizes WHERE the structure changed, not what text "
                  "changed (no OCR by design).")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 7. Telemetry drift (exponential-build 2.6): one more read-only evidence
+#    source for the config_hygiene archetype — the robust Mahalanobis
+#    baseline over the machine's own numeric telemetry.
+# ---------------------------------------------------------------------------
+
+def telemetry_drift(history: Sequence[Dict[str, float]],
+                    sample: Optional[Dict[str, float]] = None
+                    ) -> Dict[str, Any]:
+    """Score the current machine telemetry against a robust (median/MAD)
+    baseline built from the caller's own history of flattened
+    snapshots. READ-ONLY evidence: when ``sample`` is None a live
+    one-shot ``telemetry.snapshot()`` is taken (the same /proc+/sys
+    read-only probes everywhere else), and NOTHING acts on the verdict —
+    the report is for the human and the archetype layer, like
+    config_drift. Thin history or a too-partial sample is an honest
+    refusal from the underlying module, never a guessed distance."""
+    from ..diagnostics import robust_baseline, telemetry as telemetry_mod
+
+    if sample is None:
+        sample = robust_baseline.flatten_snapshot(telemetry_mod.snapshot())
+        live = True
+    else:
+        live = False
+    if len(history) < robust_baseline.MIN_SAMPLES:
+        return {"evidence": "telemetry-drift",
+                "status": "insufficient-history",
+                "history_rows": len(history),
+                "needed": robust_baseline.MIN_SAMPLES}
+    baseline = robust_baseline.robust_baseline(history)
+    result = robust_baseline.mahalanobis(sample, baseline)
+    return {"evidence": "telemetry-drift",
+            "status": result["verdict"],
+            "live_read": live,
+            "report": result,
+            "baseline": {"kept": baseline["kept"],
+                         "degenerate": baseline["degenerate"],
+                         "method": baseline["method"]},
+            "note": "read-only evidence — nothing acts on this verdict"}

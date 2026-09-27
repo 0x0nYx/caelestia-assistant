@@ -194,6 +194,22 @@ def confidence_bucket(p: float) -> str:
     return "p30-"
 
 
+def rolling_hit_rate(labels: Sequence[int], window: int = 5) -> List[float]:
+    """The calibration bucket's rolling hit-rate: acceptance rate over
+    each ``window`` consecutive routed outcomes, in arrival order — the
+    same series shape the numeric telemetry feeds its changepoint
+    detectors. Overlapping windows smooth single-outcome noise while
+    preserving the level shift a real change in routing quality
+    produces. Deterministic; a pure function of the label sequence."""
+    if window < 1:
+        raise ValueError("window must be >= 1")
+    series: List[float] = []
+    for t in range(window, len(labels) + 1):
+        chunk = labels[t - window:t]
+        series.append(sum(1 for v in chunk if v == 1) / float(window))
+    return series
+
+
 # ---------------------------------------------------------------------------
 # The learner (facade over model + calibration + bandit + example log).
 # ---------------------------------------------------------------------------
@@ -344,6 +360,56 @@ class CortexLearner:
                 "new_rate": round(rate_new, 3), "delta": round(delta, 3),
                 "examples": len(self.examples)}
 
+    def bocpd_drift_check(self, window: int = 5,
+                          cp_threshold: float = 0.5) -> Dict[str, object]:
+        """The probabilistic complement to :meth:`drift_check`: the
+        example log's rolling hit-rate, fed through
+        ``genius.data.bocpd`` (Adams & MacKay 2007) — the SAME BOCPD
+        primitive the numeric telemetry already uses, lazily imported
+        the same way dispatch.py lazily imports the k-means — so a real
+        shift in routing accuracy is flagged the same honest way a
+        shift in CPU load is. A report, not an action: the CLI surfaces
+        it, only the user resets. Thin data says nothing (labelled
+        ``insufficient-data`` — with fewer than window+3 outcomes the
+        series is shorter than BOCPD's own n >= 4 floor), and the
+        changepoint probability is REPORTED with its threshold, never
+        claimed as certainty. Deterministic: no RNG anywhere on the
+        path."""
+        labels = [int(row.get("label", 0)) for row in self.examples
+                  if isinstance(row, dict)]
+        series = rolling_hit_rate(labels, window)
+        if len(series) < 4:
+            return {"status": "insufficient-data",
+                    "examples": len(self.examples),
+                    "series_points": len(series)}
+        from ..genius.data import bocpd  # the ONE BOCPD implementation
+        result = bocpd(series)
+        probs = result["changepoint_prob"]
+        best_t = max(range(len(probs)), key=lambda t: (probs[t], -t))
+        best_p = probs[best_t]
+        means = result["segment_mean"]
+        return {
+            "status": ("drift-detected" if best_p >= cp_threshold
+                       else "stable"),
+            "examples": len(self.examples),
+            "window": window,
+            "series_points": len(series),
+            "max_changepoint_prob": best_p,
+            "threshold": cp_threshold,
+            "at_series_step": best_t,
+            "segment_mean_before": (means[best_t - 1] if best_t > 0
+                                    else None),
+            "segment_mean_after": means[best_t],
+            "algorithm": result["algorithm"],
+        }
+
+    def regret_audit(self) -> Dict[str, object]:
+        """Exponential-build 3.3: the strategy bandit's cumulative
+        reward against the best-fixed-arm-in-hindsight baseline — a
+        printed estimate over unobserved rounds, never acted on."""
+        from ..brain.regret import audit_from_arms
+        return audit_from_arms(self.bandit.arms)
+
     # -- persistence ----------------------------------------------------------
 
     def to_dict(self) -> Dict[str, object]:
@@ -378,6 +444,10 @@ class CortexLearner:
                 for name, (alpha, beta) in sorted(self.bandit.arms.items())
             },
             "drift": self.drift_check(),
+            "drift_bocpd": self.bocpd_drift_check(),
+            # exponential-build 3.3: did the strategy bandit beat
+            # always-playing its single best arm? printed, not acted on.
+            "regret": self.regret_audit(),
             "fitted_weights": {
                 name: round(w, 4) for name, w in zip(_FEATURES, self.model.weights)
             },

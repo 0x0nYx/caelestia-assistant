@@ -72,6 +72,16 @@ OPS = {
     "genius_palette": lambda q, s, l: _genius_safe(
         q, "creative.palette", q["hex"], harmony=q.get("harmony", "analogous"),
         n=int(q.get("n", 5))),
+    "genius_graphs": lambda q, s, l: _genius_graphs(
+        method=str(q.get("method", "dijkstra")), graph=q.get("graph"),
+        source=q.get("source"), target=q.get("target"), nodes=q.get("nodes"),
+        edges=q.get("edges"), cost=q.get("cost")),
+    "genius_units": lambda q, s, l: _genius_safe(q, "units.evaluate",
+                                                 q["text"]),
+    "genius_fsbrain_summary": lambda q, s, l: _genius_safe(
+        q, "fsbrain.staleness_report", str(q["path"]),
+        top=int(q.get("top", 10)),
+        half_life_days=float(q.get("half_life_days", 30))),
     "genius_plan": lambda q, s, l: _genius_safe(q, "tasks.decompose", q["goal"]),
     "genius_sentiment": lambda q, s, l: _genius_safe(q, "language.sentiment", q["text"]),
     "genius_summarize": lambda q, s, l: _genius_safe(
@@ -83,7 +93,8 @@ OPS = {
     "scan_text": lambda q, s, l: _scan_text(q),
     "brief": lambda q, s, l: _brief(l),
     "tidy_survey": lambda q, s, l: _tidy_survey(q),
-    "optimize_recommend": lambda q, s, l: _optimize_recommend(q),
+    "optimize_recommend": lambda q, s, l: _optimize_recommend(
+        profile=str(q.get("profile", "gaming")), k=int(q.get("k", 6))),
     "optimize_score": lambda q, s, l: _optimize_score(q),
     "prefs_report": lambda q, s, l: _prefs_report(l),
     "conformal_verdict": lambda q, s, l: _conformal_verdict(q, s),
@@ -137,10 +148,9 @@ def _tidy_survey(q):
                              "space_recoverable", "inert_suggestions")}}
 
 
-def _optimize_recommend(q):
+def _optimize_recommend(profile, k):
     from ..settings import optimize as opt
-    return opt.recommend(str(q.get("profile", "gaming")),
-                         k=int(q.get("k", 6)))
+    return opt.recommend(str(profile), k=int(k))
 
 
 def _optimize_score(q):
@@ -180,7 +190,7 @@ def _genius_safe(q, dotted, *args, **kwargs):
     run — the bridge cannot be pointed at arbitrary code.
     """
     from ..genius import (creative, decision, language, logic, mathengine,  # noqa: F401
-                          stats, tasks)
+                          stats, tasks, units, fsbrain)
     allowed = {
         "mathengine.expression_info": mathengine.expression_info,
         "stats.describe": stats.describe,
@@ -190,6 +200,8 @@ def _genius_safe(q, dotted, *args, **kwargs):
         "tasks.decompose": tasks.decompose,
         "language.sentiment": language.sentiment,
         "language.summarize_focused": language.summarize_focused,
+        "units.evaluate": units.evaluate,
+        "fsbrain.staleness_report": fsbrain.staleness_report,
     }
     fn = allowed.get(dotted)
     if fn is None:
@@ -198,6 +210,32 @@ def _genius_safe(q, dotted, *args, **kwargs):
         return fn(*args, **kwargs)
     except (ValueError, KeyError, TypeError) as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _genius_graphs(method: str, graph, source, target, nodes, edges,
+                   cost):
+    """Sidebar graphs op (exponential-build 5.1): classical graph
+    algorithms over JSON-serialisable inputs. A* is deliberately NOT
+    exposed here — its heuristic is a function, not data, and the
+    bridge cannot receive code (the CLI keeps A*). Args are pinned in
+    the QML parity test."""
+    from ..genius import graphs
+    if method == "dijkstra":
+        if not graph or source is None:
+            raise ValueError("dijkstra needs a graph object and a source")
+        return graphs.dijkstra(dict(graph), str(source), target=target)
+    if method == "mst":
+        if not nodes or not edges:
+            raise ValueError("mst needs nodes (list) and edges ([u, v, w])")
+        return graphs.min_spanning_tree(
+            [str(n) for n in nodes],
+            [(str(a), str(b), float(w)) for a, b, w in edges])
+    if method == "assign":
+        if not cost:
+            raise ValueError("assign needs a cost matrix (rows x columns)")
+        return graphs.hungarian([[float(w) for w in row] for row in cost])
+    return {"error": f"unknown graphs method {method!r} "
+                     "(dijkstra|mst|assign)"}
 
 
 def _genius_do(q, state_path):

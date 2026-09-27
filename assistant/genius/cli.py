@@ -261,7 +261,11 @@ def cmd_data(args, out) -> int:
         elif args.csv:
             text = Path(args.csv).read_text(encoding="utf-8", errors="replace")
             table = data.parse_table(text, delimiter=args.delimiter)
-            if args.profile:
+            if args.expr:
+                # exponential-build 2.2: named-column expression evaluator
+                from . import csvquery
+                _print(csvquery.evaluate(table, args.expr), args.json)
+            elif args.profile:
                 _print(data.profile_table(table), args.json)
             elif args.groupby:
                 key, value, agg = (args.groupby.split(":") + ["mean"])[:3]
@@ -468,6 +472,14 @@ def cmd_fsbrain(args, out) -> int:
                     if Path(brain_state.DEFAULT_STATE).exists() else {}
                 classifier = fsbrain.load_filetype_classifier(state)
                 res = fsbrain.infer_filetype(args.path, classifier=classifier)
+        elif args.action == "resemble":
+            # exponential-build 2.3: NCD folder resemblance, read-only
+            folders = [f for f in (args.folders or "").split(",") if f]
+            if not folders:
+                raise ValueError("resemble needs --folders D1,D2,...")
+            res = fsbrain.resemble_file(args.path, folders,
+                                        method=args.method,
+                                        max_samples=args.max_samples)
         else:
             raise ValueError(f"unknown fsbrain action {args.action!r}")
     except (ValueError, OSError) as exc:
@@ -706,6 +718,37 @@ def cmd_learn(args, out) -> int:
     return 0
 
 
+def cmd_synth(args, out) -> int:
+    """Exponential-build 2.1: tiny inductive string-program synthesis
+    (Gulwani 2011, FlashFill-style) over 2-3 before/after examples.
+    Read-only: the only outputs are the rendered program, the transform
+    applied to a new string, and INERT SUGGESTED_NOT_EXECUTED mv lines —
+    nothing is ever executed here."""
+    from . import synth as synth_mod
+    examples = []
+    for raw in args.example or []:
+        if "=" not in raw:
+            print("genius synth: --example needs BEFORE=AFTER "
+                  "(e.g. --example 2023-report=report_2023)", file=sys.stderr)
+            return 2
+        before, after = raw.split("=", 1)
+        examples.append((before, after))
+    try:
+        result = synth_mod.synthesize(examples)
+        if args.apply is not None:
+            result["applied"] = synth_mod.apply_program(result["program"],
+                                                        [args.apply])
+        if args.renames:
+            result["renames"] = synth_mod.suggest_renames(
+                result["program"],
+                [n for n in args.renames.split(",") if n])
+        _print(result, args.json)
+        return 0
+    except synth_mod.SynthError as exc:
+        print(f"genius synth: abstain: {exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_classify(args, out) -> int:
     try:
         if args.train:
@@ -748,6 +791,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     q = sp("math", cmd_math, help="evaluate an arithmetic expression")
     q.add_argument("expr")
+
+    q = sp("synth", cmd_synth,
+           help="induce a string transformation from 2-3 before/after "
+                "examples (FlashFill-style); output is a rendered program "
+                "+ INERT suggested mv lines, never executed")
+    q.add_argument("--example", action="append", default=[],
+                   help="BEFORE=AFTER pair (repeat 2-3 times)")
+    q.add_argument("--apply", default=None,
+                   help="apply the learned transformation to this string")
+    q.add_argument("--renames", default=None,
+                   help="comma-separated names: render INERT "
+                        "SUGGESTED_NOT_EXECUTED mv lines for each")
 
     q = sp("solve", cmd_solve, help="find a root of f(x)=0")
     q.add_argument("expr")
@@ -812,6 +867,12 @@ def build_parser() -> argparse.ArgumentParser:
     q = sp("data", cmd_data, help="tabular + time-series analysis")
     q.add_argument("--csv")
     q.add_argument("--delimiter", default=",")
+    q.add_argument("--expr", default=None,
+                   help="evaluate a named-column expression over --csv "
+                        "(whitelisted syntax: columns, numbers, + - * / "
+                        "// % **, comparisons, and/or/not, aggregates "
+                        "count/sum/min/max/mean/median/stdev/variance/"
+                        "quantile/pearson)")
     q.add_argument("--series")
     q.add_argument("--profile", action="store_true")
     q.add_argument("--groupby", help="key:value:agg")
@@ -910,12 +971,21 @@ def build_parser() -> argparse.ArgumentParser:
     gr.add_argument("--costs", default="", help="';'-separated rows for assign")
 
     fb = sp("fsbrain", cmd_fsbrain,
-            help="filesystem second-brain: stale/dupes/graph/filetype")
-    fb.add_argument("action", choices=["stale", "dupes", "graph", "filetype"])
+            help="filesystem second-brain: stale/dupes/graph/filetype/resemble")
+    fb.add_argument("action", choices=["stale", "dupes", "graph", "filetype",
+                                       "resemble"])
     fb.add_argument("path", nargs="?", default=None,
-                    help="directory (stale/dupes) or file (filetype)")
+                    help="directory (stale/dupes) or file (filetype/resemble)")
     fb.add_argument("paths", nargs="*", default=None,
                     help="directories/notes for graph")
+    fb.add_argument("--folders", default=None,
+                    help="resemble: comma-separated candidate folders")
+    fb.add_argument("--method", default="nearest", choices=["nearest", "profile"],
+                    help="resemble: folder distance = best sample or whole "
+                         "concatenated profile")
+    fb.add_argument("--max-samples", type=int, default=8,
+                    help="resemble: readable files sampled per folder "
+                         "(default 8)")
     fb.add_argument("--top", type=int, default=15, help="rows kept (default 15)")
     fb.add_argument("--half-life", type=float,
                     default=_fsbrain_halflife_default(),
@@ -972,11 +1042,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     # universal form: `genius "some request"` == `genius do "some request"`
-    subcommands = {"do", "math", "solve", "calc", "stats", "matrix", "prob",
-                   "logic", "decide", "tree", "data", "text", "qa", "summarize",
-                   "classify", "palette", "gen", "sys", "history", "plan",
-                   "graphs", "optimize", "fsbrain", "schedule", "report",
-                   "learn"}
+    subcommands = {"do", "math", "synth", "solve", "calc", "stats", "matrix",
+                   "prob", "logic", "decide", "tree", "data", "text", "qa",
+                   "summarize", "classify", "palette", "gen", "sys", "history",
+                   "plan", "graphs", "optimize", "fsbrain", "schedule",
+                   "report", "learn"}
     if argv and not argv[0].startswith("-") and argv[0] not in subcommands:
         argv = ["do"] + argv
     args = parser.parse_args(argv)

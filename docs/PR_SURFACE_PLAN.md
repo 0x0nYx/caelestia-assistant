@@ -94,3 +94,51 @@ not as code.
 - the license resolution from `docs/LICENSING_OPEN_QUESTION.md`;
 - the test/verification contract (`selfcheck`, byte-identity, ~1,400
   green tests upstream-equivalent for the offered subset).
+
+---
+
+## Dated addendum — 2026-09-27 (exponential-build-2 phases 1–5: upstream-surface triage)
+
+**Status: still a plan only. Still nothing sent upstream. The licensing
+gate below still applies to every line of this list.**
+
+Triage of the second exponential-build run's sub-items against the same
+narrow-upstream-first test used above (self-contained safety story, no
+learned personal state, no ledger, no autonomy):
+
+**Candidates for the narrow upstream surface (technique-only, no
+learned state, self-contained test suites):**
+
+- `genius/synth.py` (2.1) — FlashFill-style string synthesis; pure
+  functions, examples in / result out, abstains instead of guessing;
+- `genius/csvquery.py` (2.2) — the ast-whitelisted CSV expression
+  evaluator; pure, offline, no personal data;
+- `genius/logic.py::syllogism_check` (2.4) — the resolution prover; a
+  self-contained classical fragment next to the SAT code;
+- `retrieval/diskindex.py` (4.1) — the external-merge-sort disk index;
+  self-contained, points only at directories the user names;
+- the METHOD of `diagnostics/robust_baseline.py` (2.6) and
+  `brain/pooling.py` (3.1) — generic, citable estimators (the wiring
+  that feeds them personal history stays repo-only, below).
+
+**Explicitly repo-only scope (and why, in the document's own spirit):**
+
+- 1.1 tool-template stub drafting — drafts from the USER'S OWN gap
+  logs; the artifact is a personal-workflow scaffold, not shell code;
+- 1.2 undo-weighted calibration — learned state over the user's own
+  undo history;
+- 1.4 the re-ranker's TRAINED weights — the technique could travel,
+  the local approve/reject training data cannot;
+- 2.3 NCD file/folder resemblance — filesystem scanning is a posture
+  decision upstream would have to make, not inherit;
+- 2.5 commit-risk — devflow serves this repository's own workflow
+  (devflow/README's scope rule: never upstream);
+- 3.2 the OPE gate, 3.3 the regret audit, 3.4 the timing recommender —
+  all presuppose this repo's ledger/bandit autonomy machinery; there is
+  nothing upstream for them to gate or audit yet;
+- Phase 5's sidebar entries (`caelestia_genius_graphs`, `_units`,
+  `_optimize`, `_fsbrain_summary`) — they extend THIS repo's
+  unreviewed AiAssistant.qml patch; a different contact surface is a
+  different decision.
+
+Nothing in either list changes the plan's first offer or its order.

@@ -613,3 +613,101 @@ def infer_filetype(path: str, head: int = 512,
         "teach": f"teach it: genius fsbrain filetype {path} --correct TYPE",
     }
 
+
+
+# ---------------------------------------------------------------------------
+# NCD file/folder resemblance (exponential-build 2.3) — read-only.
+# ---------------------------------------------------------------------------
+
+_MAX_SAMPLE_BYTES = 65536       # per compared file (deterministic head)
+_MAX_SAMPLES_PER_FOLDER = 8     # bounded sampling per candidate folder
+
+
+def ncd_resemble(content: bytes, folders: Dict[str, List[bytes]],
+                 method: str = "nearest", compressor: str = "zlib",
+                 max_sample_bytes: int = _MAX_SAMPLE_BYTES
+                 ) -> Dict[str, Any]:
+    """'Which existing folder does this file most resemble?' — answered
+    with the ONE existing NCD primitive (``genius/data.py::ncd``, Li et
+    al. 2004; no new compressor, no new distance). ``folders`` maps a
+    folder name to its sample file contents (the caller owns the
+    reading; the pure core never touches the filesystem).
+
+    - ``method='nearest'`` (default): the folder's distance is its BEST
+      sample — one genuinely similar resident is enough to resemble;
+    - ``method='profile'``: the folder's samples are concatenated into
+      one profile and compared as a whole.
+
+    Honesty: empty content is refused (nothing to compare); folders
+    with no samples are skipped and NAMED, never scored as 1.0;
+    compared files are deterministically head-truncated to
+    ``max_sample_bytes`` and the truncation is reported; every folder's
+    distance is returned (the ranking IS the answer), ties broken by
+    folder name. Deterministic end to end."""
+    from . import data as data_mod  # the ONE NCD implementation
+    if not content:
+        raise ValueError("the file's content is empty — nothing to compare")
+    if method not in ("nearest", "profile"):
+        raise ValueError(f"unknown method {method!r} (nearest|profile)")
+    truncated = len(content) > max_sample_bytes
+    content = content[:max_sample_bytes]
+    matches: List[Dict[str, Any]] = []
+    skipped: List[str] = []
+    for name in sorted(folders):
+        samples = [s[:max_sample_bytes] for s in (folders[name] or []) if s]
+        if not samples:
+            skipped.append(name)
+            continue
+        if method == "profile":
+            dist = data_mod.ncd(content, b"".join(samples),
+                                compressor=compressor)["ncd"]
+            matches.append({"folder": name, "distance": dist,
+                            "n_samples": len(samples)})
+        else:
+            dists = [data_mod.ncd(content, s, compressor=compressor)["ncd"]
+                     for s in samples]
+            matches.append({"folder": name, "distance": min(dists),
+                            "n_samples": len(dists)})
+    if not matches:
+        raise ValueError("no folder had a readable sample to compare against")
+    matches.sort(key=lambda m: (m["distance"], m["folder"]))
+    return {
+        "best_folder": matches[0]["folder"],
+        "distances": matches,
+        "method": method,
+        "compared_bytes": min(len(content), max_sample_bytes),
+        "file_truncated": truncated,
+        "skipped_empty_folders": skipped,
+        "algorithm": ("NCD folder resemblance (Li et al. 2004 via "
+                      "genius.data.ncd); read-only"),
+    }
+
+
+def resemble_file(path: str, folder_paths: Sequence[str],
+                  method: str = "nearest",
+                  max_samples: int = _MAX_SAMPLES_PER_FOLDER
+                  ) -> Dict[str, Any]:
+    """The read-only filesystem wrapper: the query file plus bounded,
+    deterministic samples from each candidate folder (sorted walk, the
+    first ``max_samples`` readable files; unreadable files are counted,
+    never faked). Nothing is written, moved, or executed."""
+    p = Path(os.path.expanduser(path))
+    if not p.is_file():
+        raise ValueError(f"no such file: {path}")
+    with open(p, "rb") as fh:
+        content = fh.read(_MAX_SAMPLE_BYTES)
+    folders: Dict[str, List[bytes]] = {}
+    unreadable = 0
+    for root in folder_paths:
+        samples: List[bytes] = []
+        for f in _walk_files(root, max_files=max_samples):
+            try:
+                with open(f, "rb") as fh:
+                    samples.append(fh.read(_MAX_SAMPLE_BYTES))
+            except OSError:
+                unreadable += 1
+        folders[str(root)] = samples
+    result = ncd_resemble(content, folders, method=method)
+    result["query_file"] = path
+    result["unreadable_samples"] = unreadable
+    return result

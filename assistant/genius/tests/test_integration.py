@@ -159,7 +159,8 @@ class TestSafetyPolicy(unittest.TestCase):
                 self.assertIn(name, ("genius_do", "genius_learn", "genius_report",
                                      "genius_math", "genius_stats", "genius_logic",
                                      "genius_decide", "genius_palette",
-                                     "genius_plan",
+                                     "genius_plan", "genius_graphs",
+                                     "genius_units", "genius_fsbrain_summary",
                                      "genius_sentiment", "genius_summarize"))
 
 

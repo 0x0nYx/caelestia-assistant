@@ -13,12 +13,15 @@ All deterministic, all stdlib, all evidence-carrying.
 from __future__ import annotations
 
 import itertools
+import re
+from dataclasses import dataclass
 from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Sequence, Set, Tuple
 
 __all__ = [
     "LogicError", "Formula", "parse_formula", "evaluate_formula", "truth_table",
     "classify_formula", "equivalent", "entails", "sat_solve", "rule_infer",
-    "CSP", "solve_csp", "schedule_resources",
+    "CSP", "solve_csp", "schedule_resources", "Statement", "parse_statement",
+    "syllogism_check",
 ]
 
 _TOKENS = {
@@ -570,3 +573,193 @@ def schedule_resources(tasks: Sequence[Any],
         out["reason"] = ("no conflict-free assignment exists under these "
                          "slots/precedence/windows (see ac3_pruned)")
     return out
+
+
+# ---------------------------------------------------------------------------
+# First-order resolution for categorical syllogisms (exponential-build 2.4).
+#
+# Method: binary resolution on the clause set premises + NEGATED
+# conclusion (Robinson 1965, "A Machine-Oriented Logic Based on the
+# Resolution Principle", JACM 12(1)). The fragment is deliberately tiny:
+# unary predicates over one variable plus ground Skolem constants for
+# existentials — every clause is Horn (Horn 1951), so binary resolution
+# needs no factoring here and saturation is DECIDABLE (the derivable
+# clause set is bounded by predicates x constants). Valid <=> the empty
+# clause is derived; saturation without it is the honest "invalid".
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Statement:
+    """One parsed categorical/singular statement."""
+    kind: str            # all | no | some | some_not | is | is_not
+    subject: str         # class word for all/no/some*, constant for is*
+    cls: str             # the predicate/class word
+
+
+_STMT_PATTERNS = (
+    (re.compile(r"^(?:all|every)\s+([a-z]+)\s+(?:are|is)\s+([a-z]+)$", re.I),
+     lambda m: Statement("all", m.group(1).lower(), m.group(2).lower())),
+    (re.compile(r"^no\s+([a-z]+)\s+(?:are|is)\s+([a-z]+)$", re.I),
+     lambda m: Statement("no", m.group(1).lower(), m.group(2).lower())),
+    (re.compile(r"^([a-z]+)\s+is\s+not\s+(?:a\s+|an\s+)?([a-z]+)$", re.I),
+     lambda m: Statement("is_not", m.group(1).lower(), m.group(2).lower())),
+    (re.compile(r"^some\s+([a-z]+)\s+(?:are|is)\s+not\s+(?:a\s+|an\s+)?([a-z]+)$", re.I),
+     lambda m: Statement("some_not", m.group(1).lower(), m.group(2).lower())),
+    (re.compile(r"^some\s+([a-z]+)\s+(?:are|is)\s+(?:a\s+|an\s+)?([a-z]+)$", re.I),
+     lambda m: Statement("some", m.group(1).lower(), m.group(2).lower())),
+    (re.compile(r"^([a-z]+)\s+(?:is|are)\s+(?:a\s+|an\s+)?([a-z]+)$", re.I),
+     lambda m: Statement("is", m.group(1).lower(), m.group(2).lower())),
+)
+_RESERVED = {"all", "every", "no", "some", "not", "is", "are",
+             "the", "therefore", "then"}
+
+_VAR = ("var",)  # the single universally quantified term
+
+
+def parse_statement(text: str) -> Statement:
+    """Parse one statement of the well-formed subset (all/no/some/some-
+    not A are B, and singular 'x is (not) Y'). Anything else is an
+    honest LogicError listing what the fragment accepts."""
+    s = " ".join(str(text).strip().split())
+    for pattern, build in _STMT_PATTERNS:
+        m = pattern.match(s)
+        if m:
+            stmt = build(m)
+            if stmt.subject in _RESERVED or stmt.cls in _RESERVED:
+                continue
+            return stmt
+    raise LogicError(
+        f"not in the syllogism fragment: {text!r} — accepted forms: "
+        "'all A are B', 'no A are B', 'some A are B', 'some A are not B', "
+        "'x is Y', 'x is not Y'")
+
+
+def _negate(stmt: Statement) -> Statement:
+    """The classical categorical negation (drives the reductio)."""
+    table = {"all": "some_not", "some_not": "all", "no": "some",
+             "some": "no", "is": "is_not", "is_not": "is"}
+    return Statement(table[stmt.kind], stmt.subject, stmt.cls)
+
+
+def _canon(word: str) -> str:
+    """Canonical class-word form: one trailing 's' stripped (regular
+    plurals), so 'cats' and 'cat' are the same predicate. Deliberately
+    NOT a morphology engine: irregulars ('men'/'man') stay distinct and
+    the docstring says so — no guessing beyond the stated rule."""
+    return word[:-1] if word.endswith("s") and len(word) > 1 else word
+
+
+def _skolem_clauses(stmt: Statement, tag: int) -> Set[FrozenSet[Tuple]]:
+    """Clause translation. Literals: (sign, pred, term) with term
+    ('var',) or ('const', name). Class words are canonicalized through
+    the regular-plural rule; constants are never touched."""
+    A, B = _canon(stmt.subject), _canon(stmt.cls)
+    if stmt.kind == "all":
+        return {frozenset({(False, A, _VAR), (True, B, _VAR)})}
+    if stmt.kind == "no":
+        return {frozenset({(False, A, _VAR), (False, B, _VAR)})}
+    c = ("const", f"_sk{tag}")
+    if stmt.kind == "some":
+        return {frozenset({(True, A, c)}), frozenset({(True, B, c)})}
+    if stmt.kind == "some_not":
+        return {frozenset({(True, A, c)}), frozenset({(False, B, c)})}
+    c = ("const", stmt.subject)
+    if stmt.kind == "is":
+        return {frozenset({(True, B, c)})}
+    return {frozenset({(False, B, c)})}  # is_not
+
+
+def _substitute(lit: Tuple, var_as: Tuple) -> Tuple:
+    sign, pred, term = lit
+    return (sign, pred, var_as if term == _VAR else term)
+
+
+def _resolvents(c1: FrozenSet[Tuple], c2: FrozenSet[Tuple]
+                ) -> List[FrozenSet[Tuple]]:
+    """All binary resolvents of two clauses (unification on the single
+    variable: var unifies with anything; const only with itself)."""
+    out: List[FrozenSet[Tuple]] = []
+    for l1 in c1:
+        for l2 in c2:
+            if l1[0] == l2[0] or l1[1] != l2[1]:
+                continue  # need opposite signs on the same predicate
+            t1, t2 = l1[2], l2[2]
+            if t1 != _VAR and t2 != _VAR and t1 != t2:
+                continue  # distinct constants cannot unify
+            if t1 == _VAR and t2 == _VAR:
+                sigma = _VAR  # identity
+            elif t1 == _VAR:
+                sigma = t2
+            else:
+                sigma = t1
+            r = frozenset({_substitute(l, sigma) for l in c1 - {l1}} |
+                          {_substitute(l, sigma) for l in c2 - {l2}})
+            out.append(r)
+    return out
+
+
+def _clause_key(clause: FrozenSet[Tuple]) -> Tuple:
+    return tuple(sorted(clause))
+
+
+def syllogism_check(premises: Sequence[str], conclusion: str,
+                    max_steps: int = 2000) -> Dict[str, Any]:
+    """Is the argument valid? Premises + negated conclusion are refuted
+    by resolution (Robinson 1965): the empty clause proves VALID;
+    saturation WITHOUT it proves INVALID (decidable in this Horn,
+    unary fragment — the saturated set is satisfiable, the premises can
+    hold while the conclusion fails). Parse failures are honest
+    LogicErrors; the derivation is reported, never just a verdict."""
+    stmts = [parse_statement(p) for p in premises]
+    concl = parse_statement(conclusion)
+    negated = _negate(concl)
+    clauses: Set[FrozenSet[Tuple]] = set()
+    kinds: List[Tuple[str, str]] = []
+    for k, (stmt, label) in enumerate(
+            [(s, "premise") for s in stmts] + [(negated, "negated_conclusion")]):
+        tag = k + 1
+        clauses |= _skolem_clauses(stmt, tag)
+        kinds.append((label, stmt.kind))
+    saturated = set(clauses)
+    steps = 0
+    derivation: List[Dict[str, Any]] = []
+    valid = False
+    while steps < max_steps:
+        current = sorted(saturated, key=_clause_key)
+        new: Set[FrozenSet[Tuple]] = set()
+        for i in range(len(current)):
+            for j in range(i + 1, len(current)):
+                for r in _resolvents(current[i], current[j]):
+                    if r not in saturated:
+                        new.add(r)
+                        if len(derivation) < 25:
+                            derivation.append({
+                                "parents": [_clause_key(current[i])[:2],
+                                            _clause_key(current[j])[:2]],
+                                "resolvent": sorted(
+                                    [[l[0], l[1], list(l[2])]
+                                     for l in r])})
+        steps += 1
+        if frozenset() in new:
+            valid = True
+            break
+        if not new or new <= saturated:
+            break
+        saturated |= new
+    return {
+        "method": "first-order resolution (Robinson 1965); Horn unary "
+                  "fragment, decidable saturation",
+        "valid": valid,
+        "premises": [f"{s.kind} {s.subject} {s.cls}" for s in stmts],
+        "negated_conclusion": f"{negated.kind} {negated.subject} "
+                              f"{negated.cls}",
+        "initial_clauses": len(clauses),
+        "saturated_clauses": len(saturated),
+        "iterations": steps,
+        "derivation_prefix": derivation,
+        "note": ("the empty clause was derived: no model makes the "
+                 "premises true and the conclusion false"
+                 if valid else
+                 "saturation found no empty clause: the premises CAN "
+                 "hold while the conclusion fails — invalid"),
+    }

@@ -6,6 +6,88 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Sidebar fsbrain summary: `caelestia_genius_fsbrain_summary` (bridge op `genius_fsbrain_summary`) — the read-only staleness report only; the tidy mover is never reachable from the sidebar.
+- Sidebar optimizer preview: `caelestia_genius_optimize` (bridge op `optimize_recommend`) — Pareto/AC-3 profile ranking, read-only preview only.
+- Sidebar units tool: `caelestia_genius_units` (bridge op `genius_units`) — dimension-checked conversion and arithmetic on-device; mismatched dimensions rejected, never coerced.
+- Sidebar graphs tool: `caelestia_genius_graphs` joins the sidebar registry (bridge op `genius_graphs`) — Dijkstra/MST/Hungarian assignment over JSON inputs, read-only; A* stays CLI-only (its heuristic is a function, not data).
+- Disk-backed bounded-memory search index: `retrieval cli disk-index
+  ROOT --out DIR --ceiling MB` + `disk-search` — an external-merge-
+  sort inverted index over arbitrary folder trees (heapq.merge runs,
+  metadata-only query path, same BM25 as the in-memory index), with
+  the RAM footprint MEASURED in the build report rather than asserted.
+- Attention-aware timing: `brain/timing.py` ranks WHEN (never WHAT) a
+  proposal should surface — Thompson sampling over time buckets seeded
+  from the pooled prior (3.1), weighted by the rhythm engine's
+  activity z-scores and historical decision latency, with Holt-trend
+  deferral advice; nothing surfaces automatically.
+- Regret audit: `brain/regret.py` — every Beta bandit's cumulative
+  reward is now compared against the best-fixed-arm-in-hindsight
+  baseline in the periodic reports (`cortex report`, `brain
+  calibration`), with the estimate caveat printed, not claimed.
+- Off-policy evaluation gate: `brain ope SWITCH` replays the
+  approve/reject ledger through a candidate kill-switch policy with an
+  importance-weighted estimator (Dudik/Langford/Li 2011 framing) and
+  prints the estimated accept rate with support/coverage accounting —
+  evidence only, it writes nothing and flips nothing.
+- Hierarchical partial pooling: `brain/pooling.py` — the shared
+  Efron-Morris (1975) utility; new preference/bandit posteriors seed
+  from the pooled statistics of similar existing arms
+  (method-of-moments mu0/k0/tau², hand-checkable, deterministic)
+  instead of the flat Beta(1,1), with no-evidence pools honestly
+  staying flat.
+- Robust telemetry baseline: `diagnostics/robust_baseline.py` +
+  `archetypes.telemetry_drift` — a robust Mahalanobis distance
+  (median/MAD scale, Leys et al. 2013; Mahalanobis 1936) over the
+  machine's own numeric telemetry as read-only config_hygiene
+  evidence; degenerate and missing coordinates excluded and named,
+  thin evidence refused, chi-square p-value reported with caveats.
+- Commit-risk score: `python3 -m assistant.devflow risk --source F <
+  log.txt` — McCabe cyclomatic complexity (McCabe 1976, stdlib ast) x
+  recency-decayed churn from `git log --numstat` text (reuses the
+  diffstat parser; no subprocess), tiered low/medium/high at stated
+  thresholds; a report, never a gate.
+- Resolution syllogism checker: `genius/logic.py::syllogism_check`
+  decides 'is this argument valid' for the categorical fragment by
+  refuting premises + negated conclusion with binary resolution
+  (Robinson 1965) — empty clause = valid, saturation = invalid, both
+  with derivation evidence; the meta logic domain routes
+  therefore-shaped arguments when every clause parses.
+- NCD file/folder resemblance: `genius fsbrain resemble FILE
+  --folders D1,D2,...` answers "which folder does this file most
+  resemble" via the existing NCD primitive (Li et al. 2004) — read-
+  only, bounded deterministic sampling, empty folders skipped and
+  named, truncation reported, full ranking returned.
+- Stdlib CSV expression domain: `genius data --csv ... --expr ...`
+  evaluates named-column expressions (arithmetic, comparisons, Kleene
+  and/or/not, stats.py aggregates) over a user-supplied CSV/TSV via an
+  ast node whitelist — eval never called, unavailable cells never
+  coerced, out-of-range quantile rejected not clamped.
+- Tiny inductive program synthesis: `genius synth` (Gulwani 2011,
+  FlashFill-style) induces a string transformation from 2-3
+  before/after examples over a tiny explainable DSL — every example
+  must verify exactly, anything else abstains; the only executable-
+  looking output is an inert SUGGESTED_NOT_EXECUTED mv line.
+- Discriminative re-ranker: `cortex/reranker.py` — an averaged pairwise
+  max-margin perceptron (Rosenblatt 1958 / Herbrich et al. 2000 /
+  Collins 2002) over the router's own per-candidate signal features,
+  trained only on local approved routing history, gated by the
+  conformal calibrator with the router's ranking as the honest
+  fallback; ships library-first like the slot tagger, live pipeline
+  untouched.
+- BOCPD drift on routing accuracy: `cortex report` now also feeds the
+  example log's rolling hit-rate through the existing
+  `genius.data.bocpd` primitive (Adams & MacKay 2007) — a real shift in
+  routing accuracy is flagged with a reported changepoint probability,
+  the same honest report-not-action shape as telemetry drift.
+- Undo-weighted calibration: settings undo records gain a PII-safe
+  `quick` flag (reverted while still the head of the bounded undo
+  ring); `fold_undo_negatives` weighs an approve-then-quick-undo at
+  4 beta units vs a plain reject's 1 — posterior 2/7 vs 1/3 — while
+  slow undos and old logs keep the plain weight.
+- Gap-cluster tool-template stubs: `cortex gaps --draft-stubs`
+  drafts a reviewable markdown stub (name, cue words, TODO body) for
+  each dense, ledger-unaddressed gap cluster — never registered, never
+  wired into the dispatcher, never clobbered once a human edits it.
 - agent exponential-build: baseline recorded on branch
   `agent/exponential-build` before any feature work — 1,297 tests OK
   (skipped=12), `selfcheck` OK, gen_adapter byte-identity OK.

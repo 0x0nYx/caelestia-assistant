@@ -76,7 +76,8 @@ _DOMAIN_CUES: Dict[str, List[str]] = {
         "tautology", "contradiction", "logically equivalent", "satisfiable",
         "truth table", "entails", "if and only if", "propositional",
         "constraint problem", "schedule these", "resource contention",
-        "timetable", "conflict-free",
+        "timetable", "conflict-free", "syllogism", "valid argument",
+        "therefore",
     ],
     "decision": [
         "should i choose", "which option", "better choice", "weigh",
@@ -139,7 +140,8 @@ _STRUCTURAL_RE = {
     "calculus": re.compile(r"\b(?:derivative|differentiate|integral|integrate|"
                            r"taylor|series expansion|ode|area under)\b"),
     "logic": re.compile(r"\b(?:tautology|contradiction|satisfiable|"
-                        r"truth table|entails|logically equivalent)\b"),
+                        r"truth table|entails|logically equivalent|syllogism|"
+                        r"therefore)\b"),
     "solve_equation": re.compile(r"\bsolve\b"),
     "color_palette": re.compile(r"\b(?:palette|accent color|contrast)\b"),
     "plan_goal": re.compile(r"\b(?:how do i|steps to|plan to|break down)\b"),
@@ -451,6 +453,24 @@ def _run_domain(domain: str, text: str) -> Dict[str, Any]:
                                      "precedence arcs", "time windows",
                                      "AC-3 pruning evidence"],
                     "safety": "read-only computation; the agent layer consumes it as a planning step"}
+        # exponential-build 2.4: categorical syllogisms via resolution —
+        # only when EVERY clause parses as the fragment; anything else
+        # falls through to the propositional path below unchanged.
+        if ("therefore" in low or "syllogism" in low
+                or "valid argument" in low):
+            parts = re.split(r"\btherefore\b|\bthen\b|;|,", text, flags=re.I)
+            parts = [p.strip(" ?.") for p in parts if p.strip(" ?.")]
+            parsed = []
+            ok = len(parts) >= 2
+            if ok:
+                for p in parts:
+                    try:
+                        parsed.append(logic.parse_statement(p))
+                    except logic.LogicError:
+                        ok = False
+                        break
+            if ok:
+                return logic.syllogism_check(parts[:-1], parts[-1])
         # strip interrogative framing and trailing nouns, keep the formula
         formula = text.strip()
         formula = re.sub(r"[?.]+$", "", formula)

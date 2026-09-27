@@ -13,6 +13,14 @@ pattern for a different decision.
 import random
 from collections import defaultdict
 
+# Exponential-build 1.2: the weight of an approve-then-quick-undo (the
+# reverted apply was still the head of the bounded undo ring). With the
+# Beta(1,1) prior, approval + quick undo gives mean 2/(3+w) vs a plain
+# reject's 1/3 — strictly further only when w > 3, so 4.0 is the
+# smallest integer weight that pins "shifts further than a plain
+# reject". A slow undo stays at weight 1.0 (see fold_undo_negatives).
+QUICK_UNDO_WEIGHT = 4.0
+
 
 def acceptance_rate(labeled, prior_alpha=1.0, prior_beta=1.0):
     """labeled: [{"kind", "status"}], status in {"approved", "rejected"}
@@ -48,18 +56,32 @@ def confidence_calibration(labeled, bins=5):
     return out
 
 
-def fold_undo_negatives(stats, undo_log, weight=1.0, kind="settings"):
+def fold_undo_negatives(stats, undo_log, weight=1.0,
+                        quick_weight=QUICK_UNDO_WEIGHT, kind="settings"):
     """A3 — fold the settings layer's PII-stripped undo log into the
     Beta-Binomial posteriors as EXPLICIT negative signal.
 
     ``stats`` is an acceptance_rate() result ({kind: {alpha, beta, mean, n}});
     ``undo_log`` is settings.history.undo_log(target) — records of
-    {"tool", "magnitude", "direction"} and nothing else (the PII-strip
-    rule; magnitude is retained for future weighting experiments and
-    inspectability, not used to scale the evidence — an undo is one
-    negative observation regardless of how big the reverted change was).
+    {"tool", "magnitude", "direction", "quick"} and nothing else (the
+    PII-strip rule; magnitude is retained for inspectability, not used to
+    scale the evidence — an undo is one negative observation regardless of
+    how big the reverted change was).
 
-    Each record adds ``weight`` to the beta (negative) side of BOTH the
+    WEIGHTING (exponential-build 1.2 — a weighted update, not a new model):
+    a record with ``quick=True`` (the reverted apply was still the head of
+    the bounded undo ring — an approve-then-immediately-revert) adds
+    ``quick_weight`` to the beta side; any other undo adds the plain
+    ``weight`` (1.0, one observation, what a plain reject contributes).
+    The arithmetic the default pins: with the Beta(1,1) prior, one
+    approval followed by one quick undo gives mean 2/(3+quick_weight);
+    one plain reject gives 1/3; the posterior shifts FURTHER than the
+    plain reject exactly when quick_weight > 3, so QUICK_UNDO_WEIGHT is
+    4.0 — the smallest integer weight that satisfies it (2/7 < 1/3). A
+    SLOW undo (weight 1.0) merely cancels the approval it reverts
+    (2/4 = 0.5): the previous, conservative behavior, kept.
+
+    Each record adds its weight to the beta (negative) side of BOTH the
     kind-level posterior (``kind``, default "settings": a change the user
     reverted is evidence against settings proposals generally) and a
     per-tool posterior under ``"tool:<name>"`` (evidence against that
@@ -71,10 +93,11 @@ def fold_undo_negatives(stats, undo_log, weight=1.0, kind="settings"):
         tool = record.get("tool")
         if not tool:
             continue
+        w = float(quick_weight) if record.get("quick") else float(weight)
         for key in (kind, f"tool:{tool}"):
             entry = stats.setdefault(
                 key, {"alpha": 1.0, "beta": 1.0, "mean": 0.5, "n": 0})
-            entry["beta"] += float(weight)
+            entry["beta"] += w
             entry["n"] += 1
             entry["mean"] = round(
                 entry["alpha"] / (entry["alpha"] + entry["beta"]), 3)

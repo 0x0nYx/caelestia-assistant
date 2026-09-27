@@ -178,6 +178,9 @@ def _render_report(learner: CortexLearner, episodes: List[Dict[str, object]]) ->
         lines.append(f"    {name:10s}: mean {row['mean']} over {row['draws']} draws")
     lines.append(f"  fitted signal weights     : {report['fitted_weights']}")
     lines.append(f"  drift                     : {report['drift']}")
+    lines.append(f"  drift (BOCPD, hit-rate)   : {report['drift_bocpd']}")
+    lines.append(f"  bandit regret vs best arm : {report['regret'].get('status')}"
+                 f" (est. {report['regret'].get('estimated_regret')})")
     lines.append(f"  memory episodes           : {memory['episodes']} "
                  f"({memory['applied_episodes']} applied)")
     if memory["top_surfaces"]:
@@ -627,6 +630,15 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     gaps_p.add_argument("--purity", type=float, default=0.6,
                         help="minimum modal-shape coverage (default 0.6, the "
                              "workspace.py floor)")
+    gaps_p.add_argument("--draft-stubs", action="store_true",
+                        help="draft a reviewable tool-template stub file "
+                             "(name, cue words, TODO body) for each dense, "
+                             "unaddressed cluster — never registered, never "
+                             "wired into the dispatcher, never clobbered "
+                             "once a human edits it")
+    gaps_p.add_argument("--stubs-dir", default=None,
+                        help="where stub drafts are written (default: "
+                             "~/.local/state/caelestia-brain/tool_templates)")
     lex_p = sub.add_parser("lexicon", help="federated, opt-in, signed "
                                             "lexicon-diff sharing "
                                             "(export/import/forget; no network, "
@@ -802,9 +814,45 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             return 1
 
     if args.cmd == "gaps":
-        from .dispatch import cluster_gaps, propose_gap_clusters
+        from .dispatch import (cluster_gaps, propose_gap_clusters,
+                               select_stub_candidates, tool_template_slug,
+                               tool_template_stub_text)
         from ..brain.cli import DEFAULT_LEDGER
         from ..brain.ledger import Ledger
+
+        # Stub selection runs BEFORE any proposal is filed, so one run can
+        # both file the ledger proposal and leave the human a reviewable
+        # scaffold to look at while that proposal is still pending. A
+        # cluster the ledger already knows about (any status) is addressed:
+        # the ledger flow IS the address, no second review surface.
+        draft_report = None
+        if args.draft_stubs:
+            sel = select_stub_candidates(state, Ledger(DEFAULT_LEDGER),
+                                         min_support=args.min_support,
+                                         purity=args.purity)
+            out_dir = (Path(args.stubs_dir) if args.stubs_dir else
+                       Path.home() /
+                       ".local/state/caelestia-brain/tool_templates")
+            drafted, skipped_existing = [], []
+            for cand in sel["unaddressed"]:
+                slug = tool_template_slug(cand["label"])
+                path = out_dir / f"{slug}.md"
+                if path.exists():
+                    # A stub that already exists may carry human edits —
+                    # never clobbered, reported instead.
+                    skipped_existing.append(slug)
+                    continue
+                if not out_dir.exists():
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    tool_template_stub_text(
+                        cand, datetime.now().isoformat(timespec="seconds")),
+                    encoding="utf-8")
+                drafted.append(slug)
+            draft_report = {"dir": out_dir, "drafted": drafted,
+                            "skipped_existing": skipped_existing,
+                            "addressed": [c["label"]
+                                          for c in sel["addressed"]]}
 
         if args.propose:
             res = propose_gap_clusters(state, Ledger(DEFAULT_LEDGER),
@@ -834,6 +882,25 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         if summary["candidates"] and not args.propose:
             print("surface with: cortex gaps --propose  (ledger proposals, "
                   "never auto-applied)")
+        if draft_report is not None:
+            d = draft_report
+            if d["drafted"]:
+                print(f"drafted {len(d['drafted'])} tool-template stub(s) "
+                      f"in {d['dir']}: {', '.join(d['drafted'])}")
+                print("  stubs are DRAFT files only — never registered, "
+                      "never wired into the dispatcher; a human writes the "
+                      "real module")
+            else:
+                print("no stub drafted — every qualifying cluster is "
+                      "already addressed in the ledger or already has its "
+                      "stub file")
+            if d["skipped_existing"]:
+                print(f"  skipped {len(d['skipped_existing'])} existing "
+                      f"stub file(s) (never clobbered)")
+            if d["addressed"]:
+                print(f"  {len(d['addressed'])} cluster(s) already "
+                      f"addressed in the ledger (no second review "
+                      f"surface): {'; '.join(d['addressed'])}")
         return 0
 
     if args.cmd == "suggest":

@@ -743,6 +743,330 @@ answers would require loading the file. The settings optimizer keeps the
 optimizer that could write directly would be the most dangerous code in the
 repository.
 
+## 19. Exponential-build sessions (safety accounting per shipped sub-item)
+
+*(One shared section for the second exponential-build run; one dated
+subsection per phase, appended as sub-items ship. Each paragraph is the
+safety accounting the operating prompt requires before a sub-item may
+commit.)*
+
+### Phase 1 — cortex routing intelligence (2026-09-27)
+
+**1.1 gap-cluster → tool-template stubs.** `cortex gaps` gains an
+explicit `--draft-stubs` flag: a dense cluster (the same support ≥ 3 /
+purity ≥ 0.6 floors the clustering always had) that the ledger holds NO
+item for — pending, approved, or rejected; the ledger flow IS the
+address — can be drafted into a reviewable `.md` stub (name, cue words,
+TODO body) under `~/.local/state/caelestia-brain/tool_templates/`
+(`--stubs-dir` overrides). Safety accounting: the drafting functions in
+`cortex/dispatch.py` are pure (the module still writes no files itself —
+the CLI owns the write, exactly as it owns state writes); the stub
+format is markdown, so nothing can import or execute it; the stub
+marks itself DRAFT and is never registered in the router, never wired
+into the dispatcher, never added to the registry (pinned by test); an
+existing stub file is never clobbered (it may carry human edits —
+pinned by test); a draft-only run writes no ledger and does not mutate
+the learned state (pinned by test); selection runs before `--propose`
+files its proposals so one run can do both without the drafter and the
+ledger disagreeing about what is addressed. The stub says plainly what
+the project says everywhere else: the requests keep falling through
+honestly until a human writes the named classical algorithm behind the
+template.
+
+**1.2 undo-weighted calibration.** The settings undo log (the A3
+PII-stripped negative store) gains one boolean per record — `quick` —
+computed AT UNDO TIME from the bounded 12-entry ring itself: the undone
+apply was still the ring's head, i.e. an immediate revert with no later
+apply in between. No timestamp, label, value or text is stored, so the
+strip rule's promise ("cannot identify a person, a file, or a time")
+still holds — a relative fact about the interaction, not a clock
+reading. `calibrate.fold_undo_negatives` is the same Beta-Binomial
+update it always was; a quick record simply contributes
+`QUICK_UNDO_WEIGHT = 4.0` beta units instead of 1.0, and 4.0 is the
+smallest integer weight whose arithmetic satisfies the requirement the
+operating prompt pins: with the Beta(1,1) prior, approve-then-quick-
+undo lands at mean 2/7, strictly BELOW a plain reject's 1/3 (w = 3
+exactly ties; the boundary is pinned by test). A slow undo keeps the
+plain weight — it cancels the approval it reverts (mean 2/4 = 0.5) and
+no more, so the old conservative behavior is unchanged; pre-quick logs
+fold exactly as before. Both two existing record-shape pins were
+updated (not deleted) to pin the new shape, the same discipline the
+previous session used when behavior explicitly changed.
+
+**1.3 BOCPD drift on routing accuracy.** The example log's rolling
+hit-rate (acceptance over overlapping 5-outcome windows, arrival
+order — the same series shape the numeric telemetry feeds its
+detectors) now runs through `genius.data.bocpd` (Adams & MacKay 2007),
+the ONE existing BOCPD primitive — lazily imported exactly the way
+`dispatch.py` lazily imports the k-means, and pinned by a spy test so
+a second implementation cannot quietly appear. A real shift in routing
+accuracy is therefore flagged the same honest way a shift in CPU load
+is: the changepoint probability is REPORTED with its threshold and the
+segment means before/after travel with it, nothing acts on it (a
+report, not an action — `drift_check`'s halves heuristic stays
+untouched beside it as the deterministic view). Thin data is labelled
+`insufficient-data` and invents no numbers (BOCPD's own n ≥ 4 floor
+does the gating); the whole path is deterministic.
+
+**1.4 discriminative re-ranker.** `cortex/reranker.py` mirrors the
+slot_tagger's structural template exactly: an averaged pairwise
+max-margin perceptron (Rosenblatt 1958's update over Herbrich,
+Graepel & Obermayer 2000's pairwise ranking formulation; Collins 2002
+averaging) over the router's OWN per-candidate signal components —
+`RouteResult.features` already carries lex/sem/fuzz/noun/cue/coverage,
+so no second feature implementation exists. Supervision comes only
+from local routing history, with the slot_tagger's rules verbatim:
+approved rows give one constraint per competitor (the accepted surface
+must outrank what the router scored alongside it), rejected rows give
+nothing, a surface the router never scored fabricates no constraint.
+The gate is the repo's ONE uncertainty mechanism: top1-vs-top2 margin
+→ the same fixed-scale logistic class → `ConformalCalibrator.verdict`;
+untrained model, single candidate, below-threshold confidence, or no
+calibration data all return the router's OWN ranking unchanged with
+the reason attached — the re-ranker adds preference, it never guesses.
+Like the slot_tagger, it ships as a library + gated entry point with
+persistence into learned-state JSON; the live pipeline is untouched
+(that wiring is the maintainer's call once the calibrator stream for
+this signal accumulates), deterministic end to end, no I/O.
+
+**Phase 2 — genius new domains (2026-09-27)**
+
+**2.1 tiny inductive program synthesis.** `genius/synth.py` (plus a
+read-only `genius synth` CLI verb) implements FlashFill-style
+trace-based synthesis (Gulwani 2011) over a deliberately tiny DSL:
+1-3 stages of prefix/suffix/between/head/tail extractions joined by
+constant strings, delimiters harvested from the examples themselves.
+Safety accounting: a candidate program must reproduce EVERY example
+exactly — the inductive check is the honesty mechanism, and anything
+the DSL cannot explain (one example, four examples, a letter/digit
+boundary the DSL cannot express) is an explicit abstain, never a
+guess; genuine ambiguity (several expressions coincide) is reported
+with a count, the canonical fewest-stage answer never hides it;
+`apply_program` refuses rather than fabricates when a stage reads an
+input the caller did not supply; the ONLY executable-looking output is
+an inert `SUGGESTED_NOT_EXECUTED: [STATE_CHANGING] mv -n -- ...` line
+the user copies themselves (shell-quoted, `-n` so it cannot clobber);
+the module is pure string algebra — no I/O, no subprocess, no clock,
+no RNG, deterministic end to end and pinned by test.
+
+**2.2 stdlib CSV expression domain.** `genius/csvquery.py` (exposed
+read-only as `genius data --csv ... --expr ...`) is a named-column
+expression evaluator built entirely on existing primitives:
+`data.parse_table` (the csv-module parser the data domain already had),
+`stats.py` (describe/quantile/pearson for the aggregates), and `ast`
+as the SAFETY mechanism — the expression is walked over an explicit
+node whitelist and `eval` is never called; attribute access,
+subscripts, lambdas, string constants and unknown function names are
+rejected by name before anything runs. Honesty accounting: a missing
+or non-numeric cell makes the surrounding row value None (Kleene
+propagation through and/or/not) and lands in a reported
+`rows_unavailable` count — never coerced to 0 or False; division by
+zero is unavailable, not infinite; `quantile`'s q outside [0, 1] is
+rejected, never clamped; an unknown column is an error that lists what
+exists; `pearson` pairs rows positionally and refuses to claim a
+correlation from fewer than 3 aligned pairs. No I/O in the evaluator —
+the caller owns the table text — and the CLI path reads the user's
+file and prints; it writes nothing.
+
+**2.3 NCD file/folder resemblance.** `fsbrain` gains `ncd_resemble`
+(pure core) + `resemble_file` (read-only wrapper) + the `fsbrain
+resemble` CLI action: "which existing folder does this file most
+resemble", answered by the ONE existing NCD primitive
+(`genius/data.py::ncd`, Li et al. 2004 — spy-pinned reuse, no new
+compressor, no new distance formula). Read-only accounting: the pure
+core never touches the filesystem (the caller hands it bytes); the
+wrapper only reads (bounded deterministic head samples, sorted walk,
+unreadable files counted and named, never faked); folders without
+readable samples are skipped and NAMED rather than scored a fake 1.0;
+empty content is refused; compared files are head-truncated to a
+documented cap with the truncation reported; the whole ranking is
+returned (best + all distances), ties broken by folder name — the
+answer is a report, and nothing is moved, written, or executed.
+
+**2.4 resolution syllogism checker.** `logic.py` gains
+`syllogism_check` (plus a meta.py hook: "therefore"-shaped arguments
+route to it only when EVERY clause parses — anything else falls
+through to the propositional path unchanged): premises + NEGATED
+conclusion are refuted by binary resolution (Robinson 1965; Horn
+1951 — every clause in this fragment is Horn, so no factoring is
+needed and saturation is decidable). Honesty accounting: the empty
+clause proves VALID, saturation without it proves INVALID (the
+saturated set is satisfiable — the premises can hold while the
+conclusion fails), both stated with the derivation evidence, never a
+bare verdict; statements outside the well-formed fragment are honest
+LogicErrors listing the accepted forms; the one normalization is a
+deterministic, documented regular-plural rule (cats/cat) — irregular
+forms like men/man stay distinct, and the test pins that the checker
+does NOT pretend they resolve; no existential import is assumed
+(modern reading: "no A are B" does not entail "some A are not B" —
+pinned by test). Deterministic, pure, no I/O.
+
+**2.5 commit-risk score for devflow.** `devflow/risk.py` (CLI:
+`python3 -m assistant.devflow risk --source FILE < log.txt`) implements
+McCabe's cyclomatic complexity per function from the stdlib `ast`
+(1 + decision points, nested functions owning their own decisions)
+multiplied by log2(1 + recency-decayed churn) from `git log --numstat`
+text — the file rows reuse `diffstat.parse_numstat`, the ONE numstat
+parser, and there is NO subprocess anywhere: the caller pipes the text
+exactly as diffstat's input contract already established. Honesty
+accounting: churn decays by commit recency with a fixed, stated
+half-life (git's own newest-first order is the recency signal — no
+timestamp parsing, no clock reads); the tier thresholds are stated
+constants pinned by test; an unparsable source REFUSES the complexity
+half (risk stays None, churn still reported) rather than scoring
+garbage; the whole thing is a report for the human's review — nothing
+gates, nothing blocks, nothing executes.
+
+**2.6 robust Mahalanobis telemetry baseline.**
+`diagnostics/robust_baseline.py` + `agent/archetypes.telemetry_drift`
+(one more read-only evidence source for the config_hygiene
+archetype): center = coordinate-wise median, scale = 1.4826 x MAD
+(Leys, Klein, Bernard & Laurent 2013), distance = Mahalanobis with
+that diagonal robust scatter (Mahalanobis 1936), p-value tail from the
+EXISTING `stats.chi2_sf` primitive. Why robust: a mean/variance
+baseline is poisoned by exactly the outliers it is supposed to catch —
+pinned by a test where one poisoned history row moves a mean-based
+center but not the median. Honesty accounting: degenerate coordinates
+(MAD = 0, the metric never moved) are excluded and NAMED, never given
+a fake scale; missing sample coordinates (no battery, no thermal zone)
+are excluded and counted, never imputed; fewer than half the baseline
+coordinates present in a sample is a REFUSAL, not an extrapolation;
+thin history (< 8 rows) is refused up front; the chi-square p-value is
+reported with its independence/normality caveat attached ("reported
+not worshipped"); the archetype hook is evidence-only — nothing acts
+on the verdict, the live path is the same one-shot /proc+/sys read-only
+snapshot every other consumer uses, and battery capacity is
+deliberately excluded from the metric vector (a cyclic quantity, not a
+drift signal — documented).
+
+**Phase 3 — brain self-learning (2026-09-27)**
+
+**3.1 hierarchical partial pooling.** `brain/pooling.py` is the ONE
+shared utility the operating prompt asked for: every new
+preference/bandit posterior added from here on starts from the
+population's hierarchical prior (Efron & Morris 1975) instead of the
+flat Beta(1,1). Method-of-moments hyperparameters — pooled mean mu0,
+between-arm variance tau², concentration k0 = mu0(1-mu0)/tau² capped
+at full pooling when the arms agree and floored at one pseudocount —
+all deterministic, all hand-checkable (the test pins k0 = 50/7 exactly).
+Honesty accounting: the prior's own mass never counts as evidence; arms
+without observed evidence are LISTED, never fabricated into the pool; a
+pool with no evidence anywhere honestly degenerates to the flat prior
+and says so (`is_flat`); the new prior is
+Beta(k0·mu0, k0·(1-mu0)) with a stated 0.5 Jeffreys floor so an extreme
+pool cannot produce an improper prior — a documented rule of the
+estimator, not a silent clamp of user data; `shrunk_mean` reports each
+arm's shrinkage weight, which visibly decays as its own evidence grows.
+Pure, deterministic, JSON-round-trippable; the first consumer is this
+backlog's own 3.4 timing bandit (its arms are seeded from the existing
+proposal bandit's pooled statistics rather than flat).
+
+**3.2 off-policy evaluation gate.** `brain/ope.py` (CLI: `brain ope
+SWITCH`) is the gate the operating prompt demands before any agent —
+this one or a successor — proposes flipping a capability kill-switch:
+the historical approve/reject ledger is replayed through the candidate
+policy with an importance-weighted estimator (Horvitz-Thompson
+weights; the off-policy framing of Dudik, Langford & Li 2011), and the
+estimated accept rate is PRINTED with support and coverage accounting.
+Known switches have explicit candidate filters over the ledger
+episode's own (kind, target, diff) fields — a reviewable table, no
+guessed semantics; an unknown name lists what exists. Honesty
+accounting: a deterministic candidate has weight 1 inside its support
+and 0 outside, so episodes the candidate would never have proposed are
+EXCLUDED and the gap is REPORTED as 1 - coverage — never silently
+extrapolated; zero support (pure extrapolation) and thin support
+(< 5) are explicit refusals rather than shrug-of-a-number estimates;
+the module writes NOTHING anywhere (ledger byte-identity pinned by
+test) and the standing note on every report says flipping the switch
+stays a human file edit.
+
+**3.3 regret-vs-best-fixed audit.** `brain/regret.py` (surfaced in
+`cortex report` for the strategy bandit and in `brain calibration` for
+the preset bandit): cumulative reward vs the best-fixed-arm-in-hindsight
+baseline, printed every time the periodic report runs. Honesty
+accounting: the flat prior's own mass is never counted as plays or
+rewards; the best-fixed total is labeled an ESTIMATE (it assumes the
+best arm's observed mean would have held over the whole horizon —
+unplayed rounds are unobserved) and the caveat travels on every
+report; a bandit with fewer than two played arms states that no policy
+comparison exists (regret 0 by definition); an untouched bandit
+ABSTAINS rather than reporting a meaningless zero; both input shapes
+work (aggregate posteriors and explicit per-round draw logs);
+deterministic, pure, nothing acts on the number.
+
+**3.4 attention-aware suggestion timing.** `brain/timing.py` composes
+the existing engines — the Thompson-sampling bandit family (HourBandit's
+algorithm via NamedBandit's named arms, now over TIME BUCKETS instead
+of prompt content), the rhythm engine's activity z-scores, Holt's
+acceptance-rate trend, and historical surface-to-decision latency per
+bucket — to rank WHEN a proposal should surface. It is also the
+promised consumer of 3.1: the timing arms are seeded from the POOLED
+statistics of the user's existing proposal posteriors (pooling itself
+states when there is nothing to borrow and stays flat). Honesty
+accounting: the output ranks buckets and may ADVISE deferring on a
+falling Holt forecast — reported, never enforced; the note on every
+result says it biases WHEN, not WHAT, and that proposals still go
+through the ledger's approve/reject flow; nothing surfaces
+automatically; deterministic under a seeded rng (the one stochastic
+step, Thompson sampling, is the same one every other bandit uses);
+bad inputs (hour outside [0, 24)) are refused.
+
+**4.1 disk-backed bounded-memory search index.**
+`retrieval/diskindex.py` (+ `retrieval cli disk-index / disk-search`)
+indexes an arbitrary folder tree under a stated RAM ceiling via a
+classic external merge sort: postings accumulate in a run buffer whose
+character budget IS the ceiling (checked BEFORE each append, so the
+buffer is never past it — a construction claim, not a hope), runs are
+spilled to sorted temp files, `heapq.merge` k-way merges them into a
+term-sorted postings JSONL, and queries load ONLY the metadata — the
+searcher structurally has no postings dict (pinned by test). Scoring
+reuses `indexer.tokenize`/`idf` and the Searcher's k1/b, so both
+indexes answer with the same BM25. The footprint claim is MEASURED,
+not asserted: the report carries /proc VmHWM before/after, the
+enforced budget, `budget_respected_by_construction`, and the
+process-level observation (`hwm_growth_within_ceiling`) with the
+explicit note that VmHWM includes the whole interpreter — if the
+number says the ceiling was breached at process level, the report
+says so. Read-only walk; the only writes are the index files the
+caller named plus removed spool files; no subprocess, no network;
+lookup is an honest sorted-file scan built for low RAM, not latency.
+
+**Phase 5 — genius-as-sidebar-tool (2026-09-27)**
+
+**5.1 graphs.** `caelestia_genius_graphs` joins the sidebar registry
+(the exact math/stats/logic/decide/palette shape): one bridge op
+(`genius_graphs`) dispatching Dijkstra shortest paths, Kruskal MST and
+Hungarian assignment over JSON-serialisable inputs, with per-method
+validation and honest errors (an unknown method lists what exists; a
+missing cost matrix is a refusal). A* is deliberately NOT exposed: its
+heuristic is a function, not data, and the bridge cannot receive code
+— the CLI keeps it. Read-only compute, nothing executes.
+
+**5.2 units.** `caelestia_genius_units` (bridge op `genius_units` ->
+`genius/units.py::evaluate`, the phase-2.4 dimensional algebra already
+shipped and pinned): conversion and dimension-checked arithmetic
+on-device, mismatched dimensions REJECTED never coerced. Read-only
+compute; the registry entry, dispatch handler and async-count wiring
+are byte-pinned by the parity suite, and the op joins the
+read-only-genius-ops allow-list the integration suite enforces.
+
+**5.3 optimize.** `caelestia_genius_optimize` (bridge op
+`optimize_recommend`, the read-only Pareto/AC-3 recommender
+settings/optimize.py already ships): the sidebar gets a PREVIEW-ONLY
+optimizer entry — it ranks which preset profile fits a stated priority
+and changes nothing; apply stays a separate, confirmed action through
+the planner/applier gates. The op's lambda now reads its parameters
+inline so the parity suite's introspection guard covers it too.
+
+**5.4 fsbrain-summary.** `caelestia_genius_fsbrain_summary` (bridge
+op `genius_fsbrain_summary` -> `genius/fsbrain.py::staleness_report`,
+the existing frecency analysis): the read-only staleness/dup REPORT
+only — the entry's own description and the bridge allow-list both say
+the tidy MOVER is never reachable from the sidebar. Params pinned by
+the parity suite (path required; top and half_life_days optional); the
+op joins the read-only-genius-ops allow-list; every fsbrain analysis
+was already bounded-walk, read-only.
+
 ## What was deliberately not done
 
 - No training or fine-tuning (not enough data; unnecessary for the scope).

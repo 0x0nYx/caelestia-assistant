@@ -18,6 +18,8 @@ is the only entry point for the personal tools:
   python3 -m assistant.brain.personal ghosts VAULT [--known "t1,t2"]
   python3 -m assistant.brain.personal journal record|resolve|report ...
   python3 -m assistant.brain.personal health VAULT [--dup F] [--top N]
+  python3 -m assistant.brain.personal graph VAULT [--top N] [--half-life D] [--now T]
+  python3 -m assistant.brain.personal topics VAULT [--k N] [--terms N]
   python3 -m assistant.brain.personal ledger learn
 
 Shared global flags --state / --ledger keep the same defaults and the same
@@ -189,6 +191,51 @@ def cmd_health(args, out):
     return 0
 
 
+def cmd_graph(args, out):
+    """The link-graph report (exponential-build-3 D): PageRank, HITS
+    hubs/authorities (Kleinberg 1999), and the time-decayed 'who
+    matters NOW' PageRank — read-only, nothing proposed, nothing
+    written."""
+    r = service.graph_report(args.vault, top=args.top,
+                             now=args.now,
+                             half_life_days=args.half_life)
+    out.write(f"link graph over {r['notes']} note(s), {r['edges']} edge(s)\n")
+    for label, key in (("all-time PageRank", "pagerank"),
+                       ("hubs (HITS)", "hubs"),
+                       ("authorities (HITS)", "authorities"),
+                       ("recent-weighted PageRank (half-life "
+                        f"{r['half_life_days']:g}d)", "pagerank_recent")):
+        out.write(f"{label}:\n")
+        for row in r[key]:
+            out.write(f"  {row['score']:8.4f}  {row['note']}\n")
+    conv = "yes" if r["hits_converged"] else \
+        f"no (stopped at {r['hits_iterations']} iterations — the scores are the honest last iterate)"
+    out.write(f"HITS converged: {conv}\n")
+    return 0
+
+
+def cmd_topics(args, out):
+    """NMF topic extraction (Lee & Seung 1999) — read-only."""
+    try:
+        r = service.topics_report(args.vault, k=args.k,
+                                  terms_per_topic=args.terms)
+    except ValueError as exc:
+        out.write(f"topics: {exc}\n")
+        return 1
+    out.write(f"{r['k']} topic(s) over {r['docs']} note(s), "
+              f"{r['terms']} term(s) — NMF relative error "
+              f"{r['relative_error']:.4f} after {r['iterations']} "
+              f"iteration(s), converged: {'yes' if r['converged'] else 'no'}\n")
+    for i, topic in enumerate(r["topics"], 1):
+        terms = ", ".join(t for t, _w in topic["terms"]) or "(no positive terms)"
+        docs = ", ".join(topic["docs"][:6]) or "(none)"
+        out.write(f"  topic {i}: {terms}\n")
+        if topic["docs"]:
+            out.write(f"           strongest members: {docs}\n")
+    out.write(f"note: {r['note']}\n")
+    return 0
+
+
 def cmd_ledger(args, out):
     if args.action == "learn":
         from ..cli import DEFAULT_LEDGER as _dl  # same ledger file as the shell side
@@ -300,6 +347,32 @@ def build_parser():
     lg.add_argument("action", choices=["learn"])
     lg.add_argument("id", nargs="?", type=int, default=0)
     lg.set_defaults(fn=cmd_ledger)
+
+    gr = sub.add_parser("graph",
+                        help="link-graph report: PageRank + HITS + "
+                             "time-decayed PageRank (read-only)")
+    gr.add_argument("vault")
+    gr.add_argument("--top", type=int, default=5)
+    gr.add_argument("--half-life", type=float, default=90.0,
+                    metavar="DAYS",
+                    help="half-life in days for the recent-weighted "
+                         "PageRank (default 90)")
+    gr.add_argument("--now", type=float, default=None, metavar="EPOCH",
+                    help="fixed reference timestamp for the decay "
+                         "(default: the real clock; pass a fixed value "
+                         "for reproducible reports)")
+    gr.set_defaults(fn=cmd_graph)
+
+    tp = sub.add_parser("topics",
+                        help="NMF topic extraction over the vault "
+                             "(read-only; Lee & Seung 1999)")
+    tp.add_argument("vault")
+    tp.add_argument("--k", type=int, default=3,
+                    help="number of topics (default 3; must be <= the "
+                         "number of notes)")
+    tp.add_argument("--terms", type=int, default=6,
+                    help="terms shown per topic (default 6)")
+    tp.set_defaults(fn=cmd_topics)
     return p
 
 

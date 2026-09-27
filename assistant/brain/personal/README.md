@@ -13,7 +13,8 @@ settings layer, the JSON bridge, or any `caelestia-assist` subcommand.
 | Module | Algorithm | What it answers |
 | --- | --- | --- |
 | `vault.py` | front-matter/inline-tag parser | "what's in my notes" |
-| `graph.py` | PageRank, label-propagation communities | "which notes matter, what clusters" |
+| `graph.py` | PageRank (+ time-decay weights), HITS hub/authority, label-propagation communities | "which notes matter (all-time and right now), what clusters" |
+| `topics.py` | NMF topic extraction (Lee & Seung 1999) | "what themes run through my notes" |
 | `srs.py` | FSRS-*inspired* spaced repetition | "what's due today" |
 | `survival.py` | Kaplan-Meier estimator | "will this task ever finish" |
 | `journal.py` | Brier score + calibration curve | "how good are my confidence calls" |
@@ -35,6 +36,8 @@ Shared engines that stayed in `assistant/brain/` root (imported via
 python3 -m assistant.brain.personal --help
 python3 -m assistant.brain.personal organize ~/vault
 python3 -m assistant.brain.personal plan tasks.json --minutes 240 --propose
+python3 -m assistant.brain.personal graph ~/vault --half-life 30
+python3 -m assistant.brain.personal topics ~/vault --k 4
 ```
 
 The shell-side brain CLI (`python3 -m assistant.brain`) deliberately exposes

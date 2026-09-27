@@ -24,7 +24,7 @@ from ..textmine import keywords, summarize
 from ..spellfix import SpellIndex
 from .duration import DurationModel
 from .ghost import find_ghosts
-from .graph import Graph, links
+from .graph import Graph, decay_weights, links
 from .health import rank_notes, score as health_score
 from . import journal as _journal
 from .linkrec import suggest_links
@@ -32,6 +32,7 @@ from .planner import cpm, knapsack
 from .priority import PriorityModel, features
 from .srs import due, new_card, review
 from .survival import completion_prob, kaplan_meier
+from .topics import extract as topics_extract
 from .vault import scan
 
 NONE = "__none__"  # null hypothesis: untagged-note vocabulary, so a tag must beat "no tag"
@@ -313,3 +314,46 @@ def health_report(vault, dup_threshold=0.8):
             age_days = 0.0
         rows.append(health_score(rel, age_days, orphan_ids, dup_ids))
     return rank_notes(rows)
+
+
+# ---- link-graph views (exponential-build-3 D) -----------------------------------
+
+def graph_report(vault, top=5, now=None, half_life_days=90.0):
+    """The link-graph report: all-time PageRank, HITS hubs and
+    authorities (Kleinberg 1999, side by side with PageRank), and the
+    time-decayed "who matters NOW" PageRank. Read-only; ``now`` is
+    injectable for determinism (defaults to the real clock)."""
+    notes = scan(vault)
+    graph = Graph()
+    for rel, note in notes.items():
+        graph.add(rel.lower(), links(note["text"]))
+    pr = sorted(graph.pagerank().items(), key=lambda x: (-x[1], x[0]))[:top]
+    h = graph.hits()
+    hubs = sorted(h["hub"].items(), key=lambda x: (-x[1], x[0]))[:top]
+    auths = sorted(h["authority"].items(), key=lambda x: (-x[1], x[0]))[:top]
+    if now is None:
+        now = _dt.now(_tz.utc).timestamp()
+    weights = decay_weights(notes, now, half_life_days)
+    pr_now = sorted(graph.pagerank(weights=weights).items(),
+                    key=lambda x: (-x[1], x[0]))[:top]
+    return {
+        "notes": len(notes),
+        "edges": sum(len(t) for t in graph.out.values()),
+        "pagerank": [{"note": k, "score": round(s, 6)} for k, s in pr],
+        "hubs": [{"note": k, "score": round(s, 6)} for k, s in hubs],
+        "authorities": [{"note": k, "score": round(s, 6)} for k, s in auths],
+        "pagerank_recent": [{"note": k, "score": round(s, 6)}
+                            for k, s in pr_now],
+        "half_life_days": half_life_days,
+        "hits_iterations": h["iterations"],
+        "hits_converged": h["converged"],
+    }
+
+
+def topics_report(vault, k=3, terms_per_topic=6, max_terms=2000):
+    """The NMF topic report over the vault (Lee & Seung 1999). Pure
+    read-only analysis; refusals (empty vault, k out of range) surface
+    as ValueError from topics.extract with the reason."""
+    return topics_extract(scan(vault), k=k,
+                          terms_per_topic=terms_per_topic,
+                          max_terms=max_terms)

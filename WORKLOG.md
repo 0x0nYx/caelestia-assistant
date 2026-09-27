@@ -208,3 +208,110 @@ merge commit, so nothing was lost. Archive tags kept:
 pre-v0.1-reset-3-archive (cf2eb6b) and v0.1.0-baseline-3 (50cddea).
 Verification on the unified main: 1987 tests OK (skipped=12),
 selfcheck OK, bash tests 10/0.
+
+---
+
+## Build 5 — 2026-09-28 — exponential-build-4 (this build)
+
+Scope (per the operating prompt): eight feature groups — A automatic
+log understanding, B deeper math/science, C personal knowledge-graph
+depth, D self-learning upgrades, E system/OS intelligence, F NLU
+depth, G community distribution, H honesty/uncertainty hardening —
+then Phase 2 de-redundancy + adversarial verification, and the
+baseline reset. Branch `agent/exponential-build-4`; baseline archived
+at tag `pre-v0.1-reset-4-archive` (commit 6cafdfa) before any change:
+1987 tests OK (skipped=12), selfcheck OK.
+
+Delivered (9 commits on the branch, fa53118 → 560789e):
+
+- A Drain (fa53118): streaming fixed-depth parse-tree template miner
+  (He, Zhu, He & Lyu, ICSM 2017) in `diagnostics/drain.py`, wired in
+  front of the rule engine — NO_MATCH/AMBIGUOUS diagnoses template
+  the lines no signature matched; bounded memory with honest
+  overflow; shapes-not-causes note carried into the report and `why`.
+- B math/science (9bc93c6): bounded symbolic integration
+  (`mathengine.symbolic_integrate` — table + linear u-substitution +
+  integration by parts; every antiderivative differentially verified
+  at fixed points before shipping; honest NO_CLOSED_FORM_IN_TABLE,
+  not Risch); dual-number forward-mode AD (`genius/autodiff.py`,
+  Wengert 1964); adaptive Dormand-Prince 4(5) in ode_solve;
+  DPLL/CDCL-style SAT with a hard ABSTAIN budget (`genius/sat.py`)
+  and BMC reachability/deadlock auditing wired into HTN decomposition
+  and the preset state graph.
+- C personal graph depth (c348c92): Brandes betweenness + bridge
+  notes (Freeman 1977 / Burt 1992); windowed topic drift reusing the
+  ADWIN+Page-Hinkley consensus verbatim on a shared-basis signal;
+  cloze flashcard drafts behind the mandatory review gate; Murphy
+  1973 calibration decomposition with the finite-sample residual
+  shown.
+- D self-learning (b3e407b): conservative bandits (Wu et al., ICML
+  2016) gating the strategy bandit's own Thompson sample; Learn++.NSE
+  (Elwell & Polikar 2011) as the selectable smooth-drift alternative;
+  Wolpert stacked generalization as drop-in fusion weights.
+- E system intelligence (f5f4689): steady-state Kalman failure
+  horizons over the telemetry series (`diagnostics/forecast.py`);
+  package_breakage deepening the audit archetype with the shipped
+  graph engines (no second package path); Merkle config-tree diffing
+  (`brain/merkle.py`).
+- F NLU depth (07e4a22): linear-chain CRF slot tagger
+  (Lafferty et al. 2001) selectable and conformal-gated beside the
+  perceptron; Hobbs 1978 coreference discipline wired into the
+  pending-plan composer.
+- G community distribution (33b2ba5): DP-noised cold-start priors
+  reusing cortex/dp.py's mechanism verbatim; the goal-archetype
+  marketplace with the action whitelist, closed schema, consent and
+  capability discipline, review-only imports.
+- H uncertainty hardening (3b07d07): every touched module named in
+  the CHANGELOG line — duration posterior bands, health labels,
+  dual-number unit conversion, Holt band + Kalman interval, stats
+  describe() audited (already carried sem).
+- Phase 2 (560789e): adversarial verification and cross-references.
+
+Honest findings (the ones a human should read before trusting):
+
+- Group G gating left deliberately UNDECIDED (OPEN_QUESTIONS in
+  archetype_pack.py): what promotion from review-only to registered
+  looks like — committed file vs interactive flow vs a typed CLI verb
+  — is a human call; import implements none of it. The graph audit
+  is reported but NOT an import gate (the current default may be too
+  soft; not my call to make).
+- The tempting per-source logistic for stacked fusion weights is
+  CIRCULAR (the label is true exactly when the edge is positive, for
+  any source including a random one) — the shipped weight is the
+  non-circular chance-lift statistic, with the circularity documented
+  in the module docstring.
+- The cold-start hostile-artifact finding from the adversarial sweep:
+  an unbounded imported prior could permanently silence an arm;
+  fixed with a 1000-pseudo-observation ceiling, clipped and reported.
+- The CRF-vs-perceptron calibration comparison (Brier 0.094 vs 0.219
+  on the build fixture) is ONE synthetic corpus's result; it may flip
+  as real supervised history grows — both taggers stay selectable.
+- The adaptive RK45's one-knob mixed tolerance bounds ABSOLUTE error:
+  solutions decaying tens of orders of magnitude (e.g. y' = -1000y)
+  are resolved only to ~tol*span; a two-knob rtol/atol controller is
+  the known fix, left as a documented envelope.
+- Topic-drift per-snapshot NMF bases would compare incompatible topic
+  spaces (the tests caught this mid-build); the shipped version builds
+  ONE basis over the union corpus and projects each snapshot onto it.
+- Merkle recursion depth is Python's recursion limit (~1000 nested
+  directories) — loud RecursionError, not a silent wrong answer; a
+  cap was deliberately not invented.
+- gen_adapter byte-identity in Group B's commit message was recorded
+  as run-after-the-fact rather than claimed preemptively (the first
+  full-suite run also caught the AST import lint firing on a stray
+  `shutil` in my own test file — fixed; the lint works).
+
+De-redundancy: the duplication check found genius/graphs.py already
+shipped articulation_points (Group E deepened the archetype instead
+of duplicating); sysintel's batch "Drain-style" miner and the new
+streaming drain.py are documented as different mechanisms, not
+merged; LICENSING_OPEN_QUESTION and PR_SURFACE_PLAN re-read, verdicts
+untouched, one paragraph added to the latter for Group G's new
+standalone-only surface.
+
+Final verification (this session, in order): unittest 2165 passed /
+12 skipped OK (baseline 1987, +178); selfcheck OK; gen_adapter
+--verify byte-identical against a fresh shallow clone of the upstream
+checkout; bash test_assistant.sh 10/0; the deliberate AST-lint
+negative probe fired on socket/subprocess/os.system and the tree
+verified clean after deletion.

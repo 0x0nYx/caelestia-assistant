@@ -37,6 +37,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import argumentation
+from . import rete
 from .settings_join import settings_tools_for_rule
 
 RULES_DIR = Path(__file__).resolve().parent / "rules.d"
@@ -502,6 +504,21 @@ def render_report(diagnosis: Dict[str, Any]) -> str:
     for idx, result in enumerate(diagnosis["candidates"], start=1):
         lines.append(f"[{idx}] {render_result(result)}")
         lines.append("")
+
+    # Read-only enrichment (exponential-build-3 A1/A2): derived composite
+    # evidence (Rete, rete.py) and conflict resolution (Dung,
+    # argumentation.py) computed from THIS diagnosis without touching the
+    # matching semantics above — rendered only when they fire, nothing
+    # when they do not.
+    derived = rete.derived_evidence(diagnosis)
+    if derived is not None:
+        lines.extend(rete.render_derived_lines(derived))
+        lines.append("")
+    conflicts = argumentation.conflict_resolution(diagnosis)
+    if conflicts is not None:
+        lines.extend(argumentation.render_conflict_lines(conflicts))
+        lines.append("")
+
     lines.append("Commands above are suggestions to copy-paste after review. The assistant")
     lines.append("cannot execute them, cannot reach the network, and never edits your config.")
     return "\n".join(lines)
@@ -586,6 +603,14 @@ def main(argv: Optional[List[str]] = None) -> int:
                 for r in diagnosis["candidates"]
             ],
         }
+        # Read-only enrichment, same rule as the text renderer: keys are
+        # added ONLY when the enrichment actually fires.
+        derived = rete.derived_evidence(diagnosis)
+        if derived is not None:
+            payload["derived_evidence"] = derived
+        conflicts = argumentation.conflict_resolution(diagnosis)
+        if conflicts is not None:
+            payload["conflict_resolution"] = conflicts
         print(json.dumps(payload, indent=2))
     else:
         print(render_report(diagnosis))

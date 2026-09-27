@@ -41,6 +41,7 @@ This package is split in two, deliberately:
 | `nlp.py` | stopwords-filtered tokens, char shingles | Shared tokenizer used by the text learners |
 | `textmine.py` | TF-IDF; TextRank (weighted PageRank over sentences) | Generic keyword/summary extraction (utility library) |
 | `spellfix.py` | SymSpell-style delete-index over a supplied vocabulary | Generic typo detection (utility library) |
+| `kneser_ney.py` | Kneser-Ney smoothed n-grams (Kneser & Ney 1995; interpolated form + leaving-one-out discounts per Chen & Goodman 1999) — word flavor (n=3) completes, char flavor (n=4) corrects; continuation counts, not raw frequency, are the backoff | What word comes next / is this the word you meant — with an evidence gate ("confident"/"thin"/"abstain") so it only speaks when the vault supports it, and a fallback contract that never overrides SymSpell's answer |
 | `drift.py` | Set diff + minhash-Jaccard on shared ids | What's new, gone, or meaningfully reworded since the last snapshot? |
 | `tidy.py` | size-bucketed crc32 fingerprints + byte-exact confirmation, age-quartile staleness, collision-safe renames, journaled os.rename with rollback | How should this folder be organized? (moves only — never deletes) |
 | `brief.py` | pure assembler over the other modules' outputs | What matters today, on one honest page? |

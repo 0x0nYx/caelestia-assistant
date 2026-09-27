@@ -150,3 +150,14 @@ persistence round-trips, and the y/N consent gate.
 These compose with the existing learners: the logistic learns the route, the
 bandit learns the strategy, the calibration maps softmax to acceptance, and
 the conformal layer turns all of it into a statement you can hold it to.
+
+## Drift: Page-Hinkley + ADWIN behind a consensus gate (`adwin.py`)
+
+`PageHinkleyDrift` (conformal.py) was previously defined-and-tested but not
+surfaced anywhere. `adwin.py` adds the second detector AND the surface:
+
+| Where | Algorithm |
+|---|---|
+| `ADWIN` | **Adaptive Windowing** (Bifet & Gavaldà 2007, SIAM SDM — the compressed bucket-list variant: exponential-histogram buckets of (total, variance) over runs of 2^i elements, M=5 per row; cut when two subwindows' means differ beyond the Hoeffding bound with the paper's m = 1/(1/n0+1/n1) effective size, delta=0.002). Mirrors `PageHinkleyDrift`'s update/to_dict/from_dict/reset shape so callers can hold both. Warmup (width < 32) is labelled, never silent |
+| `DriftConsensus` / `consensus` | the gate: drift is FLAGGED to the user only when BOTH detectors have alarmed — dual agreement suppresses single-detector false alarms; each detector's own state is always reported individually |
+| `CortexLearner.ph_adwin_consensus` | the read-only wiring: the example log's accept/reject stream replayed through both detectors, surfaced in `report()` as `drift_ph_adwin` (beside `drift` and `drift_bocpd`) and rendered by the cortex report — PH itself is unchanged, nothing new is persisted |

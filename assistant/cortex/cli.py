@@ -179,6 +179,10 @@ def _render_report(learner: CortexLearner, episodes: List[Dict[str, object]]) ->
     lines.append(f"  fitted signal weights     : {report['fitted_weights']}")
     lines.append(f"  drift                     : {report['drift']}")
     lines.append(f"  drift (BOCPD, hit-rate)   : {report['drift_bocpd']}")
+    # exponential-build 3 item B2: dual-detector consensus — drift is
+    # FLAGGED only when BOTH Page-Hinkley and ADWIN have alarmed.
+    lines.append(f"  drift (PH+ADWIN consensus) : "
+                 f"{report['drift_ph_adwin']['summary']}")
     lines.append(f"  bandit regret vs best arm : {report['regret'].get('status')}"
                  f" (est. {report['regret'].get('estimated_regret')})")
     lines.append(f"  memory episodes           : {memory['episodes']} "

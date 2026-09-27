@@ -410,6 +410,28 @@ class CortexLearner:
         from ..brain.regret import audit_from_arms
         return audit_from_arms(self.bandit.arms)
 
+    def ph_adwin_consensus(self) -> Dict[str, object]:
+        """The SECOND drift opinion (exponential-build 3, item B2): the
+        example log's accept/reject stream replayed through BOTH
+        incremental detectors — PageHinkleyDrift (cortex/conformal.py,
+        untouched) and ADWIN (cortex/adwin.py, Bifet & Gavaldà 2007) —
+        under the consensus rule: drift is FLAGGED to the user only
+        when BOTH detectors have alarmed (dual agreement suppresses
+        single-detector false alarms); each detector's own state is
+        always reported individually. Read-only replay exactly like
+        bocpd_drift_check: nothing is persisted, nothing acts, and
+        Page-Hinkley's own behaviour is unchanged. Deterministic: pure
+        arithmetic over the examples in arrival order."""
+        from .adwin import DriftConsensus  # lazy, like bocpd above
+        labels = [row.get("label") for row in self.examples
+                  if isinstance(row, dict)]
+        pair = DriftConsensus()
+        for label in labels:
+            pair.update(label == 1)
+        report = pair.status()
+        report["examples"] = len(labels)
+        return report
+
     # -- persistence ----------------------------------------------------------
 
     def to_dict(self) -> Dict[str, object]:
@@ -445,6 +467,10 @@ class CortexLearner:
             },
             "drift": self.drift_check(),
             "drift_bocpd": self.bocpd_drift_check(),
+            # exponential-build 3 item B2: the dual-detector consensus
+            # (Page-Hinkley + ADWIN) — read-only replay, flag only on
+            # dual agreement.
+            "drift_ph_adwin": self.ph_adwin_consensus(),
             # exponential-build 3.3: did the strategy bandit beat
             # always-playing its single best arm? printed, not acted on.
             "regret": self.regret_audit(),

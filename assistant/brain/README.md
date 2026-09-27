@@ -36,6 +36,7 @@ This package is split in two, deliberately:
 | `forecast.py` | Holt linear trend; 1-D Kalman filter | Where is this series going; what is its smoothed level? |
 | `anomaly.py` | z-score, deferral flag, Shannon entropy of switches | Is this unusual? Is my attention fragmented? |
 | `bandit.py` | Thompson sampling over hour-of-day Beta arms (the engine `preset_bandit.py` generalizes) | Per-hour Beta arms for any caller-supplied reward stream |
+| `meta_bandit.py` | Hierarchical meta-bandit (Thompson sampling per Chapelle & Li 2011) over caller-supplied recommendation engines — per-context Beta posteriors pooled upward through `pooling.py` (Efron & Morris 1975, reused), contexts matched via `features.py`'s signed hashing, regret audited through `regret.py` | Which recommendation engine should be trusted in THIS context — and did the meta level beat always trusting one engine? (library-first: the live routing path is untouched; `choose()` returns the engine, the caller executes it) |
 | `naive_bayes.py` | Multinomial NB with a null-hypothesis class | Generic incremental text classifier (utility library) |
 | `minhash.py` | MinHash + LSH banding, Jaccard verification | Generic near-duplicate detection (utility library) |
 | `nlp.py` | stopwords-filtered tokens, char shingles | Shared tokenizer used by the text learners |

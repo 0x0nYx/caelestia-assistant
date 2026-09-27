@@ -161,3 +161,29 @@ surfaced anywhere. `adwin.py` adds the second detector AND the surface:
 | `ADWIN` | **Adaptive Windowing** (Bifet & Gavaldà 2007, SIAM SDM — the compressed bucket-list variant: exponential-histogram buckets of (total, variance) over runs of 2^i elements, M=5 per row; cut when two subwindows' means differ beyond the Hoeffding bound with the paper's m = 1/(1/n0+1/n1) effective size, delta=0.002). Mirrors `PageHinkleyDrift`'s update/to_dict/from_dict/reset shape so callers can hold both. Warmup (width < 32) is labelled, never silent |
 | `DriftConsensus` / `consensus` | the gate: drift is FLAGGED to the user only when BOTH detectors have alarmed — dual agreement suppresses single-detector false alarms; each detector's own state is always reported individually |
 | `CortexLearner.ph_adwin_consensus` | the read-only wiring: the example log's accept/reject stream replayed through both detectors, surfaced in `report()` as `drift_ph_adwin` (beside `drift` and `drift_bocpd`) and rendered by the cortex report — PH itself is unchanged, nothing new is persisted |
+
+## Lexicon-diff sharing: optional Laplace DP on the export (`dp.py`)
+
+The community lexicon-diff export carries exact per-phrase evidence
+(`n=4, p=0.86`); an aggregator collecting many users' diffs could
+reconstruct one contributor's raw behavior. The opt-in fix:
+
+| Where | Algorithm |
+|---|---|
+| `dp.laplace_noise` | the **Laplace mechanism** (Dwork, McSherry, Nissim & Smith 2006, "Calibrating Noise to Sensitivity in Private Data Analysis", TCC): noise ~ Laplace(0, b), b = sensitivity/epsilon, sampled EXACTLY by the inverse CDF from one uniform draw of the injected rng — deterministic given the rng |
+| `dp.noise_diff` | the noising pass over the export artifact: per-row `n` (sensitivity 1 per phrase event) and `p` (sensitivity 1 worst case) noised; negative counts floored at zero AND counted; `p` clipped to [0,1] AND the clips counted; every row carries a `(dp: epsilon=X)` provenance marker that round-trips through `lexicon_diff.parse` (additive regex group); re-noising an already-noised diff is refused (it would compose epsilon while claiming one); same (diff, epsilon, seed) → byte-identical output |
+| `cortex lexicon export --dp [EPSILON] [--dp-seed N]` | the CLI surface; **default behavior byte-identical when the flag is absent** (pinned by test) |
+
+Default epsilon = 1.0 **per export**: per single release a user's
+phrase-level contributions are bounded by the export cap
+(`lexicon_diff.MAX_PAIRS` = 200 rows; the underlying example log is
+capped at `learn.MAX_EXAMPLES` = 500), and one phrase event moves a
+row's `n` by 1 / its `p` by at most 1. Composition (Dwork & Roth 2014):
+k sequential exports compose to ~k·epsilon — the export is
+user-initiated and manual, so the practical bound is how often you
+export. Honest boundary: row **presence is exact** (only counts/rates
+are noised) — the guarantee is labeled *noised-evidence DP, not full
+row-level DP*; the opt-in `presence_keep` subsampling amplifies but
+does not change that label. The default seed derives from the diff's
+content id (reproducible noise — NOT independent across exports; the
+tradeoff is stated in `cortex/dp.py`'s docstring, which the tests pin).

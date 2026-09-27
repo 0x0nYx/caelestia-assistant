@@ -661,6 +661,22 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                        help="import: the identity YOU verified with your own "
                             "tool (minisign/sq/gpg) — recorded for the "
                             "advisory trust history only", )
+    lex_p.add_argument("--dp", nargs="?", const=1.0, default=None,
+                       type=float, metavar="EPSILON",
+                       help="export: pass the export through the Laplace-"
+                            "mechanism noising pass (cortex/dp.py, Dwork "
+                            "et al. 2006) — per-row n/p are noised at "
+                            "epsilon per export (default 1.0 when the "
+                            "value is omitted) and every row carries a "
+                            "(dp: epsilon=X) provenance marker; absent "
+                            "flag = the exact export, byte-identical to "
+                            "before")
+    lex_p.add_argument("--dp-seed", type=int, default=None, metavar="SEED",
+                       help="export --dp: the noise seed (default: derived "
+                            "deterministically from the diff's content id, "
+                            "so the same diff noised twice is reproducible "
+                            "— reproducible noise is NOT independent "
+                            "across exports; pass any int for fresh noise)")
     args = parser.parse_args(argv)
 
     state = brain_state.load()
@@ -699,6 +715,33 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
             if not rows:
                 print("nothing learned to share yet (the learner's example "
                       "log is empty)")
+                return 0
+            if args.dp is not None:
+                # opt-in (exponential-build 3 B4): the Laplace-mechanism
+                # noising pass over the export artifact; the default
+                # path below stays byte-identical when the flag is absent
+                from . import dp
+                try:
+                    report = dp.noise_diff(
+                        rows, epsilon=args.dp, seed=args.dp_seed,
+                        date=datetime.now().strftime("%Y-%m-%d"))
+                except ValueError as exc:
+                    print(f"error: {exc}", file=sys.stderr)
+                    return 1
+                sys.stdout.write(report["text"])
+                print(f"# (dp) epsilon={report['epsilon']:g}, "
+                      f"seed={report['seed']}: "
+                      f"{report['rows_out']}/{report['rows_in']} rows "
+                      f"kept; n floored at zero: "
+                      f"{report['n_floored_at_zero']}; p clipped to "
+                      f"[0,1]: {report['p_clipped']}; "
+                      f"{report['guarantee']}", file=sys.stderr)
+                print("# (dp) composition: k sequential exports compose to "
+                      "roughly k*epsilon (Dwork & Roth 2014) — the "
+                      "practical bound is how often you export",
+                      file=sys.stderr)
+                print("# export is read-only: sign it with YOUR external tool "
+                      "(minisign/sq/gpg) before sharing", file=sys.stderr)
                 return 0
             sys.stdout.write(lexicon_diff.render(
                 rows, date=datetime.now().strftime("%Y-%m-%d")))

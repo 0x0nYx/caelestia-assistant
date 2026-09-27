@@ -72,7 +72,11 @@ MAX_TRUST_EVENTS = 500
 
 _ROW_RE = re.compile(
     r"^\s*(?P<sign>[+-])(?P<text>.*?\S)\s*->\s*(?P<surface>\S+)"
-    r"(?:\s*\(n=(?P<n>\d+),\s*p=(?P<p>[0-9.]+)\))?\s*$")
+    r"(?:\s*\(n=(?P<n>\d+),\s*p=(?P<p>[0-9.]+)\))?"
+    # optional dp provenance marker (cortex/dp.py, exponential-build 3
+    # B4): additive — an absent marker leaves the match unchanged, so
+    # the exact export format is byte-identical to before
+    r"(?:\s*\(dp:\s*epsilon=(?P<dp>[0-9.]+)\))?\s*$")
 _DATE_RE = re.compile(r"^\((.+)\)\s*$")
 
 
@@ -196,6 +200,10 @@ def parse(text: str) -> Tuple[List[Dict[str, Any]], List[str]]:
             "n": max(1, int(m.group("n") or 1)),
             "p": min(1.0, max(0.0, float(m.group("p") or 0.0))),
             "label": 1 if m.group("sign") == "+" else 0,
+            # the dp noising provenance (cortex/dp.py), when present:
+            # rides along as row metadata so a reviewer of an IMPORTED
+            # state can still see which rows carry noised evidence
+            "dp_epsilon": float(m.group("dp")) if m.group("dp") else None,
         })
         if len(rows) > MAX_PAIRS:
             warnings.append(f"line {lineno}: over the {MAX_PAIRS}-row import "

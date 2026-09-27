@@ -32,7 +32,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 __all__ = ["STATE_KEY", "predict", "resolve", "brier_score",
-           "calibration_curve", "open_predictions", "summary"]
+           "calibration_curve", "open_predictions", "summary",
+           "murphy_decomposition"]
 
 STATE_KEY = "personal_predictions"
 
@@ -131,8 +132,103 @@ def summary(entries: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "brier": brier_score(entries),
         "calibration": calibration_curve(entries),
+        "murphy": murphy_decomposition(entries),
         "open": len(open_predictions(entries)),
         "resolved": sum(1 for e in entries.values()
                         if e["outcome"] is not None),
         "framing": _FRAMING,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Murphy (1973) calibration decomposition (exponential-build-4 C)
+# ---------------------------------------------------------------------------
+
+_MURPHY_FRAMING = (
+    "Murphy 1973 vector partition of the Brier score: BS = REL - RES "
+    "+ UNC + D (the exact finite-sample form; the two-term folding "
+    "convention folds the within-bin dispersion D into REL). "
+    "REL(reliability) is the penalty for the gap between your stated "
+    "confidence and the actual hit rate within each bin; "
+    "RES(resolution) is the credit for bins whose outcomes actually "
+    "DIVERGE from the base rate; UNC(uncertainty) is the irreducible "
+    "base-rate term, the score of always saying the base rate; D is "
+    "the within-bin spread of your own stated probabilities. Lower "
+    "REL says your 70% events happen ~70% of the time; higher RES "
+    "says your confidence separates outcomes; higher D says your "
+    "stated probabilities scatter within their own bins."
+)
+
+
+def murphy_decomposition(entries: Dict[str, Dict[str, Any]],
+                         bins: int = 5) -> Dict[str, Any]:
+    """The Murphy 1973 partition of the Brier score over resolved
+    predictions (Murphy, "A New Vector Partition of the Probability
+    Score", J. Applied Meteorology 12: 595-600):
+
+        BS = REL - RES + UNC
+
+    computed over the SAME bins calibration_curve uses (fewer/wider
+    than a reliability diagram — a personal log is small). Which
+    category is miscalibrated is now a per-component answer instead of
+    one aggregate scalar: a high REL with decent RES means "right
+    outcomes, wrong confidence"; low RES means "confidence that does
+    not separate outcomes"; UNC is the base rate itself and is nobody's
+    fault. Small-sample honesty: with fewer resolved predictions than
+    bins, the per-bin averages are thin and the report says so (n per
+    bin is always carried)."""
+    resolved = [e for e in entries.values() if e["outcome"] is not None]
+    n = len(resolved)
+    if n == 0:
+        return {"bs": None, "rel": None, "res": None, "unc": None,
+                "n": 0, "framing": _MURPHY_FRAMING,
+                "note": "nothing resolved yet — no decomposition is "
+                        "invented from an empty ledger"}
+    base = sum(1.0 if e["outcome"] else 0.0 for e in resolved) / n
+    bucket: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+    for e in resolved:
+        b = min(int(e["p"] * bins), bins - 1)
+        bucket[b].append(e)
+    rel = 0.0
+    res = 0.0
+    disp = 0.0
+    per_bin = []
+    for b in sorted(bucket):
+        items = bucket[b]
+        nk = len(items)
+        p_bar = sum(e["p"] for e in items) / nk
+        o_bar = sum(1.0 if e["outcome"] else 0.0 for e in items) / nk
+        rel += (nk / n) * (p_bar - o_bar) ** 2
+        res += (nk / n) * (o_bar - base) ** 2
+        disp += (nk / n) * sum((e["p"] - p_bar) ** 2 for e in items) / nk
+        per_bin.append({"bucket": b, "n": nk,
+                        "avg_p": round(p_bar, 3),
+                        "hit_rate": round(o_bar, 3)})
+    unc = base * (1.0 - base)
+    bs = sum((e["p"] - (1.0 if e["outcome"] else 0.0)) ** 2
+             for e in resolved) / n
+    thin = n < bins
+    # honesty about the algebra: the three-term Murphy identity is
+    # exact IN EXPECTATION; a finite sample carries a covariance
+    # residual (within-bin outcome spread vs stated-probability
+    # spread). It is computed and SHOWN, never folded silently into a
+    # component to make the identity look exact.
+    residual = bs - (rel - res + unc)
+    return {
+        "bs": round(bs, 4),
+        "rel": round(rel, 4),
+        "res": round(res, 4),
+        "unc": round(unc, 4),
+        "d": round(disp, 4),
+        "residual": round(residual, 6),
+        "base_rate": round(base, 3),
+        "per_bin": per_bin,
+        "n": n,
+        "thin_sample": thin,
+        "framing": _MURPHY_FRAMING,
+        "note": ("fewer resolved predictions than bins: per-bin averages "
+                 "are thin, treat the split as indicative only"
+                 if thin else
+                 "the three-term identity is exact in expectation; the "
+                 "finite-sample covariance residual is shown, not hidden"),
     }

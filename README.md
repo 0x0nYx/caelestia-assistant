@@ -160,6 +160,9 @@ caelestia-assist brain prefs                 # what it believes about you
 
 # Opt-in personal tools (NOT part of the #120 shell surface)
 python3 -m assistant.brain.personal --help
+python3 -m assistant.brain.personal bridges ~/notes       # bridge notes: betweenness vs PageRank (Burt 1992 brokerage)
+python3 -m assistant.brain.personal drift v1 v2 v3 v4     # topic drift: the ADWIN+Page-Hinkley consensus over vault snapshots
+python3 -m assistant.brain.personal cards ~/notes         # cloze DRAFTS (mandatory review; scheduling only after approval)
 
 # Developer-workflow drafting (NOT part of the #120 shell surface)
 python3 -m assistant.devflow commit < <(git diff --numstat)   # commit skeleton

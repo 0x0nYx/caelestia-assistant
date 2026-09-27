@@ -47,8 +47,9 @@ the only randomness is the documented seeded init.
 """
 from __future__ import annotations
 
+import math
 import random
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..nlp import tokens
 
@@ -57,7 +58,8 @@ DEFAULT_ITERS = 300
 DEFAULT_TOL = 1e-9
 DEFAULT_MAX_TERMS = 2000
 
-__all__ = ["term_matrix", "nmf", "extract"]
+__all__ = ["term_matrix", "nmf", "extract", "topic_mix",
+            "drift_report", "_percentile_ranks", "build_basis"]
 
 
 def term_matrix(notes: Dict[str, Dict[str, Any]],
@@ -245,3 +247,225 @@ def extract(notes: Dict[str, Dict[str, Any]], k: int = 3,
                 "truth; the error/converged fields say how well the "
                 "k-topic mixture explains the counts",
     }
+
+
+# ---------------------------------------------------------------------------
+# Shared percentile helper + windowed topic drift (exponential-build-4 C)
+# ---------------------------------------------------------------------------
+
+
+def _percentile_ranks(values: Dict[str, float]) -> Dict[str, float]:
+    """Rank-based percentile in [0, 100] per key (deterministic: ties
+    share the mean rank). Shared by the graph bridge view and the
+    drift report — ONE definition, never two."""
+    if not values:
+        return {}
+    keys = sorted(values)
+    ordered = sorted(keys, key=lambda k: values[k])
+    n = len(ordered)
+    out: Dict[str, float] = {}
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and values[ordered[j + 1]] == values[ordered[i]]:
+            j += 1
+        mean_rank = (i + j) / 2.0
+        pct = (mean_rank / (n - 1)) * 100.0 if n > 1 else 0.0
+        for k in ordered[i:j + 1]:
+            out[k] = pct
+        i = j + 1
+    return out
+
+
+def _counts_rows(notes: Dict[str, Dict[str, Any]],
+                 vocab: List[str]) -> List[List[float]]:
+    """Doc-by-term counts over a FIXED vocabulary (the shared basis's
+    own term order) — the projection input."""
+    from ..nlp import tokens as _tokens
+    vocab_set = set(vocab)
+    rows: List[List[float]] = []
+    for rel in sorted(notes):
+        counts: Dict[str, float] = {}
+        for tok in _tokens(notes[rel]["text"]):
+            if tok in vocab_set:
+                counts[tok] = counts.get(tok, 0.0) + 1.0
+        rows.append([counts.get(t, 0.0) for t in vocab])
+    return rows
+
+
+def _project_w(rows: List[List[float]], h: List[List[float]],
+               iters: int = 32) -> List[List[float]]:
+    """Non-negative least-squares projection of V onto the FIXED basis
+    H (solve V ~= W H for W): standard multiplicative updates with H
+    frozen (Lee & Seung's W-update half). Deterministic, no fitting
+    beyond the fixed-iteration refinement."""
+    n, m = len(rows), len(rows[0]) if rows else 0
+    k = len(h)
+    if n == 0 or m == 0 or k == 0:
+        return [[0.0] * k for _ in rows]
+    w = [[1.0] * k for _ in range(n)]
+    hh = [[sum(h[a][t] * h[b][t] for t in range(m)) for b in range(k)]
+          for a in range(k)]
+    for _ in range(iters):
+        for i in range(n):
+            for a in range(k):
+                num = sum(rows[i][t] * h[a][t] for t in range(m))
+                den = sum(w[i][b] * hh[a][b] for b in range(k))
+                if den > 1e-12:
+                    w[i][a] = max(1e-12, w[i][a] * num / den)
+    return w
+
+
+def build_basis(all_notes: Dict[str, Dict[str, Any]], k: int = 3
+                ) -> Dict[str, Any]:
+    """ONE NMF basis over the union of every snapshot's notes. Mixes
+    are only comparable across time when they come from the SAME basis
+    — per-snapshot NMF would change the basis under the signal, which
+    is unsound (the build-4 test suite caught exactly that)."""
+    docs, terms, rows = term_matrix(all_notes)
+    if not docs or not terms or len(docs) < 2:
+        return {"terms": [], "h": [], "k": 0}
+    topics_k = max(1, min(k, len(docs) - 1, len(terms)))
+    factors = nmf(rows, topics_k)
+    return {"terms": terms, "h": factors["H"], "k": topics_k,
+            "n_docs": len(docs),
+            "relative_error": round(factors.get("error", 0.0), 4)}
+
+
+def topic_mix(notes: Dict[str, Dict[str, Any]], basis: Dict[str, Any]
+              ) -> Dict[str, Any]:
+    """One snapshot's topic mix AGAINST the shared basis: projected
+    document loadings W, column-summed and L1-normalized. Empty vocab
+    or no docs -> an empty mix, honestly (the stream carries the gap)."""
+    terms = basis.get("terms") or []
+    h = basis.get("h") or []
+    if not terms or not h:
+        return {"mix": [], "n_docs": 0}
+    rows = _counts_rows(notes, terms)
+    if not rows or not any(any(r) for r in rows):
+        return {"mix": [], "n_docs": len(rows)}
+    w = _project_w(rows, h)
+    k = len(h)
+    col = [sum(row[t] for row in w) for t in range(k)]
+    total = sum(col)
+    mix = [c / total for c in col] if total > 0 else col
+    return {"mix": [round(m, 6) for m in mix], "n_docs": len(rows)}
+
+
+def _cosine(a: List[float], b: List[float]) -> float:
+    if not a or len(a) != len(b):
+        return 0.0
+    num = sum(x * y for x, y in zip(a, b))
+    da = math.sqrt(sum(x * x for x in a))
+    db = math.sqrt(sum(y * y for y in b))
+    if da == 0.0 or db == 0.0:
+        return 0.0
+    return max(0.0, min(1.0, num / (da * db)))
+
+
+def drift_report(snapshots: List[Tuple[str, Dict[str, Dict[str, Any]]]],
+                 k: int = 3,
+                 consensus: Optional[Any] = None) -> Dict[str, Any]:
+    """Windowed topic drift: the EXISTING ADWIN + Page-Hinkley
+    consensus (cortex/adwin.py DriftConsensus) reapplied — verbatim,
+    unmodified — to a new signal: the cosine similarity between
+    consecutive daily topic mixes of the vault, all mixes projected on
+    ONE basis built from the union corpus (build_basis). No second
+    drift detector is written here; the reapplication of the existing
+    machinery to a different stream is the design intent.
+
+    ``snapshots``: [(date_str, {note_id: {text: ...}})] in
+    chronological order — the caller's snapshot cadence IS the window.
+    The report names the topic gaining the most loading mass in the
+    recent half vs the older half (an NMF co-occurrence cluster, per
+    the module's honesty note — NOT a semantic topic).
+
+    Fewer than 4 snapshots (or no shift the detectors' own bound can
+    see) is an honest non-alarm, never a fabricated trend."""
+    from ...cortex.adwin import DriftConsensus  # the existing machinery
+
+    if len(snapshots) < 4:
+        return {"drifted": False, "n_snapshots": len(snapshots),
+                "note": "fewer than 4 snapshots: no drift verdict is "
+                        "possible without inventing one — bring more "
+                        "snapshot history"}
+    union: Dict[str, Dict[str, Any]] = {}
+    for _date, notes in snapshots:
+        for nid, note in notes.items():
+            union[nid] = note
+    basis = build_basis(union, k)
+    if not basis["terms"]:
+        return {"drifted": False, "n_snapshots": len(snapshots),
+                "note": "the union corpus has no vocabulary — nothing "
+                        "to build a basis from"}
+    consensus = consensus if consensus is not None else DriftConsensus()
+    sims: List[Tuple[str, float]] = []
+    mixes: List[List[float]] = []
+    # SIGNAL CONDITIONING (the one added step between the NMF signal
+    # and the detectors, documented because it is a choice): the
+    # existing ADWIN/Page-Hinkley machinery consumes a BINARY stream
+    # by contract — update(accepted: bool) binarizes its input, so
+    # feeding raw similarities would silently destroy them. The
+    # boolean fed is "the mix HELD": cosine >= 95% of the running
+    # maximum. A sustained mix change is a sustained False run, which
+    # is exactly the acceptance-drop shape those detectors were built
+    # for. 5% is fixed and stated, not fitted.
+    running_max = 0.0
+    for i in range(1, len(snapshots)):
+        prev = topic_mix(snapshots[i - 1][1], basis)
+        curr = topic_mix(snapshots[i][1], basis)
+        if not prev["mix"] or not curr["mix"]:
+            continue  # empty snapshot: no similarity is invented
+        mixes.append(curr["mix"])
+        sim = _cosine(prev["mix"], curr["mix"])
+        running_max = max(running_max, sim)
+        held = sim >= 0.95 * running_max if running_max > 0 else True
+        sims.append((snapshots[i][0], sim))
+        consensus.update(held)
+    status = consensus.status()
+    half = max(1, len(mixes) // 2)
+    gained: List[Dict[str, Any]] = []
+    labels = None
+    if mixes and mixes[0]:
+        width = len(mixes[0])
+        old_mean = [sum(m[t] for m in mixes[:half]) / half for t in range(width)]
+        new_mean = [sum(m[t] for m in mixes[half:]) / (len(mixes) - half)
+                    for t in range(width)]
+        # label each topic by its top terms off the shared basis
+        labels = []
+        for t in range(width):
+            pairs = sorted(zip(basis["terms"], basis["h"][t]),
+                           key=lambda p: (-p[1], p[0]))
+            labels.append([term for term, _w in pairs[:4]])
+        for t in range(width):
+            gained.append({"topic": t, "top_terms": labels[t],
+                           "old_mean": round(old_mean[t], 4),
+                           "new_mean": round(new_mean[t], 4),
+                           "delta": round(new_mean[t] - old_mean[t], 4)})
+        gained.sort(key=lambda g: -g["delta"])
+    return {
+        "drifted": bool(status.get("flag_drift")),
+        "detector_status": status,
+        "similarity_stream": [(d, round(s, 4)) for d, s in sims],
+        "gaining_topic": gained[0] if gained and gained[0]["delta"] > 0 else None,
+        "topic_deltas": gained,
+        "n_snapshots": len(snapshots),
+        "note": "ADWIN + Page-Hinkley consensus (binary contract) over "
+                "'mix held' booleans conditioned from consecutive-mix "
+                "cosine similarity (>= 95% of running max) on one "
+                "shared NMF basis; topics are co-occurrence clusters, "
+                "not semantic themes",
+    }
+
+
+def _cosine(a: List[float], b: List[float]) -> float:
+    if not a or len(a) != len(b):
+        return 0.0
+    num = sum(x * y for x, y in zip(a, b))
+    da = math.sqrt(sum(x * x for x in a))
+    db = math.sqrt(sum(y * y for y in b))
+    if da == 0.0 or db == 0.0:
+        return 0.0
+    return max(0.0, min(1.0, num / (da * db)))
+
+

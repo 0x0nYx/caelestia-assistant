@@ -127,7 +127,10 @@ class Graph:
                     for t in out_v:
                         new[t] += share
                     continue
-                per = [(t, weights.get((v, t), 1.0)) for t in out_v]
+                # sorted: cross-process determinism (set order follows
+                # PYTHONHASHSEED; the weighted accumulation must not)
+                per = [(t, weights.get((v, t), 1.0))
+                       for t in sorted(out_v)]
                 strength = sum(w for _t, w in per) / len(per)
                 for t, w in per:
                     new[t] += damping * rank[v] * w / len(per)
@@ -187,7 +190,7 @@ class Graph:
             new_hub = {
                 v: sum(new_auth[t] * (1.0 if weights is None
                                       else weights.get((v, t), 1.0))
-                       for t in self.out[v])
+                       for t in sorted(self.out[v]))
                 for v in nodes}
             s = sum(new_hub.values())
             if s > 0:

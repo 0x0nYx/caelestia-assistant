@@ -782,6 +782,14 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                     help="settings target whose schedules/history to use")
     sc.add_argument("--ledger", metavar="PATH", default=None,
                     help="brain ledger for file (default: DEFAULT_LEDGER)")
+    rf = sub.add_parser("refit", help="F28 guarded weight re-fit: replay "
+                                      "the example log through a fresh "
+                                      "logistic, measure candidate vs "
+                                      "current on the dev arena, adopt "
+                                      "only on no regression")
+    rf.add_argument("--apply", action="store_true",
+                    help="persist the candidate weights when the ratchet "
+                         "adopts (default: measure and report only)")
     tm = sub.add_parser("telemetry", help="engine coverage/accuracy "
                                          "report; opt-in Laplace-DP export "
                                          "(read-only, stdout only)")
@@ -1039,6 +1047,26 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         except HistoryError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+
+    if args.cmd == "refit":
+        # F28: the guarded re-fit. The arena measurement decides; the
+        # audit trail records every decision; --apply persists the
+        # candidate model ONLY when the ratchet adopted it.
+        from . import refit as refit_mod
+        from .learn import LEARN_KEY
+        from .learn import CortexLearner
+        state = brain_state.load()
+        learner_data = dict(state.get(LEARN_KEY) or {})
+        result = refit_mod.refit_ratchet(learner_data, state)
+        if result["adopted"] and args.apply:
+            learner_data["model"] = result["candidate_model"]
+            state[LEARN_KEY] = learner_data
+        brain_state.save(state)
+        print("\n".join(refit_mod.render_lines(result)))
+        if result["adopted"] and not args.apply:
+            print("(dry-run: re-run with --apply to persist the "
+                  "candidate weights)")
+        return 0
 
     if args.cmd == "telemetry":
         # exponential-build-3 F3: coverage/accuracy-only engine metrics,

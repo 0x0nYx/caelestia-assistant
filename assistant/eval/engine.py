@@ -116,14 +116,20 @@ def _peak_rss_kb() -> int:
 # ---------------------------------------------------------------------------
 
 
-def run_routing(split: str = "dev") -> Dict[str, Any]:
+def run_routing(split: str = "dev",
+                state: "Any | None" = None) -> Dict[str, Any]:
+    """``state`` (F28): inject a RouterState to measure ALTERNATIVE
+    weights (the refit ratchet measures candidate vs current). None
+    means DEFAULT_STATE — the cold-start measurement, unchanged."""
     from assistant.cortex.router import DEFAULT_STATE, Router
 
     data = load_set("routing", split)
     router = Router()
     results: List[Dict[str, Any]] = []
     for item in data["items"]:
-        res = router.route(item["text"], state=DEFAULT_STATE, k=5)
+        res = router.route(item["text"],
+                           state=state if state is not None else DEFAULT_STATE,
+                           k=5)
         cands = [(c.surface, c.kind) for c in res.candidates[:3]]
         expect_verdict = item.get("expect_verdict")
         if expect_verdict:

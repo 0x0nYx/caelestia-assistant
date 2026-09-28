@@ -600,6 +600,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--profile-delete", metavar="NAME", default=None,
         help="delete one saved profile by name (an explicit command)",
     )
+    gate3.add_argument(
+        "--profile-whatif", metavar="NAME", default=None,
+        help="read-only composite preview (F11): per-source consequences, "
+             "the conflicts the source order resolved, the blast radius by "
+             "feature area, and the projected-state sanity verdicts the "
+             "applier itself would enforce — before any consent",
+    )
     arg_parser.add_argument(
         "--also", action="append", dest="also_sources",
         metavar="SRC", default=None,
@@ -1468,6 +1475,25 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 1
         print(f"deleted profile {result['deleted']!r} "
               f"({result['sources']} source(s))")
+        return 0
+
+    if args.profile_whatif is not None:
+        # F11: composite what-if for a saved profile. Read-only: plan,
+        # project through the cited interaction graph per source and for
+        # the composite, run the applier's own sanity checks against the
+        # projected state, and render. Nothing is applied or written.
+        from . import history as _history
+        from . import planner as _planner_mod
+        from . import profile_preview
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            view = profile_preview.build(target, args.profile_whatif)
+        except (profiles_mod.ProfileError, _history.HistoryError,
+                _planner_mod.PlannerError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(profile_preview.render(view)))
         return 0
 
     if args.list_tools:

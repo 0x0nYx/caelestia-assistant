@@ -16,6 +16,7 @@
   caelestia-assist genius <command> ...             direct domain access (math/stats/...)
   caelestia-assist agent "goal" [--simulate]        agentic orchestrator (consent-gated)
   caelestia-assist api < request.json               JSON bridge for the brain (QML/IPC)
+  caelestia-assist eval [suite] [--json] [--sealed] the measurement arena (dev/sealed sets)
 
 Verbless front door: a first token that matches no
 verb above is no longer a hard error. A token within edit distance 2 of
@@ -53,6 +54,14 @@ USAGE = __doc__
 
 # Some modules parse their own subcommand name (pass full argv); others take
 # the remainder (the hub name is the routing token, not a module subcommand).
+def _lazy_eval(argv=None):
+    """eval: the measurement arena (exponential-build-5 F1). Imported
+    lazily: the arena pulls the full router/diagnostics stack and must
+    never sit on the cold-start path of other verbs."""
+    from .eval.cli import main as eval_main
+    return eval_main(argv)
+
+
 ROUTES = {
     "diagnose": (diagnostics_cli.main, True),
     "selfcheck": (diagnostics_cli.main, True),
@@ -87,6 +96,7 @@ ROUTES = {
     "agent": (agent_cli.main, False),
     # capabilities: the per-install manifest card (read-only listing)
     "capabilities": (lambda _argv=None: (_print_card(), 0)[1], False),
+    "eval": (_lazy_eval, False),
 }
 
 

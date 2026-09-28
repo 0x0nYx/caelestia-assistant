@@ -1,0 +1,42 @@
+{
+ "how": "python3 -m assistant.eval all --json (dev split), exponential-build-5 A1",
+ "metrics": {
+  "abstention.abstain_rate": {
+   "hi": 1.0,
+   "lo": 0.75,
+   "point": 0.9
+  },
+  "diagnosis.rule_hit_rate": {
+   "hi": 1.0,
+   "lo": 0.8,
+   "point": 0.95
+  },
+  "nlplan.exact_rate": {
+   "hi": 0.7667,
+   "lo": 0.4333,
+   "point": 0.6
+  },
+  "nlplan.tool_rate": {
+   "hi": 0.8667,
+   "lo": 0.5667,
+   "point": 0.7333
+  },
+  "routing.precision_among_routed": {
+   "hi": 0.9296,
+   "lo": 0.7746,
+   "point": 0.8592
+  },
+  "routing.top1_rate": {
+   "hi": 0.8667,
+   "lo": 0.6889,
+   "point": 0.7778
+  },
+  "routing.top3_rate": {
+   "hi": 0.9667,
+   "lo": 0.8444,
+   "point": 0.9111
+  }
+ },
+ "note": "Ratchet floors for the dev arena. A metric fails the ratchet test when it drops below its recorded bootstrap lower bound (lo). Baselines move only through a reviewed commit that states why. Latency/RSS are measurements, not ratchets (machine-dependent).",
+ "recorded": "2026-09-28"
+}

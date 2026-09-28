@@ -754,6 +754,34 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     cx.add_argument("--ledger", metavar="PATH", default=None,
                     help="fit the preference model from this brain ledger "
                          "instead of the DEFAULT_LEDGER")
+    sc = sub.add_parser("schedule", help="F19 workspace schedules "
+                                         "(pull-based; nothing runs by "
+                                         "itself)")
+    sc.add_argument("action", choices=["save", "list", "delete", "eval",
+                                        "file"],
+                    help="save = define (needs --name and --profile or "
+                         "--preset, condition via --window/--on-battery); "
+                         "list/delete/eval are read-only; file = file the "
+                         "FIRING schedules into the brain ledger")
+    sc.add_argument("--name", default=None, help="schedule name")
+    sc.add_argument("--profile", default=None,
+                    help="action: a saved profile (F9)")
+    sc.add_argument("--preset", default=None, help="action: a preset name")
+    sc.add_argument("--window", default=None,
+                    help="condition: daily HH:MM-HH:MM (may wrap midnight)")
+    sc.add_argument("--on-battery", default=None,
+                    choices=["true", "false"],
+                    help="condition: fire when discharging (true) or "
+                         "charging/on AC (false)")
+    sc.add_argument("--now", dest="sched_now", metavar="ISO", default=None,
+                    help="eval/file: anchor time (default: the real clock "
+                         "— eval is a pull-based verb)")
+    sc.add_argument("--probe", action="store_true",
+                    help="eval/file: read the real power state (read-only)")
+    sc.add_argument("--file", metavar="PATH", default=None,
+                    help="settings target whose schedules/history to use")
+    sc.add_argument("--ledger", metavar="PATH", default=None,
+                    help="brain ledger for file (default: DEFAULT_LEDGER)")
     tm = sub.add_parser("telemetry", help="engine coverage/accuracy "
                                          "report; opt-in Laplace-DP export "
                                          "(read-only, stdout only)")
@@ -938,6 +966,79 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                                                 model=model)
         print("\n".join(context_mod.render_lines(view)))
         return 0
+
+    if args.cmd == "schedule":
+        # F19: pull-based workspace schedules. eval/file are explicit
+        # verbs; nothing runs by itself, ever.
+        from . import schedules as sched_mod
+        from ..settings.cli import default_target
+        from ..settings.history import HistoryError
+        target = Path(args.file) if args.file else default_target()
+        try:
+            if args.action == "save":
+                if not args.name:
+                    print("error: save needs --name", file=sys.stderr)
+                    return 2
+                on_battery = (None if args.on_battery is None
+                              else args.on_battery == "true")
+                entry = sched_mod.save(
+                    target, args.name, profile=args.profile,
+                    preset=args.preset, window=args.window,
+                    on_battery=on_battery)
+                print(f"saved schedule {entry['name']!r} "
+                      f"(window {entry.get('window')}, "
+                      f"on-battery {entry.get('on_battery')})")
+                print("check it with: cortex schedule eval")
+                return 0
+            if args.action == "list":
+                saved = sched_mod.list_schedules(target)
+                if not saved:
+                    print("no schedules defined; define one with "
+                          "schedule save --name N --profile P "
+                          "--window HH:MM-HH:MM")
+                for s in saved:
+                    print(f"  {s['name']:<20} action={s['action']} "
+                          f"window={s.get('window')} "
+                          f"on-battery={s.get('on_battery')}")
+                return 0
+            if args.action == "delete":
+                if not args.name:
+                    print("error: delete needs --name", file=sys.stderr)
+                    return 2
+                result = sched_mod.delete(target, args.name)
+                print(f"deleted schedule {result['deleted']!r}")
+                return 0
+            # eval / file
+            from datetime import datetime as _dt
+            if args.sched_now:
+                try:
+                    now = _dt.fromisoformat(args.sched_now)
+                except ValueError:
+                    print("error: --now needs an ISO-8601 datetime",
+                          file=sys.stderr)
+                    return 2
+            else:
+                now = _dt.now()
+            power = (context_probe_power() if args.probe else None)
+            result = sched_mod.evaluate(target, now=now, power=power)
+            print("\n".join(sched_mod.render_eval(result)))
+            if args.action == "file":
+                from ..brain.cli import DEFAULT_LEDGER
+                from ..brain.ledger import Ledger
+                ledger = Ledger(Path(args.ledger) if args.ledger
+                                else DEFAULT_LEDGER)
+                stats = sched_mod.file_firing(result, ledger, now=now)
+                print(f"filed {stats['filed']} firing schedule(s) into "
+                      f"the ledger (pending duplicates skipped: "
+                      f"{stats['skipped_pending']}, recently decided "
+                      f"skipped: {stats['skipped_cooldown']})")
+            return 0
+        except sched_mod.ScheduleError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        except HistoryError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
 
     if args.cmd == "telemetry":
         # exponential-build-3 F3: coverage/accuracy-only engine metrics,
@@ -1371,6 +1472,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     if argv[0] in ("report", "recall", "reset-learning", "suggest", "review"):
         return cmd_cortex(argv)
     return cmd_cortex(argv)
+
+
+def context_probe_power():
+    """One read-only power probe (F30's reader), shared by the schedule
+    verbs."""
+    from . import context as context_mod
+    return context_mod.read_power_state()
 
 
 if __name__ == "__main__":

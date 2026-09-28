@@ -333,7 +333,18 @@ class OpsResolutionTests(unittest.TestCase):
         self.assertEqual(ops[0]["value"], 1.0)
 
     def test_string_tool_is_honest(self):
-        ops, notes = ops_for_candidate("setFontMonoFamily", {}, "set font")
+        # The 2026-09-28 upstream resync removed the registry's only
+        # string-kind tool (setFontMonoFamily), so this guard now builds a
+        # synthetic string spec: the honesty property (string tools never
+        # produce ops from free text; the note says so) must survive even
+        # when the class is empty in the shipped registry.
+        from unittest import mock
+        from assistant.settings.registry import ToolSpec
+        synthetic = ToolSpec(name="setTestString", path="test.string",
+                             kind="string", default="")
+        with mock.patch("assistant.cortex.pipeline.tool_by_name",
+                        return_value=synthetic):
+            ops, notes = ops_for_candidate("setTestString", {}, "set font")
         self.assertEqual(ops, [])
         self.assertTrue(any("string" in n for n in notes))
 

@@ -142,7 +142,7 @@ The natural-language grammar covers a frozen surface of 18 everyday tools
 border thickness, launcher size, bezel mode, notification counts) — each
 grounded in the shipped Nexus UI and addressable by plain words. The full
 registry underneath is generated straight from the shell's own C++ config
-headers plus a transcription of every shipped Nexus control: **277 tools in
+headers plus a transcription of every shipped Nexus control: **272 tools in
 19 feature-area groups**, every tool double-cited (C++ declaration line +
 shipped control), with the leaves that are deliberately not exposed
 (credentials, endpoints, the master switch, kwinrc companions, no shipped
@@ -178,7 +178,7 @@ python3 -m assistant.cortex.cli cortex report
 
 What it adds over the frozen grammar:
 
-- **All 277 tools become word-addressable** through their name atoms,
+- **All 272 tools become word-addressable** through their name atoms,
   paths, groups, enum values and the seeded synonym lexicon — with typo
   tolerance ("transparncy" still routes) and stemming.
 - **Compound requests split and compose**: "disable blur and move the dock
@@ -276,7 +276,7 @@ genius layer inline, read-only, with its evidence.
    `DRAFT — NOT SUBMITTED TO ANYWHERE`.
 5. **Settings editing — deterministic intent parsing (separate module).**
    A natural-language settings request is parsed by a fixed regex grammar —
-   no ML, no network — into validated tool calls against the 277-tool
+   no ML, no network — into validated tool calls against the 272-tool
    registry described above. The 18 everyday tools answer plain words; the
    rest are addressed by name through `--call`. AMBIGUOUS asks get a
    clarifying question, NO_INTENT lists the supported settings, `--explain`
@@ -347,7 +347,7 @@ configured via `aiconfig.hpp`) with provider integrations. The CLI layers
 of this assistant remain independent of it on purpose: reviewable, offline,
 standards-based. `shell/services/SettingsTools.qml` is the one deliberate,
 separately-reviewable touchpoint between the two: a native QML singleton
-that exposes the same generated 277-tool registry (embedded from
+that exposes the same generated 272-tool registry (embedded from
 `assistant/settings/tools.json`, byte-checked by a Python test) to the
 sidebar's agent loop as 8 settings meta-tools with preview-then-confirm
 cards — property writes through `GlobalConfig`, no runtime Python. The QML

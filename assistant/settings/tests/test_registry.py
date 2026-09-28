@@ -85,15 +85,15 @@ GOLDEN_CORE: tuple = (
 
 # Generated-registry pins (regenerating tools.json is a deliberate act that
 # must update these numbers together with the artifact).
-EXPANSION_COUNT = 277
+EXPANSION_COUNT = 272
 GROUP_COUNTS = {
-    "bar": 58, "dock": 5, "appearance": 6, "effects": 9, "animations": 1,
+    "bar": 58, "dock": 5, "appearance": 5, "effects": 9, "animations": 1,
     "notifications": 13, "launcher": 18, "lockscreen": 14,
     "wallpaper-scheme": 36, "overview": 16, "osd": 7, "dashboard": 21,
-    "sidebar": 3, "nexus": 1, "border": 3, "general": 12, "services": 17,
+    "sidebar": 3, "nexus": 1, "border": 3, "general": 8, "services": 17,
     "utilities": 27, "audio": 10,
 }
-NOT_EXPOSED_COUNT = 427
+NOT_EXPOSED_COUNT = 364
 
 # Five NEW tools whose C++ citation lines are needle-pinned (drift guard).
 NEW_TOOL_PINS = (

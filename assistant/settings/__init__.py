@@ -1,6 +1,6 @@
 """Layer 5 of the caelestia assistant: natural-language settings editing
 (#120) — the module that a 18-tool natural-language core answers, generated
-277-tool registry, explain, bounded undo, presets — the module that
+generated registry (272 tools at the 2026-09-28 resync), explain, bounded undo, presets — the module that
 answers "change this setting" while the four troubleshooting layers answer
 "what is broken".
 
@@ -32,7 +32,7 @@ Guarantees shared by every module in this package:
   calls through the ordinary planner path (build-time validated; a preset
   is never a bespoke code path).
 - Validated before written: every value is checked against the frozen
-  277-tool registry (types, ranges, enums; 19 feature-area groups — see
+  generated registry (types, ranges, enums; 19 feature-area groups — see
   --list-tools, tools.json for the generated table and the not_exposed
   reasons). Absolute out-of-range values
   are REJECTED entries — never silently clamped or dropped — and any

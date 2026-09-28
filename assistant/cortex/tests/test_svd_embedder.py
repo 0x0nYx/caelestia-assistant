@@ -78,7 +78,10 @@ class RefactorFingerprintTests(unittest.TestCase):
                   "workspace pill overview"]
         blob = repr([[round(x, 12) for x in e.embed(p)] for p in probes])
         self.assertEqual(
-            hashlib.sha256(blob.encode()).hexdigest()[:16], "7de6def72fc21c43")
+            hashlib.sha256(blob.encode()).hexdigest()[:16], "588d52c5fc0ed311")
+        # ^ pin spans the generated-registry corpus; it updates on
+        # registry resyncs (2026-09-28: 277 -> 272 upstream), never on
+        # refactors of the embedder itself
 
 
 class SvdCapabilityTests(unittest.TestCase):

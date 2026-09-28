@@ -1,6 +1,6 @@
 """The universal intent router — the cortex layer's decision core.
 
-Ranks EVERY routable surface (277 registry tools, 5 presets, the coarse
+Ranks EVERY routable surface (every registry tool, 5 presets, the coarse
 explain/undo/history/scheme/wallpaper/diagnose/search/brain/issue
 surfaces) against one user phrase, using four complementary signals:
 
@@ -33,7 +33,7 @@ On top of the four signals sit two DETERMINISTIC structural layers
   and penalizes bool/enum ones; a bool cue boosts bool tools; a
   position cue and literal enum-value words boost enum tools. This is
   the router-side mirror of parser.py §3.3 step 5's direction classes,
-  generalized to all 277 tools via the registry's kind metadata.
+  generalized to every registry tool via the registry's kind metadata.
 
 Verdicts (honest, never a silent guess):
 

@@ -1,4 +1,4 @@
-"""Fuzzy tool-name search over the 277-tool registry (§6.2).
+"""Fuzzy tool-name search over the generated tool registry (§6.2).
 
 The bit-parallel Levenshtein automaton (Wu & Manber 1992, full-string
 variant) is fuzzed against a reference two-row DP here, and suggest_tools'

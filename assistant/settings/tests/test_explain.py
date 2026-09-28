@@ -93,7 +93,7 @@ class ExplainTests(unittest.TestCase):
         self.assertIn("The bar.scale is currently set to 1.2", result["answer"])
         self.assertIn("range 0.6-1.6", result["answer"])
         self.assertIn("default 1", result["answer"])
-        self.assertIn("barconfig.hpp:233", result["answer"])
+        self.assertIn("barconfig.hpp:214", result["answer"])
 
     def test_unset_key_uses_registry_default(self) -> None:
         result = explain_fn("border.thickness", self.target)

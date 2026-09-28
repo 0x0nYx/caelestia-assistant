@@ -125,10 +125,20 @@ def run_routing(split: str = "dev") -> Dict[str, Any]:
     for item in data["items"]:
         res = router.route(item["text"], state=DEFAULT_STATE, k=5)
         cands = [(c.surface, c.kind) for c in res.candidates[:3]]
+        expect_verdict = item.get("expect_verdict")
+        if expect_verdict:
+            # Pre-declared rule (2026-09-28 registry resync): an item whose
+            # accepted tool was REMOVED upstream expects the honest
+            # out-of-ontology verdict, never a confident route to a
+            # coincidental tool. A confident ROUTE here counts as a
+            # confident-wrong, which is exactly the signal we want.
+            top1_ok = res.verdict == expect_verdict
+        else:
+            top1_ok = bool(cands and cands[0][0] in item["accept"])
         results.append({
             "id": item["id"], "text": item["text"],
             "verdict": res.verdict, "top3": cands,
-            "top1_ok": bool(cands and cands[0][0] in item["accept"]),
+            "top1_ok": top1_ok,
             "top3_ok": any(s in item["accept"] for s, _k in cands),
             "accept": item["accept"],
         })

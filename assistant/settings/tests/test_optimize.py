@@ -1,6 +1,6 @@
 """settings.optimize tests — profiles, Pareto, AC-3, synthesis.
 
-Everything is tested against the REAL 277-tool registry (tools.json), the
+Everything is tested against the REAL generated registry (tools.json), the
 same discipline the rest of the settings layer's tests follow."""
 import unittest
 

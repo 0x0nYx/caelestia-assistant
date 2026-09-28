@@ -53,8 +53,8 @@ class BuildTests(unittest.TestCase):
             self.assertIn("label", n)
             self.assertIn("attrs", n)
             types[n["type"]] = types.get(n["type"], 0) + 1
-        self.assertEqual(types["tool"], 277)        # the full registry
-        self.assertEqual(types["not_exposed"], 427)  # every hidden path
+        self.assertEqual(types["tool"], 272)        # the full registry
+        self.assertEqual(types["not_exposed"], 364)  # every hidden path
         self.assertEqual(types["preset"], 5)
         self.assertEqual(types["explain_rule"], 11)
         self.assertGreaterEqual(types["file"], 100)  # citation targets
@@ -69,12 +69,12 @@ class BuildTests(unittest.TestCase):
             prov = e["provenance"]
             self.assertIn("source", prov)  # every edge is auditable
             kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
-        self.assertEqual(kinds["sets"], 277)          # tool -> config
+        self.assertEqual(kinds["sets"], 272)          # tool -> config
         self.assertEqual(kinds["affects"], 5)          # the curated table
         self.assertEqual(kinds["explained_by"], 11)
         self.assertEqual(kinds["applies"], 27)          # 5 presets' calls
         self.assertGreaterEqual(kinds["cites"], 100)
-        self.assertGreaterEqual(kinds["member_of"], 277)
+        self.assertGreaterEqual(kinds["member_of"], 272)
 
     def test_every_affects_edge_carries_citation_and_content(self) -> None:
         g = gbuild.build_graph()

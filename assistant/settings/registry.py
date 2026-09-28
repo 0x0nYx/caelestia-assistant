@@ -9,7 +9,7 @@ row carries its citations as ("file:line", "what it evidences") pairs, so
 the provenance travels with the data instead of living only in
 DESIGN.md's appendix.
 
-The registry: an 18-tool hand-frozen core inside a 277-tool generated whole — every scalar leaf
+The registry: an 18-tool hand-frozen core inside the generated whole — every scalar leaf
 that a shipped scalar Nexus control touches. The table is no longer
 hand-maintained here: build_registry.py generates tools.json from the real
 headers (enumerate.py) + the transcribed control table

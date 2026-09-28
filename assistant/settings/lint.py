@@ -41,7 +41,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from .registry import tool_by_path
+from .registry import NOT_EXPOSED, TOOL_COUNT, tool_by_path
 
 FileTarget = Union[str, Path]
 
@@ -148,7 +148,8 @@ def lint(config: Dict[str, Any], specs: Optional[List[Any]] = None) -> List[Dict
                 "message": ("not a registry tool path and not a known "
                             "non-tool leaf: stale, renamed upstream, or "
                             "hand-edited; the shell ignores unknown keys"),
-                "cite": "assistant/settings/tools.json (277 tool paths, 427 not_exposed paths)",
+                "cite": ("assistant/settings/tools.json (%d tool paths, %d not_exposed paths)"
+                          % (TOOL_COUNT, len(NOT_EXPOSED))),
                 "fix": "remove the key, or check the upstream config name",
             })
             continue
@@ -237,7 +238,7 @@ def lint_rules_ok() -> List[str]:
     schema_lint.check_rule_files): every gate rule must name registry paths
     that actually exist, have a severity the renderer understands, and carry
     message/cite/fix strings. Returns a list of failures (empty = OK)."""
-    from .registry import tool_by_path as _tbp
+    from .registry import NOT_EXPOSED, TOOL_COUNT, tool_by_path as _tbp
 
     failures: List[str] = []
     severities = {"error", "warning", "info"}

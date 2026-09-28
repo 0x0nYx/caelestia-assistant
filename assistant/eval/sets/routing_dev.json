@@ -394,9 +394,9 @@
   {
    "id": "r56",
    "text": "change the monospace font",
-   "accept": [
-    "setFontMonoFamily"
-   ]
+   "accept": [],
+   "expect_verdict": "OUT_OF_ONTOLOGY",
+   "note": "upstream removed setFontMonoFamily (dev @ 200ea777, 2026-09-28); the honest expectation is the out-of-ontology verdict, never a confident route to a coincidental tool (e.g. setFontScale)"
   },
   {
    "id": "r57",

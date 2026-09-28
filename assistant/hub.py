@@ -46,6 +46,7 @@ USAGE = __doc__
 ROUTES = {
     "diagnose": ("assistant.diagnostics.cli:main", True),
     "selfcheck": ("assistant.diagnostics.cli:main", True),
+    "doctor": ("assistant.doctor:main", True),
     # rulepack: the signed rule-pack surface (export/import/list/
     # render — exponential-build-3 F1; same parser as diagnose)
     "rulepack": ("assistant.diagnostics.cli:main", True),

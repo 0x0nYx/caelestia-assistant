@@ -726,6 +726,21 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     pw.add_argument("--high", type=float, default=85000.0, metavar="MC",
                     help="thermal high threshold in millidegrees C "
                          "(default 85000 = 85 C)")
+    pz = sub.add_parser("personalize", help="F16 personalized "
+                                            "suggestions mined from your "
+                                            "approved history")
+    pz.add_argument("action", nargs="?", default="list",
+                    choices=["list", "file"],
+                    help="list = read-only mining view; file = file "
+                         "qualifying suggestions into the brain ledger "
+                         "(the #120 proposal surface; you approve/reject "
+                         "there)")
+    pz.add_argument("--file", metavar="PATH", default=None,
+                    help="settings target whose history to mine (default: "
+                         "the settings layer's default shell.json)")
+    pz.add_argument("--ledger", metavar="PATH", default=None,
+                    help="brain ledger path for file (default: the brain "
+                         "CLI's DEFAULT_LEDGER)")
     tm = sub.add_parser("telemetry", help="engine coverage/accuracy "
                                          "report; opt-in Laplace-DP export "
                                          "(read-only, stdout only)")
@@ -840,6 +855,43 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                 print(f"  changepoint: {cp['note']}")
             if r.get("suggestion"):
                 print(f"  {r['suggestion']}")
+        return 0
+
+    if args.cmd == "personalize":
+        # F16: personalized suggestions mined from CONSENTED evidence
+        # (the settings history ring holds only approved applies).
+        # list = read-only; file = writes ONLY the brain ledger, the
+        # same #120 proposal surface every other proposal rides — the
+        # approve/reject decision is the user's, through the existing
+        # flow. Filing is an explicit verb, never a background loop.
+        from . import personalize
+        from ..settings.history import entries as history_entries
+        from ..settings.cli import default_target
+        target = Path(args.file) if args.file else default_target()
+        try:
+            entries = history_entries(target)
+        except Exception as exc:
+            print(f"error: cannot read the settings history at {target}: "
+                  f"{exc}", file=sys.stderr)
+            return 1
+        mined = personalize.mine(entries)
+        if args.action == "list":
+            print("\n".join(personalize.render_lines(mined)))
+            return 0
+        from ..brain.cli import DEFAULT_LEDGER
+        from ..brain.ledger import Ledger
+        ledger = Ledger(Path(args.ledger) if args.ledger else DEFAULT_LEDGER)
+        stats = personalize.file_suggestions(mined, ledger)
+        print(f"filed {stats['filed']} suggestion(s) into "
+              f"{ledger.path} "
+              f"(pending duplicates skipped: "
+              f"{stats['skipped_pending']}, recently decided skipped: "
+              f"{stats['skipped_cooldown']})")
+        if stats["filed"] == 0:
+            print("nothing new to file (already pending, recently "
+                  "decided, or below the evidence floors)")
+        print("decide via: caelestia-assist inbox (the unified "
+              "pending-decisions view; or brain ledger approve|reject)")
         return 0
 
     if args.cmd == "telemetry":

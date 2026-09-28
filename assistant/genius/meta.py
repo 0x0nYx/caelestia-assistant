@@ -310,6 +310,38 @@ def _quoted_or_rest(text: str, marker: str) -> str:
     return text[idx + len(marker):].strip() if idx >= 0 else text
 
 
+def _unclaimed_spans(text: str, claimed_spans: list) -> list:
+    """F7 no-silent-drop: the non-boilerplate spans of ``text`` that no
+    handler claimed. Boilerplate = the question lead-in and single
+    function words; anything else left over is content the request
+    asked about and no handler answered."""
+    claimed = sorted((max(0, s), min(len(text), e)) for s, e in claimed_spans if e > s)
+    # merge
+    merged = []
+    for s, e in claimed:
+        if merged and s <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+        else:
+            merged.append((s, e))
+    uncovered = []
+    pos = 0
+    for s, e in merged + [(len(text), len(text))]:
+        if s > pos:
+            uncovered.append((pos, s))
+        pos = max(pos, e)
+    boilerplate = re.compile(
+        r"^(?:what\s+is|what's|whats|calculate|compute|evaluate|how\s+much\s+is)\b"
+        r"|[?.!,;]|\b(?:is|are|the|of|please|equals?)\b", re.I)
+    out = []
+    for s, e in uncovered:
+        chunk = text[s:e]
+        cleaned = boilerplate.sub(" ", chunk)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if cleaned:
+            out.append(cleaned)
+    return out
+
+
 def _run_domain(domain: str, text: str) -> Dict[str, Any]:
     """Dispatch with parameter extraction. Returns result dict."""
     low = text.lower()
@@ -327,8 +359,54 @@ def _run_domain(domain: str, text: str) -> Dict[str, Any]:
             raise ValueError("could not find an arithmetic expression in the request")
         m = re.search(r"(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)", text, re.I)
         if m:
+            # F7 no-silent-drop (D7): the first percent-of match must not
+            # silently swallow the rest of the request. Whatever content
+            # the match does not claim is surfaced as an AMBIGUOUS verdict
+            # with BOTH readings — never a partial answer presented as
+            # complete.
+            unclaimed = _unclaimed_spans(text, [m.span()])
+            if unclaimed:
+                part, whole = float(m.group(1)), float(m.group(2))
+                return {
+                    "ok": False,
+                    "ambiguous": True,
+                    "readings": [
+                        {"reading": f"{m.group(1)}% of {m.group(2)}",
+                         "value": part / 100.0 * whole,
+                         "claimed": m.group(0)},
+                        {"reading": " + ".join(unclaimed),
+                         "unhandled": True},
+                    ],
+                    "unhandled": unclaimed,
+                    "note": ("the request has parts that do not fold into one "
+                             "expression — answer them separately or rephrase"),
+                }
             return mathengine.percent_of(float(m.group(1)), float(m.group(2)))
-        return mathengine.expression_info(expr)
+        try:
+            return mathengine.expression_info(expr)
+        except mathengine.CalcError:
+            # F7 no-silent-drop: a compound the single-expression parser
+            # cannot fold ("5 + 80 and 12 times 80") is split on the
+            # compound connectors into its readings, each evaluated
+            # separately — AMBIGUOUS with values, never a crash and
+            # never a silent partial.
+            parts = [p.strip() for p in re.split(r"\s+(?:and|also)\s+|;", expr) if p.strip()]
+            readings = []
+            for part in parts:
+                try:
+                    info = mathengine.expression_info(part)
+                    readings.append({"reading": part, "value": info["value"]})
+                except mathengine.CalcError:
+                    readings.append({"reading": part, "unhandled": True})
+            if len(readings) >= 2:
+                return {
+                    "ok": False,
+                    "ambiguous": True,
+                    "readings": readings,
+                    "unhandled": [r["reading"] for r in readings if r.get("unhandled")],
+                    "note": "compound request — each part evaluated separately",
+                }
+            raise
     if domain == "solve_equation":
         eq = re.sub(r"^.*?\bsolve\b[:\s]*", "", text, flags=re.I).strip()
         eq = re.sub(r"\s*(?:for|in terms of)\s+[a-z]\s*$", "", eq, flags=re.I).strip()
@@ -626,7 +704,10 @@ def route_and_do(text: str,
     try:
         result = _run_domain(verdict["domain"], text)
         out["result"] = result
-        out["ok"] = True
+        # F7: an ambiguous result (readings + unhandled spans) is an
+        # honest NEEDS-CLARIFICATION outcome, not a completed answer —
+        # ok reflects that (D7's silent-partial contract).
+        out["ok"] = not bool(isinstance(result, dict) and result.get("ambiguous"))
     except (ValueError, KeyError) as exc:
         out["ok"] = False
         out["error"] = f"{type(exc).__name__}: {exc}"

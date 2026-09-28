@@ -55,10 +55,27 @@ _STEPS_LAST_RE = re.compile(r"\b(?:last|latest|most recent|previous)\b")
 _UNDO_VERB_RE = re.compile(r"\b(?:undo|revert|roll\s?back|restore|take back)\b")
 
 _HOURS_AGO_RE = re.compile(r"\b(\d+|a|an)\s+hours?\s+ago\b")
+_MINUTES_AGO_RE = re.compile(r"\b(\d+|a|an)\s+minutes?\s+ago\b")
 _DAYS_AGO_RE = re.compile(r"\b(\d+|a|an)\s+days?\s+ago\b")
 _TODAY_RE = re.compile(r"\b(?:today|this morning|this afternoon|this evening|tonight)\b")
 _YESTERDAY_RE = re.compile(r"\b(?:yesterday|last night)\b")
 _THIS_WEEK_RE = re.compile(r"\b(?:this week|past week|last week)\b")
+
+# F10: day-part sub-windows ("yesterday morning" is NOT all of yesterday).
+# night deliberately spans midnight (21:00 -> next-day 05:00).
+_DAYPART_RE = re.compile(
+    r"\b(?:(yesterday|this|last)\s+)?(morning|afternoon|evening|night)\b")
+_DAYPART_HOURS = {
+    "morning": (5, 12),
+    "afternoon": (12, 17),
+    "evening": (17, 21),
+    "night": (21, 29),  # 29-24 == next-day 05:00
+}
+_WEEKDAY_RE = re.compile(
+    r"\b(?:on\s+|last\s+)?(monday|tuesday|wednesday|thursday|friday|"
+    r"saturday|sunday)\b")
+_WEEKDAYS = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+             "friday": 4, "saturday": 5, "sunday": 6}
 
 _THEME_RE = re.compile(r"\b(?:theme|look|preset|customization|setup)\b")
 _LISTING_RE = re.compile(r"\b(?:what did i change|show (?:my )?(?:change |edit )?history|"
@@ -107,20 +124,52 @@ def parse_query(text: str, now: Optional[datetime] = None) -> HistoryQuery:
     now = now or datetime(2026, 1, 1, 12, 0, 0)
 
     window: Optional[Tuple[datetime, datetime]] = None
+    minutes = _MINUTES_AGO_RE.search(lowered)
     hours = _HOURS_AGO_RE.search(lowered)
     days = _DAYS_AGO_RE.search(lowered)
-    if hours:
+    daypart = _DAYPART_RE.search(lowered)
+    weekday = _WEEKDAY_RE.search(lowered)
+    if minutes:
+        n = _word_num(minutes.group(1), 1)
+        window = (now - timedelta(minutes=n), now)
+    elif hours:
         n = _word_num(hours.group(1), 1)
         window = (now - timedelta(hours=n), now)
     elif days:
         n = _word_num(days.group(1), 1)
         window = (now - timedelta(days=n), now)
-    elif _TODAY_RE.search(lowered):
-        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        window = (start, now)
+    elif daypart:
+        base_word, part = daypart.group(1), daypart.group(2)
+        start_h, end_h = _DAYPART_HOURS[part]
+        if base_word == "yesterday":
+            base = now - timedelta(days=1)
+        else:
+            base = now
+        if part == "night" and base_word == "last":
+            # "last night" names YESTERDAY's night: 21:00 -> today 05:00
+            lo = base.replace(hour=0, minute=0, second=0, microsecond=0) \
+                + timedelta(hours=start_h) - timedelta(days=1)
+            hi = base.replace(hour=0, minute=0, second=0, microsecond=0) \
+                + timedelta(hours=end_h - 24)
+        else:
+            lo = base.replace(hour=0, minute=0, second=0, microsecond=0) \
+                + timedelta(hours=start_h)
+            hi = base.replace(hour=0, minute=0, second=0, microsecond=0) \
+                + timedelta(hours=end_h)
+            hi = min(hi, now)
+        window = (lo, hi)
     elif _YESTERDAY_RE.search(lowered):
         start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         window = (start, start + timedelta(days=1))
+    elif _TODAY_RE.search(lowered):
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        window = (start, now)
+    elif weekday:
+        target = _WEEKDAYS[weekday.group(1)]
+        back = (now.weekday() - target) % 7  # 0 == today
+        day = (now - timedelta(days=back)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        window = (day, min(day + timedelta(days=1), now))
     elif _THIS_WEEK_RE.search(lowered):
         window = (now - timedelta(days=7), now)
 
@@ -231,6 +280,55 @@ def plan(query: HistoryQuery, entries: Sequence[Dict[str, object]],
             verdict="UNDO", action="undo", steps=steps,
             entries=list(entries[:steps]), total_entries=total,
             reason=f"undo the last {steps} change{'s' if steps != 1 else ''} (history holds {total})",
+        )
+
+    # F10 restore-since reading: a WINDOW (no domain scope) names a point
+    # in time to restore TO, not a single entry to revert. "restore
+    # yesterday's theme" = put the config back the way it was at the end
+    # of yesterday = revert every change applied SINCE then. Those
+    # entries are the newest-first history's contiguous prefix (apply
+    # order is storage order), so the EXISTING undo(steps=K) engine does
+    # the restore exactly; a clock-skewed ring (non-monotonic times)
+    # falls back to the newest matching entry, named honestly.
+    if query.window and not query.scope_words:
+        hi = query.window[1]
+        since_prefix: List[Dict[str, object]] = []
+        since_all: List[Dict[str, object]] = []
+        contiguous = True
+        for entry in entries:
+            when = _entry_time(entry)
+            if when is None:
+                contiguous = False  # unparseable timestamp: not provably in order
+                continue
+            if when > hi:
+                since_all.append(entry)
+                if contiguous:
+                    since_prefix.append(entry)
+            else:
+                contiguous = False
+        if since_all and len(since_all) == len(since_prefix):
+            return HistoryPlan(
+                verdict="UNDO", action="undo", steps=len(since_prefix),
+                entries=since_prefix, total_entries=total,
+                reason=f"restores the state as of {hi.isoformat(timespec='minutes')}: "
+                       f"reverts the {len(since_prefix)} change(s) applied since "
+                       f"then, oldest reverted first",
+            )
+        if since_all:
+            best = since_all[0]
+            return HistoryPlan(
+                verdict="UNDO", action="undo_by_id",
+                entry_id=int(best.get("id", 0)),
+                entries=since_all, total_entries=total,
+                reason="history timestamps are not in apply order (clock "
+                       "skew); reverting the newest change since the named "
+                       "time — check the full history before more",
+            )
+        return HistoryPlan(
+            verdict="NOT_FOUND", action=None, entries=[], total_entries=total,
+            reason=f"nothing was applied since "
+                   f"{hi.isoformat(timespec='minutes')} — there is "
+                   f"nothing to restore to that point",
         )
 
     candidates: List[Dict[str, object]] = []

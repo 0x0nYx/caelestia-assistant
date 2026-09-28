@@ -216,11 +216,15 @@ def diff(old: Dict[str, Any], new: Dict[str, Any]) -> Dict[str, Any]:
     removed_dirs: List[str] = []
     pruned = {"subtrees_skipped": 0, "files_compared": 0}
 
-    def walk(a: Optional[Dict[str, Any]], b: Optional[Dict[str, Any]],
-             rel: str) -> None:
+    # F8: iterative traversal (an explicit stack) — a crafted snapshot
+    # with pathological depth must diff, not hit the recursion limit.
+    stack: List[Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]], str]] = [
+        (old.get("tree"), new.get("tree"), "")]
+    while stack:
+        a, b, rel = stack.pop()
         if a is not None and b is not None and a["hash"] == b["hash"]:
             pruned["subtrees_skipped"] += 1
-            return
+            continue
         a_files = a["files"] if a else {}
         b_files = b["files"] if b else {}
         for name in sorted(set(a_files) | set(b_files)):
@@ -237,24 +241,27 @@ def diff(old: Dict[str, Any], new: Dict[str, Any]) -> Dict[str, Any]:
                            | set((b["dirs"] if b else {}))):
             child_a = (a or {}).get("dirs", {}).get(name)
             child_b = (b or {}).get("dirs", {}).get(name)
+            child_rel = f"{rel}{name}/"
             if child_a is not None and child_b is None:
-                removed_dirs.append(f"{rel}{name}/")
-                _list_all(child_a, f"{rel}{name}/", removed, removed_dirs)
+                removed_dirs.append(child_rel)
+                _list_all(child_a, child_rel, removed, removed_dirs)
             elif child_b is not None and child_a is None:
-                added_dirs.append(f"{rel}{name}/")
-                _list_all(child_b, f"{rel}{name}/", added, added_dirs)
+                added_dirs.append(child_rel)
+                _list_all(child_b, child_rel, added, added_dirs)
             else:
-                walk(child_a, child_b, f"{rel}{name}/")
+                stack.append((child_a, child_b, child_rel))
 
     def _list_all(node: Dict[str, Any], rel: str,
                   files: List[str], dirs: List[str]) -> None:
-        for name in node["files"]:
-            files.append(f"{rel}{name}")
-        for name, child in node["dirs"].items():
-            dirs.append(f"{rel}{name}/")
-            _list_all(child, f"{rel}{name}/", files, dirs)
-
-    walk(old.get("tree"), new.get("tree"), "")
+        # iterative too (same reason as the main walk)
+        pending = [(node, rel)]
+        while pending:
+            cur, cur_rel = pending.pop()
+            for name in cur["files"]:
+                files.append(f"{cur_rel}{name}")
+            for name, child in cur["dirs"].items():
+                dirs.append(f"{cur_rel}{name}/")
+                pending.append((child, f"{cur_rel}{name}/"))
     return {"added": added, "removed": removed, "changed": changed,
             "added_dirs": added_dirs, "removed_dirs": removed_dirs,
             "same": root_hash(old) == root_hash(new),

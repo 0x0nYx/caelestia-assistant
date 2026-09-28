@@ -54,6 +54,43 @@ def _pretty(obj: Any, indent: int = 0) -> None:
 # command implementations
 # ---------------------------------------------------------------------------
 
+def _do_answer_line(result: Dict[str, Any]) -> str:
+    """F8/D6: the one-line ANSWER for a do result, printed FIRST — the
+    routing card and full details live behind --verbose."""
+    res = result.get("result")
+    if not isinstance(res, dict):
+        if result.get("error"):
+            return f"error: {result['error']}"
+        return ""
+    if res.get("ambiguous"):
+        readings = "; ".join(
+            f"{r.get('reading')}" + (f" = {r.get('value')}" if r.get("value") is not None else "")
+            for r in res.get("readings", [])[:3])
+        return f"ambiguous — readings: {readings} ({res.get('note', '')})"
+    if "roots" in res:
+        parts = []
+        for r in res["roots"][:6]:
+            label = r.get("exact") if isinstance(r, dict) else None
+            val = r.get("value") if isinstance(r, dict) else r
+            if label:
+                parts.append(str(label))
+            elif hasattr(val, "imag"):
+                parts.append(f"{val.real:.6g}{val.imag:+.6g}i")
+            else:
+                parts.append(f"{val:.6g}")
+        scope = "exhaustive" if res.get("exhaustive") else "found-not-exhaustive"
+        n = res.get("real_roots_count")
+        return (f"roots: {', '.join(parts)}"
+                + (f" ({n} real roots, {scope})" if n is not None else f" ({scope})"))
+    if res.get("value") is not None:
+        return f"{res.get('formatted') or res['value']}"
+    if res.get("answer"):
+        return str(res["answer"])
+    if result.get("error"):
+        return f"error: {result['error']}"
+    return ""
+
+
 def cmd_do(args, out) -> int:
     text = args.text if args.text else (Path(args.stdin_file).read_text() if
                                         args.stdin_file else "")
@@ -67,7 +104,17 @@ def cmd_do(args, out) -> int:
     if args.json:
         _print(result, True)
         return 0 if result.get("ok", result.get("verdict") == "ROUTE") else 1
-    _print(result, False)
+    # F8/D6: the ANSWER comes first; the routing card and full details
+    # are --verbose material.
+    answer = _do_answer_line(result)
+    if args.verbose:
+        _print(result, False)
+    elif answer:
+        print(f"answer: {answer}")
+        if result.get("note"):
+            print(f"note: {result['note']}")
+    else:
+        _print(result, False)
     return 0 if result.get("ok", result.get("verdict") == "ROUTE") else 1
 
 
@@ -794,6 +841,9 @@ def build_parser() -> argparse.ArgumentParser:
     q = sp("do", cmd_do, help="any request: classify then dispatch")
     q.add_argument("text", nargs="?", default="")
     q.add_argument("--stdin-file", default=None)
+    q.add_argument("--verbose", action="store_true",
+                   help="show the routing card and full result details "
+                        "(the answer alone prints by default)")
 
     q = sp("math", cmd_math, help="evaluate an arithmetic expression")
     q.add_argument("expr")

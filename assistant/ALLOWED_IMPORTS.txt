@@ -61,3 +61,9 @@ csv
 # minimal stdlib PNG reader in genius/palette_extract.py
 # (wallpaper -> candidate accent). No execution, no network.
 struct
+# fractions (exponential-build-5 F8, A2-6): exact rational arithmetic for
+# the polynomial root finder — rational roots with multiplicity, Sturm
+# sequences, exact quadratic radicals. Pure stdlib number type, same
+# class as math/datetime: no I/O, no execution, no network. Guarded by
+# the policy tests and assistant/genius/tests/test_math_allroots.py.
+fractions

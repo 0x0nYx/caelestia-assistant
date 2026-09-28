@@ -53,8 +53,15 @@ class TestHubWiring(unittest.TestCase):
         code, out, _ = _hub(["do", "solve x^2 - 2 = 0", "--json"])
         payload = json.loads(out)
         self.assertEqual(payload["domain"], "solve_equation")
-        # bisection on the auto-scanned bracket finds one of the two roots
-        self.assertAlmostEqual(abs(payload["result"]["root"]), 1.4142135, places=5)
+        # F8 (D6): polynomial equations solve for ALL roots — both ±√2,
+        # exact surd forms, Sturm count, exhaustive.
+        roots = payload["result"]["roots"]
+        values = sorted(round(r["value"], 5) for r in roots)
+        self.assertEqual(len(values), 2)
+        self.assertAlmostEqual(abs(values[0]), 1.4142135, places=4)
+        self.assertAlmostEqual(abs(values[1]), 1.4142135, places=4)
+        self.assertEqual(payload["result"]["real_roots_count"], 2)
+        self.assertTrue(payload["result"]["exhaustive"])
 
 
 class TestBridgeOps(unittest.TestCase):

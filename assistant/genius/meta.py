@@ -411,23 +411,42 @@ def _run_domain(domain: str, text: str) -> Dict[str, Any]:
         eq = re.sub(r"^.*?\bsolve\b[:\s]*", "", text, flags=re.I).strip()
         eq = re.sub(r"\s*(?:for|in terms of)\s+[a-z]\s*$", "", eq, flags=re.I).strip()
         eq = re.sub(r"\s*(?:using|with|by)\s+(?:the\s+)?(?:newton|newton-raphson|"
-                   r"secant|bisection|bisect)(?:\s+method)?\s*", " ", eq, flags=re.I)
+                    r"secant|bisection|bisect)(?:\s+method)?\s*", " ", eq, flags=re.I)
+        rng = re.search(r"\bfrom\s+(-?\d+(?:\.\d+)?)\s+to\s+(-?\d+(?:\.\d+)?)", low)
+        lo, hi = (float(rng.group(1)), float(rng.group(2))) if rng else (-100.0, 100.0)
         eq = re.sub(r"\s*(?:from|starting (?:at|from)|between)\s+-?\d+(?:\.\d+)?"
-                    r"(?:\s+(?:and|to)\s+-?\d+(?:\.\d+)?)?\s*$", "", eq, flags=re.I)
+                    r"(?:\s+(?:and|to)\s+-?\d+(?:\.\d+)?)?\s*$", "", eq, flags=re.I).strip()
+        eq = re.sub(r"\s+to\s+-?\d+(?:\.\d+)?\s*$", "", eq, flags=re.I).strip()
         eq = re.sub(r"\s+", " ", eq).strip()
         eq = re.sub(r"[?.]+$", "", eq)
+        # implicit multiplication: "6x^2" -> "6*x^2", ")(x" -> ")*(x"
+        # (digit/paren followed by a letter or opening paren)
+        eq = re.sub(r"(\d)\s*([a-z(])", r"\1*\2", eq, flags=re.I)
+        eq = re.sub(r"(\))\s*([0-9a-z(])", r"\1*\2", eq, flags=re.I)
         if "=" not in eq:
             eq = eq + " - 0"
         else:
             lhs, rhs = eq.split("=", 1)
             eq = f"({lhs}) - ({rhs})"
+        # F8 (D6): a POLYNOMIAL equation solves for ALL roots exactly —
+        # rational roots with multiplicity, quadratic radicals, Durand-
+        # Kerner + Newton polish for the rest, a Sturm count of the real
+        # roots, and an explicit exhaustive flag. Non-polynomials fall
+        # through to the bracket scan (every sign-change root, labeled
+        # found-not-exhaustive).
+        try:
+            coeffs = mathengine.polynomial_coeffs(mathengine.parse(eq))
+        except mathengine.CalcError:
+            coeffs = None
+        if coeffs and len(coeffs) > 1:
+            return mathengine.solve_polynomial_all(coeffs)
         method = "newton" if "newton" in low else \
-                 "secant" if "secant" in low else "bisection"
+                 "secant" if "secant" in low else "scan"
         x0 = None
         m = re.search(r"(?:from|starting (?:at|from))\s+(-?\d+(?:\.\d+)?)", low)
         if m and method == "newton":
             x0 = float(m.group(1))
-        return mathengine.solve_root(eq, method=method, x0=x0)
+        return mathengine.solve_root(eq, method=method, x0=x0, lo=lo, hi=hi)
     if domain == "calculus":
         if "derivative" in low or "differen" in low:
             expr = re.sub(r"^.*?(?:derivative|differentiate)\s*(?:of)?\s*", "", text, flags=re.I)

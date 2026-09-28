@@ -20,6 +20,7 @@ the assistant shows its work the way a careful human would.
 from __future__ import annotations
 
 import math
+from fractions import Fraction
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 __all__ = [
@@ -440,10 +441,53 @@ def _f(text_or_node, env: Optional[Dict[str, float]] = None):
 
 def solve_root(expr: str, method: str = "auto", lo: float = -100.0, hi: float = 100.0,
                x0: Optional[float] = None, tol: float = 1e-9, max_iter: int = 100) -> Dict[str, Any]:
-    """Find f(x)=0 by bisection, Newton-Raphson or secant. Returns steps."""
+    """Find f(x)=0. Methods: bisection/newton/secant (one root, with
+    step traces) or 'scan' — F8's default for non-polynomial requests:
+    bracket-scan [lo, hi] and report EVERY sign-change root by bisecting
+    each bracket, honestly labeled found-not-exhaustive (a scan can miss
+    double roots and roots outside the interval)."""
     f, node = _f(expr)
-    method = method if method != "auto" else ("newton" if x0 is not None else "bisection")
+    method = method if method != "auto" else ("newton" if x0 is not None else "scan")
     steps: List[Dict[str, float]] = []
+
+    if method == "scan":
+        n_slices = 400
+        roots: List[float] = []
+        a = lo
+        fa = f(a)
+        for k in range(1, n_slices + 1):
+            b = lo + (hi - lo) * k / n_slices
+            fb = f(b)
+            if fa == 0.0:
+                roots.append(a)
+            elif fa * fb < 0:
+                # bisect inside this bracket
+                blo, bhi, flo = a, b, fa
+                for _ in range(80):
+                    mid = (blo + bhi) / 2
+                    fm = f(mid)
+                    if abs(fm) < tol or (bhi - blo) / 2 < tol:
+                        break
+                    if flo * fm <= 0:
+                        bhi = mid
+                    else:
+                        blo, flo = mid, fm
+                roots.append((blo + bhi) / 2)
+            a, fa = b, fb
+        if fa == 0.0:
+            roots.append(a)
+        # dedupe
+        dedup: List[float] = []
+        for r in sorted(roots):
+            if not dedup or abs(r - dedup[-1]) > 1e-6:
+                dedup.append(r)
+        return {"method": "scan", "roots": [{"value": r} for r in dedup],
+                "n_roots": len(dedup),
+                "interval": [lo, hi], "expr": to_str(node),
+                "exhaustive": False,
+                "note": "bracket scan: every sign-change root in the interval; "
+                        "double roots and roots outside it can be missed "
+                        "(found-not-exhaustive)"}
 
     if method == "bisection":
         flo, fhi = f(lo), f(hi)
@@ -551,7 +595,7 @@ def _adaptive(f, lo, hi, flo, fhi, tol, depth=48):
 
 
 def ode_solve(expr: str, x0: float, y0: float, x_end: float, h: float = 0.01,
-              method: str = "rk4", tol: float = 1e-6) -> Dict[str, Any]:
+              method: str = "rk4", tol: float = 1e-6, **kwargs) -> Dict[str, Any]:
     """Solve y' = f(x, y) from (x0, y0) to x_end.
 
     Fixed-step: euler, rk4 (steps = (x_end - x0)/h, recomputed to land
@@ -570,9 +614,17 @@ def ode_solve(expr: str, x0: float, y0: float, x_end: float, h: float = 0.01,
         return evaluate(node, {"x": x, "y": y})
 
     if method == "rk45":
-        adaptive = _rk45_solve(f, x0, y0, x_end, tol)
+        # F8: the standard TWO-KNOB controller (rtol + atol, **kwargs):
+        #   scale = atol + rtol * max(|y|, |y5|)
+        # ``tol`` alone maps to rtol = tol, atol = tol * 1e-3 (relative-
+        # dominant, with an absolute floor for near-zero y — the stiff
+        # decay y' = -1000y used to fight a pure-relative envelope).
+        rtol = kwargs.get("rtol", tol)
+        atol = kwargs.get("atol", tol * 1e-3)
+        adaptive = _rk45_solve(f, x0, y0, x_end, rtol, atol)
         return {"ode": to_str(node), "method": "rk45", "x0": x0, "y0": y0,
-                "x_end": x_end, "tol": tol,
+                "x_end": x_end, "tol": tol, "rtol": rtol, "atol": atol,
+                "controller": "rtol+atol",
                 "steps": adaptive["accepted"],
                 "rejected_steps": adaptive["rejected"],
                 "fevals": adaptive["fevals"],
@@ -604,8 +656,8 @@ def ode_solve(expr: str, x0: float, y0: float, x_end: float, h: float = 0.01,
             "trace": trace[:200], "trace_points": len(trace)}
 
 
-def _rk45_solve(f, x0: float, y0: float, x_end: float, tol: float
-                ) -> Dict[str, Any]:
+def _rk45_solve(f, x0: float, y0: float, x_end: float, rtol: float,
+                atol: float = 0.0) -> Dict[str, Any]:
     """Adaptive embedded Runge-Kutta 4(5) — Dormand & Prince 1980
     ("A family of embedded Runge-Kutta formulae", J. Comp. Appl. Math
     6(1), 19-35), the DOPRI5 pair: 7 stages, FSAL (the 7th stage is the
@@ -614,7 +666,8 @@ def _rk45_solve(f, x0: float, y0: float, x_end: float, tol: float
 
         h_new = h * clamp(0.9 * (tol / err) ** (1/5), 0.2, 5.0),
 
-    one knob ``tol`` (the mixed tolerance err <= tol * (1 + |y|)).
+    two knobs (F8): err <= atol + rtol * max(|y|, |y_new|) — the standard
+    relative+absolute error envelope.
     Rejected steps are retried smaller; a step floor of 1e-12 * span
     makes failure LOUD (an error, never a silent stall)."""
     c = [0.0, 1/5, 3/10, 4/5, 8/9, 1.0, 1.0]
@@ -655,7 +708,7 @@ def _rk45_solve(f, x0: float, y0: float, x_end: float, tol: float
         y5 = y + hn * sum(b5[i] * ks[i] for i in range(7))
         y4 = y + hn * sum(b4[i] * ks[i] for i in range(7))
         err = abs(y5 - y4)
-        scale = tol * (1.0 + max(abs(y), abs(y5)))
+        scale = atol + rtol * max(abs(y), abs(y5))
         if err <= scale or hn <= h_min:
             x_new = x + hn
             if x_new + 1e-12 * span >= x_end:
@@ -1225,3 +1278,381 @@ def symbolic_integrate(expr: str, var: str = "x") -> Dict[str, Any]:
             "note": "verified by differentiating this answer and "
                     "comparing against the integrand at fixed sample "
                     "points; +C omitted (a constant, always)"}
+
+
+# ---------------------------------------------------------------------------
+# 9. Exact polynomial root finding (exponential-build-5 F8, D6).
+# All-roots: exact rational roots with multiplicity over fractions.Fraction,
+# exact quadratic radicals, Durand-Kerner + Newton polish for the rest,
+# and a Sturm sequence (exact) that counts the DISTINCT real roots so the
+# result can say honestly whether the root set is exhaustive.
+# ---------------------------------------------------------------------------
+
+def polynomial_coeffs(node: "_Node", var: str = "x") -> Optional[List[Any]]:
+    """Exact rational coefficients (ascending) of a polynomial in ``var``,
+    or None when the expression is not a polynomial (calls, non-integer
+    exponents, other variables, division by a non-constant...)."""
+
+    def exact(v: float) -> Fraction:
+        return Fraction(v).limit_denominator(10 ** 12)
+
+    def walk(n: "_Node") -> Optional[Dict[int, Any]]:
+        if n.kind == "num":
+            return {0: exact(float(n.value))}
+        if n.kind == "var":
+            return {1: Fraction(1)} if n.name == var else None
+        if n.kind == "neg":
+            inner = walk(n.left)
+            if inner is None:
+                return None
+            return {k: -v for k, v in inner.items()}
+        if n.kind == "bin":
+            a, b = walk(n.left), walk(n.right)
+            if a is None or b is None:
+                return None
+            op = n.value
+            if op == "+":
+                out = dict(a)
+                for k, v in b.items():
+                    out[k] = out.get(k, Fraction(0)) + v
+                return out
+            if op == "-":
+                out = dict(a)
+                for k, v in b.items():
+                    out[k] = out.get(k, Fraction(0)) - v
+                return out
+            if op == "*":
+                out: Dict[int, Any] = {}
+                for ka, va in a.items():
+                    for kb, vb in b.items():
+                        out[ka + kb] = out.get(ka + kb, Fraction(0)) + va * vb
+                return out
+            if op == "/":
+                if set(b) == {0}:
+                    return {k: v / b[0] for k, v in a.items()}
+                return None
+            if op == "^":
+                # only non-negative integer exponents of the variable
+                if set(b) == {0} and b[0].denominator == 1 and b[0] >= 0:
+                    e = int(b[0])
+                    if e > 64:
+                        return None
+                    out = {0: Fraction(1)}
+                    for _ in range(e):
+                        nxt: Dict[int, Any] = {}
+                        for k1, v1 in out.items():
+                            for k2, v2 in a.items():
+                                nxt[k1 + k2] = nxt.get(k1 + k2, Fraction(0)) + v1 * v2
+                        out = nxt
+                    return out
+                return None
+            return None
+        return None
+
+    poly = walk(node)
+    if poly is None:
+        return None
+    degree = max(poly) if poly else 0
+    out = [poly.get(k, Fraction(0)) for k in range(degree + 1)]
+    while len(out) > 1 and out[-1] == 0:
+        out.pop()
+    return out
+
+
+def _poly_eval_frac(coeffs: List[Any], x: Any) -> Any:
+    total = 0 * x if x != 0 else 0
+    acc = type(x)(1) if hasattr(type(x), "__call__") is False and False else 1
+    # Horner over ascending coefficients (reversed)
+    total = None
+    for c in reversed(coeffs):
+        total = c if total is None else total * x + c
+    return total
+
+
+def _poly_eval_c(coeffs: List[Any], x: complex) -> complex:
+    total = 0j
+    for c in reversed(coeffs):
+        total = total * x + float(c)
+    return total
+
+
+def _sturm_real_root_count(coeffs: List[Any]) -> Optional[int]:
+    """Distinct real roots via the Sturm sequence (exact Fractions).
+    None when the sequence degenerates (should not happen for a
+    square-free-normalized polynomial with degree >= 1)."""
+
+    def normalize(seq):
+        while seq and seq[-1] == 0:
+            seq.pop()
+        return seq
+
+    def rem(a, b):
+        # polynomial remainder of a / b, both ascending Fraction lists
+        a = list(a)
+        while len(a) >= len(b) and normalize(a):
+            if len(a) < len(b):
+                break
+            shift = len(a) - len(b)
+            factor = a[-1] / b[-1]
+            for i, c in enumerate(b):
+                a[shift + i] -= factor * c
+            normalize(a)
+        return a
+
+    p = [Fraction(c) for c in coeffs]
+    normalize(p)
+    if not p or len(p) < 2:
+        return None
+    dp = [Fraction(i * p[i]) for i in range(1, len(p))]
+    normalize(dp)
+    if not dp:
+        return None
+    seq = [p, dp]
+    while len(seq[-1]) > 1:
+        r = rem(seq[-2], seq[-1])
+        if not r:
+            break
+        seq.append([-c for c in r])
+    if len(seq) < 2:
+        return None
+
+    def sign_at_inf(s: int) -> List[int]:
+        out = []
+        for poly in seq:
+            lead = poly[-1]
+            v = lead * (s ** (len(poly) - 1))
+            out.append(1 if v > 0 else -1)
+        return out
+
+    def variations(signs: List[int]) -> int:
+        nz = [s for s in signs if s != 0]
+        return sum(1 for i in range(len(nz) - 1) if nz[i] != nz[i + 1])
+
+    return variations(sign_at_inf(-1)) - variations(sign_at_inf(1))
+
+
+def _exact_quadratic(c: Any, b: Any, a: Any) -> List[Dict[str, Any]]:
+    """Exact roots of ax^2 + bx + c over Fractions, radicals simplified:
+    D = b^2-4ac = s^2 * m with m square-free, so roots are
+    r +/- k*sqrt(m) with r = -b/2a and k = s/2a rational."""
+    import math as _math
+
+    two_a = 2 * a
+    disc = b * b - 4 * a * c
+    if disc == 0:
+        r = -b / two_a
+        return [{"value": float(r), "exact": _fmt_frac(r),
+                 "kind": "rational", "multiplicity": 2}]
+    if disc > 0:
+        num, den = disc.numerator, disc.denominator
+        s_num = _math.isqrt(num)
+        while s_num > 1 and num % (s_num * s_num) != 0:
+            s_num -= 1
+        s_den = _math.isqrt(den)
+        while s_den > 1 and den % (s_den * s_den) != 0:
+            s_den -= 1
+        m = Fraction(num // (s_num * s_num), den // (s_den * s_den))
+        r = -b / two_a
+        if m == 1:
+            # disc is a perfect rational square: rational roots
+            s = Fraction(s_num, s_den)
+            r1, r2 = r + s / two_a, r - s / two_a
+            return [
+                {"value": float(r1), "exact": _fmt_frac(r1), "kind": "rational", "multiplicity": 1},
+                {"value": float(r2), "exact": _fmt_frac(r2), "kind": "rational", "multiplicity": 1},
+            ]
+        k = Fraction(s_num, s_den) / two_a
+        val = _math.sqrt(float(disc)) / float(two_a)
+        return [
+            {"exact": _surd_str(r, k, m, +1), "value": float(r) + val,
+             "kind": "surd", "multiplicity": 1},
+            {"exact": _surd_str(r, k, m, -1), "value": float(r) - val,
+             "kind": "surd", "multiplicity": 1},
+        ]
+    im = _math.sqrt(float(-disc)) / float(two_a)
+    re_frac = -b / two_a
+    re_part = float(re_frac)
+    im_body = f"{im:.10g}i" if abs(im - 1) > 1e-12 else "i"
+    if re_frac == 0:
+        forms = (im_body, f"-{im_body}")
+    else:
+        forms = (f"{_fmt_frac(re_frac)} + {im_body}",
+                 f"{_fmt_frac(re_frac)} - {im_body}")
+    return [
+        {"exact": forms[0], "value": complex(re_part, im),
+         "kind": "complex", "multiplicity": 1},
+        {"exact": forms[1], "value": complex(re_part, -im),
+         "kind": "complex", "multiplicity": 1},
+    ]
+
+
+def _surd_str(r, k, m, sign: int) -> str:
+    """'r + k*sqrt(m)' simplified: drop zero/one parts, fold the sign."""
+    k = abs(k)
+    neg = sign < 0
+    body = f"sqrt({_fmt_frac(m)})"
+    if k != 1:
+        body = f"{_fmt_frac(k)}*{body}"
+    if r == 0:
+        return f"-{body}" if neg else body
+    return f"{_fmt_frac(r)} - {body}" if neg else f"{_fmt_frac(r)} + {body}"
+
+
+def _fmt_frac(f) -> str:
+    if f.denominator == 1:
+        return str(f.numerator)
+    return f"{f.numerator}/{f.denominator}"
+
+
+def _sqrt_frac_str(s, m) -> str:
+    if m == 1:
+        return _fmt_frac(s)
+    if s == 1:
+        return f"sqrt({_fmt_frac(m)})"
+    return f"{_fmt_frac(s)}*sqrt({_fmt_frac(m)})"
+
+
+def solve_polynomial_all(coeffs: List[Any]) -> Dict[str, Any]:
+    """All roots of a polynomial given as ascending exact Fraction
+    coefficients: rational roots with multiplicity (exact), quadratic
+    leftovers with simplified radical exact forms, Durand-Kerner + Newton
+    polish for higher degrees, and a Sturm count that says whether the
+    real root set is exhaustive."""
+    import math as _math
+
+    degree = len(coeffs) - 1
+    if degree < 1:
+        raise CalcError("not a degree >= 1 polynomial")
+    if coeffs[0] == 0:  # x is a factor: root 0 with the deflated multiplicity
+        sub = solve_polynomial_all(coeffs[1:])
+        for r in sub["roots"]:
+            pass
+        zero_mult = 1
+        rest = coeffs[1:]
+        while rest and rest[0] == 0:
+            zero_mult += 1
+            rest = rest[1:]
+        sub = solve_polynomial_all(rest) if len(rest) > 1 else None
+        roots = [{"value": 0.0, "exact": "0", "kind": "rational",
+                  "multiplicity": zero_mult}]
+        if sub:
+            roots.extend(sub["roots"])
+        sturm = _sturm_real_root_count(coeffs)
+        return {"method": "polynomial", "degree": degree, "roots": roots,
+                "real_roots_count": sturm if sturm is not None else len(
+                    [r for r in roots if not hasattr(r["value"], "imag")]),
+                "sturm_count": sturm, "exhaustive": True}
+
+    roots: List[Dict[str, Any]] = []
+    work = list(coeffs)
+
+    # 1) exact rational roots with multiplicity (rational-root theorem +
+    #    exact synthetic division)
+    while len(work) > 3:
+        a0, an = work[0], work[-1]
+        found = None
+        for p in _divisors(abs(a0.numerator)):
+            for q in _divisors(an.denominator):
+                for cand in (Fraction(p, q), Fraction(-p, q)):
+                    if _poly_eval_frac(work, cand) == 0:
+                        found = cand
+                        break
+                if found is not None:
+                    break
+            if found is not None:
+                break
+        if found is None:
+            break
+        mult = 0
+        while True:
+            work = _synthetic_div(work, found)
+            mult += 1
+            if _poly_eval_frac(work, found) != 0 or len(work) < 2:
+                break
+        roots.append({"value": float(found), "exact": _fmt_frac(found),
+                      "kind": "rational", "multiplicity": mult})
+
+    # 2) the remaining factor: degree 1, 2 exact; >= 3 Durand-Kerner
+    if len(work) == 2:
+        r = -work[0] / work[1]
+        roots.append({"value": float(r), "exact": _fmt_frac(r),
+                      "kind": "rational", "multiplicity": 1})
+    elif len(work) == 3:
+        roots.extend(_exact_quadratic(work[0], work[1], work[2]))
+    elif len(work) > 3:
+        for v, ex in _durand_kerner(work):
+            roots.append({"value": v, "exact": ex, "kind": "numeric",
+                          "multiplicity": 1})
+
+    sturm = _sturm_real_root_count(coeffs)
+    n_real_found = len({round(r["value"], 9) for r in roots
+                        if not (hasattr(r["value"], "imag") and r["value"].imag != 0)})
+    exhaustive = sturm is None or sturm == n_real_found
+    return {"method": "polynomial", "degree": degree, "roots": roots,
+            "real_roots_count": sturm if sturm is not None else n_real_found,
+            "sturm_count": sturm, "exhaustive": exhaustive}
+
+
+def _divisors(n: int) -> List[int]:
+    out = []
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            out.append(i)
+            if i != n // i:
+                out.append(n // i)
+        i += 1
+    return sorted(out) or [1]
+
+
+def _synthetic_div(coeffs: List[Any], root: Any) -> List[Any]:
+    """Divide ascending-coefficient polynomial by (x - root); exact."""
+    desc = list(reversed(coeffs))
+    out = [desc[0]]
+    for c in desc[1:-1]:
+        out.append(c + out[-1] * root)
+    return list(reversed(out))
+
+
+def _durand_kerner(coeffs: List[Any], max_iter: int = 300) -> List[Tuple[complex, Optional[str]]]:
+    """All complex roots by simultaneous Weierstrass/Durand-Kerner
+    iteration, each polished by Newton on the original polynomial."""
+    n = len(coeffs) - 1
+    f = [float(c) for c in coeffs]
+    roots = [(0.4 + 0.9j) ** k for k in range(n)]
+    for _ in range(max_iter):
+        new = []
+        for i, ri in enumerate(roots):
+            denom = 1.0 + 0j
+            for j, rj in enumerate(roots):
+                if i != j:
+                    denom *= ri - rj
+            if abs(denom) < 1e-300:
+                denom = 1e-300 + 0j
+            new.append(ri - _poly_eval_c(f, ri) / denom)
+        shift = max(abs(a - b) for a, b in zip(roots, new))
+        roots = new
+        if shift < 1e-14:
+            break
+    # Newton polish on the ORIGINAL polynomial
+    df = [i * f[i] for i in range(1, len(f))]
+    polished = []
+    for r in roots:
+        x = r
+        for _ in range(6):
+            fx = _poly_eval_c(f, x)
+            dx = _poly_eval_c(df, x) if len(df) >= 1 else 1.0
+            if abs(dx) < 1e-300:
+                break
+            step = fx / dx
+            x = x - step
+            if abs(step) < 1e-15:
+                break
+        polished.append(x)
+    out = []
+    for x in sorted(polished, key=lambda z: (round(z.real, 9), round(z.imag, 9))):
+        if abs(x.imag) < 1e-8:
+            out.append((complex(x.real, 0), None))
+        else:
+            out.append((x, None))
+    return out

@@ -241,13 +241,43 @@ class CortexLearner:
             1 for row in self.examples if row.get("label") == 0
         )
         self._rng = random.Random(0xC0E7E)  # seeded: strategy choice is reproducible
+        self.conservative_exploration = bool(
+            data.get("conservative_exploration", False))
+        self._epsilon = float(data.get("conservative_epsilon", 0.05))
+        self.last_gate_report: Optional[Dict[str, object]] = None
+        self.drift_mode = str(data.get("drift_mode", "consensus"))
+        self._drift_state = data.get("drift_state") or {}
 
     # -- learning ----------------------------------------------------------
 
-    def choose_strategy(self) -> Tuple[str, RouterState]:
-        """Thompson-sample a routing strategy. Returns (name, state)."""
+    def choose_strategy(self, conservative: Optional[bool] = None
+                        ) -> Tuple[str, RouterState]:
+        """Thompson-sample a routing strategy. Returns (name, state).
+
+        exponential-build-4 D adds the SELECTABLE conservative mode
+        (Wu et al. 2016): the same Thompson sample, gated by the safe-
+        exploration floor in conservative.py — a non-baseline strategy
+        plays only when its evidence clears the "balanced" floor's
+        lower bound minus ε. The mode is a user choice (the data's
+        ``conservative_exploration`` key), never a silent replacement:
+        with the mode off this function is byte-for-byte the old
+        Thompson path."""
         ranked = self.bandit.rank(list(STRATEGY_PROFILES), rng=self._rng)
         name = ranked[0][0] if ranked else "balanced"
+        if conservative is None:
+            conservative = bool(getattr(self, "conservative_exploration",
+                                        False))
+        if conservative:
+            from . import conservative as cons_mod
+            arms = {n: {"alpha": self.bandit.arms.get(n, [1.0, 1.0])[0],
+                        "beta": self.bandit.arms.get(n, [1.0, 1.0])[1]}
+                    for n in STRATEGY_PROFILES}
+            gate = cons_mod.ConservativeBandit(
+                arms=arms, safe_arm="balanced",
+                epsilon=self._epsilon, delta=0.05)
+            verdict = gate.choose(thompson_sample=name)
+            self.last_gate_report = verdict
+            name = verdict["arm"]
         return name, STRATEGY_PROFILES.get(name, RouterState())
 
     def observe(self, text: str, surface: str, features: Dict[str, float],
@@ -430,6 +460,29 @@ class CortexLearner:
             pair.update(label == 1)
         report = pair.status()
         report["examples"] = len(labels)
+        # exponential-build-4 D: the SELECTABLE smooth-drift alternative
+        # runs on the same stream when the data asks for it — the NSE
+        # ensemble re-weights experts by recent accuracy instead of the
+        # consensus' detect-and-reset. Both verdicts are reported side
+        # by side with the honest no-winner note; the consensus stays
+        # the default and nothing acts on either.
+        if getattr(self, "drift_mode", "consensus") == "nse":
+            from .ensemble import LearnPPNSE
+            nse = LearnPPNSE.from_dict(
+                (self._drift_state or {}).get("nse", {}))
+            if nse.n_features < 1:
+                nse = LearnPPNSE(n_features=1)
+            for row in (r for r in self.examples
+                        if isinstance(r, dict)):
+                feats = (row.get("features") or {})
+                nse.observe([float(len(feats))], int(row.get("label") or 0))
+            report["nse_alternative"] = {
+                "members": len(nse.members),
+                "weights": [round(w, 4) for w in nse.member_weights()],
+                "note": "Learn++.NSE (Elwell & Polikar 2011): continuous "
+                        "re-weighting, not reset; no winner is declared "
+                        "here — compare via the regret audit",
+            }
         return report
 
     # -- persistence ----------------------------------------------------------

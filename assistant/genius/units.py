@@ -413,3 +413,56 @@ def handle(text: str) -> Dict[str, Any]:
     """The meta-router entry: one unit-shaped request in, one result
     dict out (the same dispatch contract as every other domain)."""
     return evaluate(text)
+
+
+# ---------------------------------------------------------------------------
+# Uncertainty pass (exponential-build-4 H): measured quantities carry
+# error bars, and a unit conversion is arithmetic on the measurement —
+# so the bar converts with it. Group B's dual-number propagation
+# (genius/autodiff.propagate_error) does the calculus; this wrapper
+# keeps the dimensional discipline (a mismatch is still an error).
+# ---------------------------------------------------------------------------
+
+def convert_with_uncertainty(value: float, sigma: float,
+                             src_name: str, dst_name: str) -> Dict[str, Any]:
+    """Convert a MEASUREMENT and its one-sigma bar between same-dimension
+    units. sigma propagates through the (exact) conversion factor by the
+    first-order rule via dual numbers — for the multiplicative and
+    affine temperature factors here the first-order form is EXACT up to
+    the arithmetic, which is worth saying: the interval is honest, not
+    approximate-by-convenience. A dimension mismatch is still a
+    UnitsError; a negative sigma is refused, never clamped."""
+    from .autodiff import propagate_error
+
+    src = parse_unit(src_name)
+    dst = parse_unit(dst_name)
+    if src["dims"] != dst["dims"]:
+        raise UnitsError(_MISMATCH.format(a=_fmt_dims(src["dims"]),
+                                          b=_fmt_dims(dst["dims"])))
+    if sigma < 0:
+        raise UnitsError("sigma must be non-negative (rejected, never "
+                         "clamped)")
+
+    def measurement(xs):
+        v = xs[0]
+        if src["name"] in _AFFINE or dst["name"] in _AFFINE:
+            if src["name"] == "degC":
+                converted = v + 273.15
+            elif src["name"] == "degF":
+                converted = (v - 32.0) * 5.0 / 9.0 + 273.15
+            else:
+                converted = v
+            if dst["name"] == "degC":
+                converted = converted - 273.15
+            elif dst["name"] == "degF":
+                converted = (converted - 273.15) * 9.0 / 5.0 + 32.0
+            return converted
+        return v * src["factor"] / dst["factor"]
+
+    result = propagate_error(measurement, [float(value)], [float(sigma)])
+    return {"value": result["values"][0],
+            "sigma": result["sigmas"][0],
+            "interval": result["intervals"][0],
+            "unit": dst_name,
+            "method": "dual-number forward-mode propagation through the "
+                      "exact conversion factor (genius/autodiff.py)"}

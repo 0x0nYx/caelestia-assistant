@@ -6,22 +6,22 @@ No language model in the critical path. No training. No network in the offline c
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-1987%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-2165%20passing-brightgreen)
 ![LLM required](https://img.shields.io/badge/LLM%20required-none-success) *(offline core)*
 
 ---
 
 ## What it is
 
-A shell-side assistant organized as **ten cooperating layers**, each replaceable, each honestly scoped:
+A shell-side assistant organized as **ten cooperating layers (eleven counting `devflow`, with exponential-build-4's additions folded into their owning layers)**, each replaceable, each honestly scoped:
 
 | Layer | Package | What it answers | Core machinery |
 | --- | --- | --- | --- |
-| Diagnostics | `assistant/diagnostics/` | "Which known problem is this?" | Deterministic rule engine over signature→fix mappings, every rule citing its source; reverse lookup joins matched rules to the settings tools addressing their root cause |
+| Diagnostics | `assistant/diagnostics/` | "Which known problem is this?" | Deterministic rule engine over signature→fix mappings, every rule citing its source, with streaming Drain template mining in front of it for the lines no rule matches; reverse lookup joins matched rules to the settings tools addressing their root cause; Kalman trend forecasts over the telemetry series |
 | Retrieval | `assistant/retrieval/` | "What is the closest *real* past resolution?" | BM25 over the repo's own docs and resolved issues |
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
-| Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief — with the personal-PKM tools split out into an opt-in subpackage |
+| Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief, Merkle config-tree diffing — with the personal-PKM tools split out into an opt-in subpackage (now incl. bridge notes, topic drift, cloze drafts, Murphy decomposition) |
 | Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over 277 tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default); a CART readability tree (Breiman et al. 1984) reports its agreement with the fitted logistic model before any promotion decision; a LinUCB contextual bandit (Li et al. 2010) ranks presets by context, and a shared Elo + Bradley-Terry primitive ranks anything compared pairwise |
 | Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 277-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, macro capture/replay of approved sequences (re-consented every replay), compositional slot-grammar recovery for paraphrases; a session-scoped pending-plan cache that composes follow-up requests, and a what-if consequence view over a cited cross-key interaction table |
 | Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system, files | 17-domain meta-router over stdlib engines: A*/Dijkstra, Edmonds-Karp max-flow/min-cut, label-propagation communities, branch-and-bound + tabu search, resource-contention scheduling over AC-3, NCD compression similarity, BOCPD changepoints, plus a filesystem second-brain (staleness scoring, SimHash near-dups, PageRank knowledge graph, byte-signature file typing) |
@@ -160,6 +160,9 @@ caelestia-assist brain prefs                 # what it believes about you
 
 # Opt-in personal tools (NOT part of the #120 shell surface)
 python3 -m assistant.brain.personal --help
+python3 -m assistant.brain.personal bridges ~/notes       # bridge notes: betweenness vs PageRank (Burt 1992 brokerage)
+python3 -m assistant.brain.personal drift v1 v2 v3 v4     # topic drift: the ADWIN+Page-Hinkley consensus over vault snapshots
+python3 -m assistant.brain.personal cards ~/notes         # cloze DRAFTS (mandatory review; scheduling only after approval)
 
 # Developer-workflow drafting (NOT part of the #120 shell surface)
 python3 -m assistant.devflow commit < <(git diff --numstat)   # commit skeleton
@@ -168,6 +171,8 @@ python3 -m assistant.devflow todo ~/my-checkout               # TODO/FIXME triag
 # Any task, no chat needed
 caelestia-assist do "solve x^2 - 2 = 0"
 caelestia-assist do "summarize this: $(cat notes/foo.md)"
+caelestia-assist genius calc --antiderivative "x*exp(x)"          # SYMBOLIC integration (table+parts+u-sub; verified; not Risch)
+caelestia-assist genius calc --ode "y" --ode-method rk45 --tol 1e-8   # adaptive Dormand-Prince 4(5)
 caelestia-assist genius graphs dijkstra '{"a":{"b":4,"c":1},"c":{"b":2},"b":{}}' --source a
 
 # The agent
@@ -183,7 +188,7 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 1987 tests, ~1 min
+python3 -m unittest discover -s . -p "test_*.py"   # 2165 tests, ~1 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
 python3 -m assistant.settings gen_adapter --verify # registry byte-identity guard
 ```

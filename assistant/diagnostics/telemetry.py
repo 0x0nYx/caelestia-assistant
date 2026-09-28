@@ -199,3 +199,51 @@ def main(argv: Optional[List[str]] = None) -> int:
     if missing:
         print("unavailable: " + ", ".join(missing))
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Time-series accumulation (exponential-build-4 E) — the bridge between
+# the one-shot snapshot above and diagnostics/forecast.py's Kalman trend.
+# The series lives in the caller's learned-state JSON (the enumerated
+# write path); this module still performs no writes itself.
+# ---------------------------------------------------------------------------
+
+SERIES_STATE_KEY = "telemetry_series"
+SERIES_MAX_POINTS = 240
+
+
+def _flatten(snapshot: Dict[str, Any]) -> Dict[str, float]:
+    """The numeric leaves of one snapshot as a flat {metric: value} —
+    the same flattening convention robust_baseline.flatten_snapshot
+    uses, so both consumers agree on metric names."""
+    from . import robust_baseline
+    return robust_baseline.flatten_snapshot(snapshot)
+
+
+def record_series(state: Dict[str, Any], snapshot: Dict[str, Any],
+                  when: str, key: str = SERIES_STATE_KEY) -> Dict[str, Any]:
+    """Append one flattened snapshot to the persisted series. ``when``
+    is the caller-supplied ISO timestamp (determinism: nothing here
+    reads the clock). Bounded at SERIES_MAX_POINTS (oldest dropped —
+    a series that grows without bound is a leak, not a feature)."""
+    flat = _flatten(snapshot)
+    series = state.setdefault(key, [])
+    series.append({"when": when, "metrics": flat})
+    if len(series) > SERIES_MAX_POINTS:
+        del series[:len(series) - SERIES_MAX_POINTS]
+    return series
+
+
+def series_for(state: Dict[str, Any], metric: str,
+               key: str = SERIES_STATE_KEY) -> List[Tuple[str, float]]:
+    """One metric's [(when, value)] series in arrival order — the input
+    shape diagnostics.forecast.steady_state_kalman consumes (values
+    only) with the dates carried for the human report. Missing
+    readings are SKIPPED, not interpolated (a gap is honest; a
+    fabricated point is not)."""
+    out: List[Tuple[str, float]] = []
+    for row in state.get(key, []):
+        metrics = row.get("metrics") or {}
+        if metric in metrics and isinstance(metrics[metric], (int, float)):
+            out.append((row.get("when", ""), float(metrics[metric])))
+    return out

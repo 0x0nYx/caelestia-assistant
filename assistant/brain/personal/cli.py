@@ -236,6 +236,123 @@ def cmd_topics(args, out):
     return 0
 
 
+def cmd_bridges(args, out):
+    """Bridge notes (exponential-build-4 C): high betweenness
+    (Brandes 2001) with unremarkable PageRank/authority — the notes
+    connecting otherwise-separate clusters (Burt 1992's brokerage).
+    A different signal from PageRank/HITS, presented as such."""
+    from .graph import Graph, bridge_notes, links
+    from .vault import scan as _scan
+    notes = _scan(args.vault)
+    graph = Graph()
+    for rel, note in notes.items():
+        graph.add(rel.lower(), links(note["text"]))
+    if len(graph.out) == 0:
+        out.write("bridges: the vault has no wiki-links — nothing to "
+                  "analyze\n")
+        return 1
+    r = bridge_notes(graph, top=args.top)
+    if not r["bridges"]:
+        out.write(f"no bridge notes ({r['n_nodes']} node(s)): "
+                  f"{r['note']}\n")
+        return 0
+    out.write(f"bridge notes over {r['n_nodes']} node(s) "
+              "(betweenness gated > 0, ranked by percentile gap):\n")
+    for row in r["bridges"]:
+        out.write(f"  {row['note']}  betweenness={row['betweenness']:.4f} "
+                  f"pagerank={row['pagerank']:.4f} gap={row['gap']:+.1f}\n")
+    out.write(f"note: {r['note']}\n")
+    return 0
+
+
+def cmd_drift(args, out):
+    """Windowed topic drift (exponential-build-4 C): the existing
+    ADWIN + Page-Hinkley consensus over the vault's topic-mix
+    similarity, one shared NMF basis. Snapshots are vault paths in
+    chronological order."""
+    from .topics import drift_report
+    snapshots = []
+    for i, path in enumerate(args.vault):
+        snapshots.append((f"snapshot{i + 1}:{path}", _scan_vault_notes(path)))
+    r = drift_report(snapshots, k=args.k)
+    if r.get("drifted"):
+        out.write("TOPIC DRIFT FLAGGED (both detectors alarmed)\n")
+    else:
+        summary = r.get("detector_status", {}).get("summary",
+                                                   "not enough history")
+        out.write(f"no drift flagged: {summary}\n")
+    for date, sim in r.get("similarity_stream", [])[-8:]:
+        out.write(f"  {date}: mix similarity {sim:.4f}\n")
+    g = r.get("gaining_topic")
+    if g:
+        out.write(f"gaining topic: {', '.join(g['top_terms'])} "
+                  f"(delta {g['delta']:+.4f})\n")
+    out.write(f"note: {r['note']}\n")
+    return 0
+
+
+def _scan_vault_notes(path):
+    from .vault import scan as _scan
+    return _scan(path)
+
+
+def cmd_cards(args, out):
+    """Cloze-deletion flashcard DRAFTS (exponential-build-4 C):
+    mechanical blank selection over the vault's notes; every draft
+    lands in the approve/reject queue — nothing is scheduled until a
+    human approves."""
+    from . import cloze
+    notes = _scan_vault_notes(args.vault)
+    state = st.load(args.state)
+    drafts = state.setdefault(cloze.STATE_KEY, {})
+    next_id = max([int(k[1:]) for k in drafts if k.startswith("d")
+                   and k[1:].isdigit()] or [0]) + 1
+    made = 0
+    for rel in sorted(notes):
+        result = cloze.draft_cards(notes[rel]["text"], rel,
+                                   max_cards=args.max_per_note)
+        for d in result["drafts"]:
+            if made >= args.top:
+                break
+            drafts[f"d{next_id}"] = dict(d, status="draft")
+            next_id += 1
+            made += 1
+    st.save(state, args.state)
+    out.write(f"{made} draft(s) queued (review is mandatory; nothing "
+              "is scheduled until you approve):\n")
+    for k, d in sorted(drafts.items()):
+        if d.get("status") != "draft":
+            continue
+        out.write(f"  [{k}] {d['question'][:100]} -> {d['answer']}\n")
+    out.write("approve/reject: python3 -m assistant.brain.personal "
+              "cards-decide <id> approve|reject\n")
+    return 0
+
+
+def cmd_cards_decide(args, out):
+    """The review gate for cloze drafts: approve creates a real FSRS
+    card through srs.new_card(); reject records the reason. One-way."""
+    from . import cloze
+    state = st.load(args.state)
+    try:
+        if args.decision == "approve":
+            rec = cloze.approve(state, args.id)
+            card = cloze.promote(state, args.id)
+            st.save(state, args.state)
+            out.write(f"approved {args.id}: card created via the FSRS "
+                      f"entry point (S={card['card']['S']}, "
+                      f"D={card['card']['D']}; first review schedules it)\n")
+        else:
+            rec = cloze.reject(state, args.id, reason=args.reason)
+            st.save(state, args.state)
+            out.write(f"rejected {args.id}"
+                      + (f" ({args.reason})" if args.reason else "") + "\n")
+    except (KeyError, ValueError) as exc:
+        out.write(f"cards-decide: {exc}\n")
+        return 1
+    return 0
+
+
 def cmd_ledger(args, out):
     if args.action == "learn":
         from ..cli import DEFAULT_LEDGER as _dl  # same ledger file as the shell side
@@ -328,6 +445,30 @@ def build_parser():
     gh.add_argument("--known", default="")
     gh.add_argument("--overlap", type=float, default=0.4)
     gh.set_defaults(fn=cmd_ghosts)
+
+    br = sub.add_parser("bridges")
+    br.add_argument("vault")
+    br.add_argument("--top", type=int, default=5)
+    br.set_defaults(fn=cmd_bridges)
+
+    dr = sub.add_parser("drift")
+    dr.add_argument("vault", nargs="+",
+                    help="vault snapshots in chronological order")
+    dr.add_argument("--k", type=int, default=3)
+    dr.set_defaults(fn=cmd_drift)
+
+    cd = sub.add_parser("cards")
+    cd.add_argument("vault")
+    cd.add_argument("--top", type=int, default=10)
+    cd.add_argument("--max-per-note", type=int, default=3,
+                    dest="max_per_note")
+    cd.set_defaults(fn=cmd_cards)
+
+    cdd = sub.add_parser("cards-decide")
+    cdd.add_argument("id")
+    cdd.add_argument("decision", choices=["approve", "reject"])
+    cdd.add_argument("--reason", default="")
+    cdd.set_defaults(fn=cmd_cards_decide)
 
     jr = sub.add_parser("journal")
     jr.add_argument("action", choices=["record", "resolve", "report"])

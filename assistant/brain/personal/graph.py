@@ -17,6 +17,7 @@ exponential-build-3 D adds two link-graph views alongside PageRank:
 import os
 import re
 from collections import Counter
+from typing import Any, Dict, List, Set
 
 LINK = re.compile(r"\[\[([^\]|#]+)")
 
@@ -232,3 +233,116 @@ class Graph:
         for v, lbl in labels.items():
             groups.setdefault(lbl, []).append(v)
         return sorted((sorted(g) for g in groups.values()), key=lambda g: (-len(g), g[0]))
+
+
+# ---------------------------------------------------------------------------
+# Betweenness centrality + bridge notes (exponential-build-4 C)
+# ---------------------------------------------------------------------------
+
+
+def betweenness(graph) -> Dict[str, Dict[str, float]]:
+    """Brandes 2001, "A Faster Algorithm for Betweenness Centrality",
+    J. Mathematical Sociology 25(2): the standard accumulation over
+    single-source shortest-path DAGs — O(V*E), unweighted (a wiki link
+    is an edge; there is no edge length in a vault). Betweenness of v
+    = the share of shortest paths between OTHER pairs that pass
+    THROUGH v — the "this note connects otherwise-separate clusters"
+    quantity, Freeman 1977, "A Set of Measures of Centrality Based on
+    Betweenness", Sociometry 40(1). Normalized by (n-1)(n-2)/2, the
+    undirected maximum, so the value is in [0, 1] and comparable
+    across vault sizes. Deterministic: nodes visited in sorted order,
+    ties accumulate identically. Pairs counted once per undirected
+    pair; self-pairs excluded (v is never an endpoint of its own
+    betweenness)."""
+    nodes = graph.nodes
+    und: Dict[str, Set[str]] = {v: set() for v in nodes}
+    for src in nodes:
+        for t in graph.out[src]:
+            und[src].add(t)
+            und[t].add(src)
+    betw: Dict[str, float] = {v: 0.0 for v in nodes}
+    for s in sorted(nodes):
+        # Brandes single-source pass
+        stack: List[str] = []
+        preds: Dict[str, List[str]] = {v: [] for v in nodes}
+        sigma: Dict[str, float] = {v: 0.0 for v in nodes}
+        sigma[s] = 1.0
+        dist: Dict[str, int] = {v: -1 for v in nodes}
+        dist[s] = 0
+        queue: List[str] = [s]
+        head = 0
+        while head < len(queue):
+            v = queue[head]
+            head += 1
+            stack.append(v)
+            for w in sorted(und[v]):
+                if dist[w] < 0:
+                    dist[w] = dist[v] + 1
+                    queue.append(w)
+                if dist[w] == dist[v] + 1:
+                    sigma[w] += sigma[v]
+                    preds[w].append(v)
+        delta: Dict[str, float] = {v: 0.0 for v in nodes}
+        while stack:
+            w = stack.pop()
+            for v in preds[w]:
+                delta[v] += (sigma[v] / sigma[w]) * (1.0 + delta[w])
+            if w != s:
+                betw[w] += delta[w]
+    n = len(nodes)
+    norm = ((n - 1) * (n - 2) / 2.0) if n > 2 else 1.0
+    # undirected graphs count each pair twice in the Brandes delta
+    return {v: {"raw": round(betw[v] / 2.0, 6),
+                "normalized": round((betw[v] / 2.0) / norm, 6)}
+            for v in nodes}
+
+
+def bridge_notes(graph, top: int = 5) -> Dict[str, Any]:
+    """The betweenness-vs-PageRank cross view: notes whose BETWEENNESS
+    is high while their PageRank and HITS authority are unremarkable —
+    the ones connecting separate clusters rather than the ones
+    everything points at (Burt 1992, "Structural Holes": the brokerage
+    position, not the popularity position). This is a DIFFERENT signal
+    from the existing importance views, presented as such: a bridge
+    note is not "more important", it is differently important — it is
+    the note whose removal would disconnect topics.
+
+    Ranking: betweenness percentile MINUS mean of (pagerank
+    percentile, authority percentile); positive gaps are bridges.
+    Percentiles are rank-based over the vault's own distribution — a
+    small vault makes percentiles coarse, and the report says so."""
+    from .topics import _percentile_ranks  # shared helper (see topics.py)
+    bet = betweenness(graph)
+    rank = graph.pagerank()
+    hits = graph.hits()
+    auth = hits["authority"]
+    nodes = graph.nodes
+    if len(nodes) < 5:
+        return {"bridges": [], "n_nodes": len(nodes),
+                "note": "fewer than 5 notes: percentiles are too coarse "
+                        "to name bridges honestly (rerun as the vault grows)",
+                "algorithm": "Brandes 2001 betweenness vs PageRank/HITS "
+                             "percentile gap"}
+    b_pct = _percentile_ranks({v: bet[v]["normalized"] for v in nodes})
+    p_pct = _percentile_ranks({v: rank.get(v, 0.0) for v in nodes})
+    a_pct = _percentile_ranks({v: auth.get(v, 0.0) for v in nodes})
+    rows = []
+    for v in nodes:
+        gap = b_pct[v] - (p_pct[v] + a_pct[v]) / 2.0
+        rows.append({"note": v,
+                     "betweenness": bet[v]["normalized"],
+                     "pagerank": round(rank.get(v, 0.0), 6),
+                     "gap": round(gap, 3)})
+    # the GATE: a bridge note must actually sit on shortest paths —
+    # strictly positive betweenness. (A percentile-median gate would
+    # not do: tied zero-betweenness nodes share a mean-rank percentile
+    # and would sail through on the gap arithmetic alone.)
+    rows.sort(key=lambda r: (-r["gap"], r["note"]))
+    bridges = [r for r in rows if r["betweenness"] > 0][:top]
+    return {"bridges": bridges, "n_nodes": len(nodes),
+            "converged": hits["converged"],
+            "note": "bridge = high betweenness, unremarkable PageRank/"
+                    "authority — a brokerage position (Burt 1992), not a "
+                    "fourth flavor of important",
+            "algorithm": "Brandes 2001 betweenness percentile minus mean "
+                         "PageRank/authority percentile"}

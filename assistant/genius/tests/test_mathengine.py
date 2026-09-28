@@ -165,5 +165,111 @@ class TestProbability(unittest.TestCase):
         self.assertAlmostEqual(ab["expected_steps_to_absorption"][1], 6.0, places=6)
 
 
+class TestSymbolicIntegration(unittest.TestCase):
+    """exponential-build-4 B: the bounded symbolic integrator — table
+    hits verified differentially before shipping; table misses are the
+    honest NO_CLOSED_FORM_IN_TABLE, never an invented answer."""
+
+    def test_table_hits_verified_ok(self):
+        cases = {
+            "x": "(x ^ 2) / 2",
+            "3*x^2": "x ^ 3",
+            "exp(2*x)": "exp(2 * x) / 2",
+            "ln(x)": "x * ln(x) - x",
+            "sin(3*x)": "-cos(3 * x) / 3",
+            "cos(x)": "sin(x)",
+            "1/x": "ln(x)",
+            "x*exp(x)": "x * exp(x) - exp(x)",        # by parts
+            "x^2*exp(x)": None,                        # by parts, degree 2
+            "x^2*sin(x)": None,                        # by parts, twice
+            "x*exp(x^2)": "0.5 * exp(x ^ 2)",          # u-substitution
+            "sqrt(x)": "(x ^ 1.5) / 1.5",
+            "(2*x + 1)^3": "(2 * x + 1) ^ 4 / 8",      # chain power rule
+        }
+        for expr in cases:
+            r = m.symbolic_integrate(expr)
+            self.assertEqual(r["status"], "OK", msg=expr)
+            self.assertTrue(r["verified"], msg=expr)
+            self.assertTrue(r["method_trace"], msg=expr)
+
+    def test_antiderivative_differentiates_back(self):
+        for expr in ("x^3 - 2*x + 7", "tan(x)", "ln(2*x)", "5*x*exp(-x)"):
+            r = m.symbolic_integrate(expr)
+            self.assertEqual(r["status"], "OK", msg=expr)
+            F = m.parse(r["antiderivative"])
+            dF = m.simplify(m.differentiate(F, "x"))
+            f = m.parse(expr)
+            for x in (0.5, 1.3, 2.1):
+                a = m.evaluate(dF, {"x": x})
+                b = m.evaluate(f, {"x": x})
+                self.assertAlmostEqual(a, b, places=5, msg=expr)
+
+    def test_out_of_table_is_honest_refusal(self):
+        for expr in ("exp(x^2)", "sin(x)*cos(x)", "exp(x)*sin(x)"):
+            r = m.symbolic_integrate(expr)
+            self.assertEqual(r["status"], "NO_CLOSED_FORM_IN_TABLE", msg=expr)
+            self.assertIn("not a Risch", r["note"])
+
+    def test_verification_gate_refuses_bad_candidates(self):
+        # a forced bad candidate through the internal table: the gate
+        # must refuse the engine's own wrong answer, never ship it
+        integrand = m.parse("x*exp(x^2)")
+        bad = m.parse("2 * exp(x^2)")   # wrong factor (k division bug)
+        self.assertFalse(m._verify_antiderivative(bad, integrand, "x"))
+        good = m.parse("0.5 * exp(x^2)")
+        self.assertTrue(m._verify_antiderivative(good, integrand, "x"))
+
+    def test_power_rule_negative_one_gives_ln(self):
+        r = m.symbolic_integrate("1/x")
+        self.assertEqual(r["status"], "OK")
+        self.assertIn("ln", r["antiderivative"])
+
+
+class TestRK45(unittest.TestCase):
+    """exponential-build-4 B: adaptive Dormand-Prince 4(5) alongside the
+    fixed-step solvers — same interface, honest step/error accounting."""
+
+    def test_rk45_matches_exact_solution(self):
+        r = m.ode_solve("y", 0.0, 1.0, 1.0, method="rk45", tol=1e-9)
+        self.assertAlmostEqual(r["y_end"], math.e, places=8)
+        self.assertEqual(r["method"], "rk45")
+        self.assertIn("rejected_steps", r)
+        self.assertLess(r["max_local_error"], 1e-8)
+
+    def test_adaptive_steps_earn_their_keep(self):
+        # y' = y on [0,1]: exact y(1) = e. Adaptive hits it with ~a dozen
+        # steps; euler at the SAME step budget is off by ~0.1. The
+        # comparison is against the same-budget euler, not rk4 (fixed
+        # rk4 at h=1e-3 is also very accurate — 1000 steps of it —
+        # which is the honest counterpoint: adaptivity buys steps, not
+        # magic)
+        adaptive = m.ode_solve("y", 0.0, 1.0, 1.0, method="rk45", tol=1e-8)
+        euler_same_budget = m.ode_solve("y", 0.0, 1.0, 1.0, h=1.0 / adaptive["steps"],
+                                        method="euler")
+        self.assertLess(adaptive["steps"], 30)
+        self.assertLess(abs(adaptive["y_end"] - math.e), 1e-7)
+        self.assertGreater(abs(euler_same_budget["y_end"] - math.e), 0.05)
+
+    def test_rejections_reported_on_stiff_problem(self):
+        # y' = -1000y has time constant 1e-3; the initial step guess
+        # (span/100) is beyond the stability region, so the controller
+        # MUST reject and shrink — visibly, in the report. The mixed
+        # one-knob tolerance bounds ABSOLUTE error, so a solution that
+        # decays ~435 orders of magnitude is resolved only down to
+        # ~tol*span — that envelope is the documented honest limit,
+        # recorded in the build-4 findings
+        r = m.ode_solve("-1000*y", 0.0, 1.0, 1.0, method="rk45", tol=1e-10)
+        self.assertGreaterEqual(r["rejected_steps"], 1)
+        self.assertLess(r["y_end"], 1e-9)
+
+    def test_unknown_method_still_refused(self):
+        with self.assertRaises(m.CalcError):
+            m.ode_solve("y", 0.0, 1.0, 1.0, method="midpoint")
+
+    def test_tol_must_be_positive(self):
+        with self.assertRaises(m.CalcError):
+            m.ode_solve("y", 0.0, 1.0, 1.0, method="rk45", tol=0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

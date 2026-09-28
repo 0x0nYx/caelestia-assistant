@@ -358,3 +358,144 @@ class ServiceAndCliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# exponential-build-4 C: Brandes betweenness + bridge notes, windowed
+# topic drift over the EXISTING ADWIN/Page-Hinkley consensus
+# ---------------------------------------------------------------------------
+
+import random as _random
+
+from assistant.brain.personal.graph import Graph, betweenness, bridge_notes
+from assistant.brain.personal import topics
+from assistant.brain.personal.topics import (drift_report, topic_mix,
+                                             _percentile_ranks)
+
+
+class BetweennessTests(unittest.TestCase):
+    def _two_cluster_bridge(self):
+        g = Graph()
+        g.add("k1", ["k2"])
+        g.add("k2", ["bridge"])
+        g.add("bridge", ["g1"])
+        g.add("g1", ["g2"])
+        return g
+
+    def test_bridge_node_has_max_betweenness(self):
+        b = betweenness(self._two_cluster_bridge())
+        self.assertAlmostEqual(b["bridge"]["normalized"], 2 / 3, places=5)
+        for other in ("k1", "g2"):
+            self.assertLess(b[other]["normalized"], 0.2)
+
+    def test_normalized_in_unit_interval(self):
+        b = betweenness(self._two_cluster_bridge())
+        for v in b.values():
+            self.assertTrue(0.0 <= v["normalized"] <= 1.0)
+
+    def test_empty_graph_zero(self):
+        self.assertEqual(betweenness(Graph()), {})
+
+
+class BridgeNoteTests(unittest.TestCase):
+    def test_bridge_note_ranks_first_and_honesty_carried(self):
+        g = Graph()
+        # cluster A densely links to a hub, cluster B to another; one
+        # span note connects them
+        g.add("a1", ["a2"])
+        g.add("a2", ["hub_a"])
+        g.add("a3", ["hub_a"])
+        g.add("hub_a", ["span", "a1"])
+        g.add("b1", ["b2"])
+        g.add("b2", ["hub_b"])
+        g.add("hub_b", ["span", "b1"])
+        g.add("span", ["hub_a", "hub_b"])
+        result = bridge_notes(g, top=3)
+        self.assertEqual(result["bridges"][0]["note"], "span")
+        self.assertIn("brokerage", result["note"])
+
+    def test_small_vault_refuses_honestly(self):
+        g = Graph()
+        g.add("x", ["y"])
+        result = bridge_notes(g)
+        self.assertEqual(result["bridges"], [])
+        self.assertIn("too coarse", result["note"])
+
+
+class PercentileTests(unittest.TestCase):
+    def test_ties_share_mean_rank(self):
+        p = _percentile_ranks({"a": 1.0, "b": 1.0, "c": 2.0})
+        self.assertEqual(p["a"], p["b"])
+        self.assertEqual(p["c"], 100.0)
+
+
+class TopicDriftTests(unittest.TestCase):
+    KERNEL = {"a": {"text": "kernel scheduling latency cpu"},
+              "b": {"text": "cpu scheduler kernel threads"},
+              "c": {"text": "garden plants soil water"},
+              "d": {"text": "soil water garden plants"}}
+    GARDEN = {"a": {"text": "garden plants soil water mulch"},
+              "b": {"text": "soil mulch garden compost plants"},
+              "c": {"text": "kernel latency cpu"},
+              "d": {"text": "cpu scheduler kernel"}}
+
+    def test_topic_mix_normalized_against_shared_basis(self):
+        snaps = [("k1", self.KERNEL), ("k2", self.KERNEL),
+                 ("k3", self.MONO), ("k4", self.MONO)]
+        # build the basis the same way drift_report does
+        union = {}
+        for _d, notes in snaps:
+            for nid, note in notes.items():
+                union[nid] = note
+        basis = topics.build_basis(union)
+        mix = topic_mix(self.KERNEL, basis)
+        self.assertTrue(mix["mix"])
+        self.assertAlmostEqual(sum(mix["mix"]), 1.0, places=5)
+
+    def test_fewer_than_four_snapshots_refused(self):
+        r = drift_report([("d1", self.KERNEL), ("d2", self.KERNEL)])
+        self.assertFalse(r["drifted"])
+        self.assertIn("inventing", r["note"])
+
+    def test_warmup_honesty_no_alarm_without_history(self):
+        # the existing detectors' warmup is honored: a short stream
+        # (even with a real shift) cannot alarm — reported, not faked
+        snaps = [("d1", self.KERNEL), ("d2", self.KERNEL),
+                 ("d3", self.MONO), ("d4", self.G2)]
+        r = drift_report(snaps)
+        self.assertFalse(r["drifted"])
+        self.assertIn("co-occurrence", r["note"])
+
+    MONO = {"a": {"text": "garden plants soil water mulch"},
+            "b": {"text": "soil mulch garden compost plants"},
+            "c": {"text": "garden compost soil mulch plants"},
+            "d": {"text": "plants soil garden water mulch compost"}}
+    G2 = {"a": {"text": "mulch compost garden soil water"},
+          "b": {"text": "garden soil water mulch compost"},
+          "c": {"text": "compost mulch soil garden plants"},
+          "d": {"text": "water soil garden compost mulch"}}
+
+    def test_real_shift_flags_with_enough_history(self):
+        # 30 stable kernel snapshots, then 30 garden snapshots rotating
+        # two garden mixes: within-phase cosine 1.0, then a SUSTAINED
+        # drop (a one-point dip is an outlier and the detectors are
+        # right to ignore it). Both existing detectors must alarm
+        # through their unchanged consensus gate.
+        snaps = [(f"k{i}", self.KERNEL) for i in range(30)]
+        for i in range(30):
+            snaps.append((f"m{i}", self.MONO if i % 2 == 0 else self.G2))
+        r = drift_report(snaps)
+        self.assertTrue(r["drifted"], msg=r["detector_status"])
+        # the signal stream itself shows the shape: ~1.0 inside the
+        # phase, a decisive drop at the boundary, sustained below
+        self.assertAlmostEqual(r["similarity_stream"][0][1], 1.0, places=4)
+        self.assertLess(r["similarity_stream"][30][1], 0.99)
+
+    def test_gaining_topic_reported_names_terms(self):
+        snaps = [(f"k{i}", self.KERNEL) for i in range(10)]
+        for i in range(10):
+            snaps.append((f"m{i}", self.MONO if i % 2 == 0 else self.G2))
+        r = drift_report(snaps)
+        self.assertIsNotNone(r["gaining_topic"])
+        self.assertTrue(r["gaining_topic"]["top_terms"])
+        self.assertGreater(r["gaining_topic"]["delta"], 0.0)

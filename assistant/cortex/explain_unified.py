@@ -70,10 +70,20 @@ def explain_diagnostics(text: str) -> Dict[str, Any]:
     d = diagnostics_engine.diagnose(text)
     top = d.get("top")
     if not top:
+        lines = ["no rule matched — the honest answer is "
+                 "\"I don't know\" (diagnostics engine's own verdict)"]
+        unmatched = d.get("unmatched_templates")
+        if unmatched:
+            lines.append("recurring shapes among the unmatched lines "
+                         f"({unmatched.get('n_lines', 0)} line(s) templated):")
+            for row in unmatched.get("rows", [])[:5]:
+                lines.append(f"  - [{row['count']}x] {row['template'][:140]}")
+            lines.append(str(unmatched.get(
+                "note", "Drain clusters shapes, not causes"))
+                + " — a recurring template is a candidate for a "
+                "human-written rule, not a diagnosis")
         return {"engine": "diagnostics", "headline": "NO_MATCH",
-                "lines": ["no rule matched — the honest answer is "
-                          "\"I don't know\" (diagnostics engine's own "
-                          "verdict)"],
+                "lines": lines,
                 "citations": [], "confidence": None}
     rule = top["rule"]
     lines = [f"{fix.get('text', '')}" for fix in (rule.get("fix") or [])]

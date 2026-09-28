@@ -102,3 +102,69 @@ class DistinctInstanceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MurphyDecompositionTests(unittest.TestCase):
+    """exponential-build-4 C: the Murphy 1973 partition of the Brier
+    score — REL/RES/UNC plus the honestly-reported finite-sample
+    residual (the three-term identity is exact in expectation; the
+    covariance residual is shown, not folded away)."""
+
+    def _ledger(self):
+        entries = {}
+        outcomes = [(0.8, True), (0.8, False), (0.7, False),
+                    (0.3, False), (0.3, True), (0.6, True)]
+        for i, (p, o) in enumerate(outcomes):
+            selfcal.predict(entries, f"p{i}", f"statement {i}", p)
+            selfcal.resolve(entries, f"p{i}", o)
+        return entries
+
+    def test_components_present_and_ordered(self):
+        m = selfcal.murphy_decomposition(self._ledger())
+        for key in ("bs", "rel", "res", "unc", "d", "residual", "base_rate"):
+            self.assertIn(key, m)
+        self.assertAlmostEqual(m["bs"], 0.3183, places=3)
+        self.assertAlmostEqual(m["base_rate"], 0.5, places=6)
+
+    def test_residual_makes_the_identity_exact_by_construction(self):
+        m = selfcal.murphy_decomposition(self._ledger())
+        recomposed = m["rel"] - m["res"] + m["unc"] + m["residual"]
+        self.assertAlmostEqual(recomposed, m["bs"], places=4)
+
+    def test_perfectly_calibrated_low_rel(self):
+        entries = {}
+        outcomes = [(0.9, True), (0.9, True), (0.9, True),
+                    (0.1, False), (0.1, False), (0.1, False)]
+        for i, (p, o) in enumerate(outcomes):
+            selfcal.predict(entries, f"p{i}", f"s{i}", p)
+            selfcal.resolve(entries, f"p{i}", o)
+        m = selfcal.murphy_decomposition(entries)
+        high_res = m["rel"] + m["d"]
+        self.assertLessEqual(high_res, 0.0101)
+
+    def test_resolution_zero_when_outcomes_do_not_separate(self):
+        entries = {}
+        outcomes = [(0.7, True), (0.3, True), (0.7, False), (0.3, False)]
+        for i, (p, o) in enumerate(outcomes):
+            selfcal.predict(entries, f"p{i}", f"s{i}", p)
+            selfcal.resolve(entries, f"p{i}", o)
+        m = selfcal.murphy_decomposition(entries)
+        self.assertAlmostEqual(m["res"], 0.0, places=6)
+
+    def test_empty_ledger_refused_honestly(self):
+        m = selfcal.murphy_decomposition({})
+        self.assertIsNone(m["bs"])
+        self.assertIn("empty", m["note"])
+
+    def test_thin_sample_flagged(self):
+        entries = {}
+        for i, (p, o) in enumerate([(0.8, True), (0.9, False)]):
+            selfcal.predict(entries, f"p{i}", f"s{i}", p)
+            selfcal.resolve(entries, f"p{i}", o)
+        m = selfcal.murphy_decomposition(entries)
+        self.assertTrue(m["thin_sample"])
+
+    def test_summary_carries_murphy(self):
+        summary = selfcal.summary(self._ledger())
+        self.assertIn("murphy", summary)
+        self.assertIn("rel", summary["murphy"])

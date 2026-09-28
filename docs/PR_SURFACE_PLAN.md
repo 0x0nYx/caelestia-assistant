@@ -72,6 +72,20 @@ requests without them.
 The second brain's lessons travel as DESIGN notes in a PR description,
 not as code.
 
+exponential-build-4 addition (same verdict, one paragraph of new
+surface named): the community-distribution group (`agent/
+archetype_pack.py`, `cortex/coldstart.py`) widens this repo's
+standalone scope and is explicitly NOT offered upstream either — an
+archetype marketplace that binds nodes to THIS repo's dispatcher table
+is meaningless outside it, and the DP-noised community priors
+bootstrap THIS repo's bandit state, which upstream does not run. The
+build-4 feature groups otherwise extend layers already named above
+(diagnostics/drain.py, genius/mathengine.py + autodiff + sat,
+brain/personal graph/topics/cloze/selfcal, cortex conservative/
+ensemble/crf/coref, diagnostics/forecast) — all inside the
+already-excluded scope, none of them staged, imported, or structured
+for an upstream PR while the licensing question above stays open.
+
 ## Why this narrow order
 
 - It matches the thread: the proposal asked for structured config

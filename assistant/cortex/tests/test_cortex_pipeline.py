@@ -513,6 +513,22 @@ class CliAndWiringTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.dir = Path(self._tmp.name)
         self.target = _write_target(self.dir)
+        # Hermeticity: the inline-run tests below exercise the full
+        # pipeline, which reads learned state from HOME (episodes,
+        # calibration). Pin HOME to this temp dir so an ambient HOME
+        # with real learned state can never change routing outcomes
+        # here (this suite once flipped depending on how many `route`
+        # calls the developer had made).
+        import os
+        self._orig_home = os.environ.get("HOME")
+        os.environ["HOME"] = self._tmp.name
+
+        def _restore_home():
+            if self._orig_home is None:
+                os.environ.pop("HOME", None)
+            else:
+                os.environ["HOME"] = self._orig_home
+        self.addCleanup(_restore_home)
 
     def test_hub_routes_registered(self):
         from assistant.hub import ROUTES

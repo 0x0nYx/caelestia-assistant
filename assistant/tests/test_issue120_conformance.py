@@ -63,14 +63,34 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
+
+from assistant.cortex.nlhistory import parse_query as parse_history_query
+from assistant.cortex.nlhistory import plan as plan_history
 
 STATUS = {
     "b1": "IMPLEMENTED", "b2a": "IMPLEMENTED", "b2b": "IMPLEMENTED",
-    "b3": "IMPLEMENTED", "b4a": "IMPLEMENTED", "b4b": "PARTIAL",
+    "b3": "IMPLEMENTED", "b4a": "IMPLEMENTED",
+    # F10 (33c42b1): the NL time-expression restore exists and the
+    # restore-since reading rides the existing undo(steps=K) engine.
+    "b4b": "IMPLEMENTED",
     "b5a": "IMPLEMENTED", "b5b": "IMPLEMENTED", "b5c": "IMPLEMENTED",
-    "b6a": "NOT_IMPLEMENTED", "b6b": "PARTIAL", "b6c": "NOT_IMPLEMENTED",
-    "b6d": "NOT_IMPLEMENTED", "b6e": "PARTIAL",
+    # F30 (8c8f7a2): cortex context — injectable read-only probes, the
+    # clock is never evidence by itself.
+    "b6a": "IMPLEMENTED",
+    # F9 (7088f2c): profile algebra — compose presets/macros/calls,
+    # later-wins with conflicts reported, riding the normal gates.
+    "b6b": "IMPLEMENTED",
+    # F19 (57f5fd7): pull-based schedules — nothing runs by itself.
+    "b6c": "IMPLEMENTED",
+    # F20 (2b11443): --monitor/--monitors over the upstream forScreen
+    # override layers; connected-screen enumeration stays in
+    # Quickshell/Wayland and the report says so.
+    "b6d": "IMPLEMENTED",
+    # F16 (5b3d55f): personalize mines consented evidence into the
+    # brain ledger — the #120 proposal surface.
+    "b6e": "IMPLEMENTED",
 }
 
 
@@ -90,6 +110,15 @@ def _settings(argv, state="{}", target=None):
         except SystemExit as exc:
             rc = int(exc.code or 0)
     return rc, out.getvalue(), err.getvalue(), target
+
+
+def _mk_target():
+    """A scratch shell.json target for surface-existence checks."""
+    import tempfile
+    tmp = Path(tempfile.mkdtemp(prefix="iss120-row-"))
+    target = tmp / "shell.json"
+    target.write_text("{}", encoding="utf-8")
+    return tmp, target
 
 
 def _route(text):
@@ -275,18 +304,28 @@ class B4UndoHistory(unittest.TestCase):
         self.assertEqual(json.loads(target.read_text())
                          ["bar"]["scale"], 1.0)
 
-    def test_restore_yesterdays_theme_is_partial_and_honest(self) -> None:
-        """No NL time-expression surface yet: the STATUS row says
-        PARTIAL, and --undo-id + --macro-save are the honest primitives
-        a user composes today (macro capture of an approved sequence
-        exists)."""
-        self.assertEqual(STATUS["b4b"], "PARTIAL")
-        from assistant.settings import cli as settings_cli
-        parser = settings_cli._build_arg_parser()
-        flags = {a.option_strings[0]
-                 for a in parser._actions if a.option_strings}
-        self.assertIn("--undo-id", flags)
-        self.assertIn("--macro-save", flags)
+    def test_restore_yesterdays_theme_resolves_the_window(self) -> None:
+        """F10 flipped b4b: the NL time expression resolves to a
+        concrete restore plan — a window with no domain scope means
+        'restore TO that point' and reverts every change applied since
+        then via the existing undo(steps=K) engine."""
+        self.assertEqual(STATUS["b4b"], "IMPLEMENTED")
+        now = datetime(2026, 9, 28, 12, 0)
+        from datetime import timedelta as _td
+        entries = [
+            {"id": 2, "at": (now - _td(hours=1)).isoformat(),
+             "label": "chat: x",
+             "ops": [{"path": "bar.scale", "old": 0.9, "new": 1.0}]},
+            {"id": 1, "at": (now - _td(days=2)).isoformat(),
+             "label": "chat: y",
+             "ops": [{"path": "bar.scale", "old": 1.0, "new": 0.9}]},
+        ]
+        query = parse_history_query("restore yesterday's theme", now=now)
+        plan = plan_history(query, entries, now=now)
+        self.assertEqual(plan.verdict, "UNDO")
+        self.assertEqual(plan.action, "undo")
+        self.assertEqual(plan.steps, 1)
+        self.assertIn("restores the state as of", plan.reason)
 
 
 class B5NexusComplements(unittest.TestCase):
@@ -326,18 +365,56 @@ class B6Phase3(unittest.TestCase):
     automation, monitor-aware config, personalized suggestions."""
 
     def test_phase3_status_rows_are_declared_honestly(self) -> None:
-        self.assertEqual(STATUS["b6a"], "NOT_IMPLEMENTED")
-        self.assertEqual(STATUS["b6b"], "PARTIAL")
-        self.assertEqual(STATUS["b6c"], "NOT_IMPLEMENTED")
-        self.assertEqual(STATUS["b6d"], "NOT_IMPLEMENTED")
-        self.assertEqual(STATUS["b6e"], "PARTIAL")
+        """The F16/F17-F21/F30 wave closed every Phase-3 row; the drift
+        detector keeps the table honest in BOTH directions."""
+        self.assertEqual(STATUS["b6a"], "IMPLEMENTED")
+        self.assertEqual(STATUS["b6b"], "IMPLEMENTED")
+        self.assertEqual(STATUS["b6c"], "IMPLEMENTED")
+        self.assertEqual(STATUS["b6d"], "IMPLEMENTED")
+        self.assertEqual(STATUS["b6e"], "IMPLEMENTED")
 
-    def test_personalization_primitives_exist_but_are_unwired(self) -> None:
-        """b6e PARTIAL: the brain layer learns (prefs/nlhistory), but no
-        #120 proposal surface consumes it yet — pinned as such."""
-        from assistant.brain import state as brain_state
-        self.assertTrue(hasattr(brain_state, "resolve_path"))
-        self.assertTrue(hasattr(brain_state, "load"))
+    def test_b6a_context_recommendations_surface(self) -> None:
+        from assistant.cortex import context as context_mod
+        view = context_mod.recommend_contextual(
+            now=datetime(2026, 9, 28, 12, 0),
+            power={"percent": 14.0, "charging": False,
+                   "source": "BAT0"})
+        self.assertEqual(view["findings"][0]["kind"], "battery_low")
+        self.assertIn("SUGGESTED_NOT_EXECUTED",
+                      view["findings"][0]["command"])
+
+    def test_b6b_profile_algebra_composes(self) -> None:
+        from assistant.settings import cli as settings_cli
+        parser = settings_cli._build_arg_parser()
+        flags = {a.option_strings[0]
+                 for a in parser._actions if a.option_strings}
+        for flag in ("--profile", "--profile-save", "--profile-diff",
+                     "--profile-whatif"):
+            self.assertIn(flag, flags)
+
+    def test_b6c_schedules_are_pull_based(self) -> None:
+        from assistant.cortex import schedules
+        self.assertTrue(hasattr(schedules, "evaluate"))
+        self.assertTrue(hasattr(schedules, "file_firing"))
+
+    def test_b6d_monitor_report_targets_override_layers(self) -> None:
+        from assistant.settings import monitors
+        tmp, target = _mk_target()
+        resolved = monitors.resolve_target(target, "DP-1")
+        self.assertEqual(resolved.name, target.name)
+        self.assertIn("monitors", str(resolved))
+        rows = monitors.monitor_behavior_tools()
+        self.assertTrue(any(r["name"] == "setMonitor" for r in rows))
+
+    def test_b6e_personalization_files_into_the_ledger(self) -> None:
+        from assistant.cortex import personalize
+        mined = personalize.mine([
+            {"id": i, "at": f"2026-09-28T1{i}:00:00",
+             "label": "preset: battery-saver", "ops": []}
+            for i in range(1, 4)])
+        self.assertEqual(mined["recurring"][0]["count"], 3)
+        self.assertEqual(personalize.SUGGESTION_KIND,
+                         "personalized_suggestion")
 
 
 if __name__ == "__main__":

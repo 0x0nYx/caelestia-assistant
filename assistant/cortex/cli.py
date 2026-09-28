@@ -741,6 +741,19 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
     pz.add_argument("--ledger", metavar="PATH", default=None,
                     help="brain ledger path for file (default: the brain "
                          "CLI's DEFAULT_LEDGER)")
+    cx = sub.add_parser("context", help="F30 context-aware "
+                                        "recommendations (read-only probes, "
+                                        "inert commands)")
+    cx.add_argument("--probe", action="store_true",
+                    help="read the real power state from "
+                         "/sys/class/power_supply (read-only; without "
+                         "this, no battery advice is made)")
+    cx.add_argument("--now", metavar="ISO", default=None,
+                    help="anchor for hour-bucket selection (default: the "
+                         "real clock — this is a pull-based verb)")
+    cx.add_argument("--ledger", metavar="PATH", default=None,
+                    help="fit the preference model from this brain ledger "
+                         "instead of the DEFAULT_LEDGER")
     tm = sub.add_parser("telemetry", help="engine coverage/accuracy "
                                          "report; opt-in Laplace-DP export "
                                          "(read-only, stdout only)")
@@ -892,6 +905,38 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                   "decided, or below the evidence floors)")
         print("decide via: caelestia-assist inbox (the unified "
               "pending-decisions view; or brain ledger approve|reject)")
+        return 0
+
+    if args.cmd == "context":
+        # F30: context-aware recommendations. Read-only probes; the
+        # command strings are SUGGESTED_NOT_EXECUTED; the clock selects,
+        # it never supplies evidence.
+        from . import context as context_mod
+        from datetime import datetime as _dt
+        now = None
+        if args.now:
+            try:
+                now = _dt.fromisoformat(args.now)
+            except ValueError:
+                print("error: --now needs an ISO-8601 datetime",
+                      file=sys.stderr)
+                return 2
+        else:
+            now = _dt.now()
+        power = context_mod.read_power_state() if args.probe else None
+        model = None
+        from ..brain.cli import DEFAULT_LEDGER
+        from ..brain.ledger import Ledger
+        from ..brain.prefs import PreferenceModel
+        ledger_path = args.ledger or str(DEFAULT_LEDGER)
+        if Path(ledger_path).exists():
+            model = PreferenceModel()
+            model.from_ledger(Ledger(ledger_path).items)
+            if not model.table:
+                model = None
+        view = context_mod.recommend_contextual(now=now, power=power,
+                                                model=model)
+        print("\n".join(context_mod.render_lines(view)))
         return 0
 
     if args.cmd == "telemetry":

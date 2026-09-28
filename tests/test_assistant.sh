@@ -66,6 +66,45 @@ test_scan_suite
 test_cortex_suite
 test_genius_suite
 
+test_properties_suite() {
+  # F25 (exponential-build-5): the seeded, shrinking property helper
+  # and the three safety properties (apply-then-undo identity, no
+  # out-of-range plans, hub flag order). Runs in its own interpreter
+  # with the repo root on the path (the file sets it itself too).
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not available; skipping property tests" >&2
+    return 0
+  fi
+  local out code
+  out=$(PYTHONPATH="$REPO_ROOT" timeout 300 python3 \
+        "$TESTS_DIR/test_properties.py" 2>&1)
+  code=$?
+  if [ "$code" != "0" ]; then
+    echo "FAIL - assistant property suite"
+    echo "$out" | tail -20
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    FAILED_NAMES+=("assistant property suite")
+    return 1
+  fi
+  echo "$out" | grep "^prop ok:" || true
+  PASS_COUNT=$((PASS_COUNT + 1))
+  echo "ok   - assistant property suite (seeded, shrinking)"
+}
+test_properties_suite
+
+test_conformance_suite() {
+  # A9 (exponential-build-5): the issue #120 bullet-by-bullet
+  # conformance suite with the honest status table.
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not available; skipping conformance tests" >&2
+    return 0
+  fi
+  PYTHONPATH="$REPO_ROOT" python3 -m unittest discover \
+    -s "$REPO_ROOT/assistant/tests" -t "$REPO_ROOT" >/dev/null 2>&1
+  assert_status 0 "$?" "assistant suite assistant/tests (issue #120 conformance)"
+}
+test_conformance_suite
+
 test_lazy_imports() {
   # R4 (exponential-build-5): `--help` must not import engine modules.
   # Needs a fresh interpreter, so it lives here (the Python suite runs

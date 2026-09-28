@@ -4,6 +4,75 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/)-flavoured.
 
+## [0.3.0] — 2026-09-29 — exponential-build-5 baseline
+
+The fifth build: the measurement arena, ten defect fixes, seventeen
+feature items across routing, composite command intelligence,
+knowledge-graph personalization, environment management, community
+distribution, accessibility and self-improvement — every item gated by
+the full suite (2496 tests), the seeded dev arena (top-1 0.9556,
+confident-wrong 1.5%), and the value gates (no duplication, budgets,
+existing engines).
+
+### Added — exponential-build-5 (this entry's substance)
+
+- Measurement: the eval arena (`assistant/eval`) — six suites over
+  frozen sets (routing/nlplan/abstention/diagnosis/calibration/
+  footprint) with seeded bootstrap intervals, a ratchet baseline file,
+  and `eval grow` (F26) mining near-threshold and approved phrases
+  into a quarantine that promotes ONLY to caller-named dev sets
+  (sealed sets refuse by name).
+- Routing: type-gated cue constraints (F2), value/unit grammar (F4),
+  absence explainer (F5), out-of-ontology detector (F6), no-silent-drop
+  invariant (F7), mathematics fixes (F8) — and the F3 evidence guard
+  (specific-addressing displacement + prepositional-object demotion
+  plus cited lexicon entries) taking confident-wrong from 5.8% to
+  1.5% on dev.
+- Composite command intelligence: profile algebra (F9 — compose
+  presets/macros/calls, later-wins with conflicts reported), NL
+  time-expression restore (F10 — "restore yesterday's theme" reverts
+  everything applied since via the existing undo engine), and the
+  composite what-if preview (F11 — per-source consequences, blast
+  radius, projected-state sanity verdicts before consent).
+- Knowledge graph & personalization: shell knowledge graph (F12),
+  noisy config bisect (F13), causal why-chains and counterfactuals
+  (F14), taught concepts (F15), context-aware recommendations (F30 —
+  injectable read-only probes; the clock is never evidence by itself),
+  personalized suggestions wired into the brain ledger (F16).
+- Environment management: hash-pinned snapshots with restore-as-plan
+  (F17), portable export with review-only import (F18), pull-based
+  workspace schedules (F19 — nothing runs by itself), monitor-aware
+  planning over the upstream forScreen override layers (F20), and the
+  one-pass environment audit (F21).
+- Community & accessibility: the zero-drift tool catalog and shell
+  completion generator (F23), the test-enforced plain-output contract
+  and the reduced-motion recipe (F24), seeded shrinking property tests
+  over the safety invariants (F25).
+- Self-improvement: the composite doctor (F27) and the guarded weight
+  re-fit ratchet (F28 — adopt only on no measured regression, bounded
+  audit).
+- Optional model tier (A8): local-model-assisted drafting for
+  out-of-ontology requests (generative/assisted.py) — DEFAULT OFF,
+  loopback-only, single attempt, every draft validated by the ordinary
+  planner and labeled MODEL_SUGGESTED, never executed.
+
+### Fixed — the ten defects (D1-D10)
+
+- D1/D2 routing confidence: boolean/numeric polarity verbs are now
+  TYPE CONSTRAINTS on candidate kinds (a gate, not a nudge), with the
+  value-side defect classes (intensity, percentages, unit suffixes)
+  handled by the F4 grammar; D3 absence explanations ("increase the
+  blur" on an on/off-only key explains the setting's real nature and
+  cites the nearest real magnitude); D4/D5 free-text misroutes now
+  produce the honest OUT_OF_ONTOLOGY verdict; D6 the quadratic root
+  finder returns ALL roots with exact radicals and the answer leads
+  the reply; D7 multi-clause requests never partially execute (the
+  composed plan is all-or-nothing behind the standard gate); D8
+  cold-start confidences are labeled "uncalibrated" until real
+  observations exist; D9 the README/MODELS.md command and surface
+  claims match reality (re-verified in Stage B); D10 the hub's flag
+  parsing accepts verbs and flags in any order.
+
 ## [0.2.0] — 2026-09-28 — exponential-build-4 baseline
 
 The fourth build's contribution, one clean entry: eight feature

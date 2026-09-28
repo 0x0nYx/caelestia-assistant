@@ -111,7 +111,9 @@ caelestia-assist scan ~/.local/state/caelestia-shell.log
 
 # Natural-language settings (issue #120) — dry-run by default
 caelestia-assist settings "make my bar thinner"
-caelestia-assist settings "make everything minimal" --apply
+caelestia-assist settings "make everything minimal" --apply --confirm
+#   (multi-change applies need the second consent: --confirm, or the
+#    interactive y/N prompt; single-change applies need only --apply)
 
 # The verbless front door + conversational composition
 caelestia-assist "make my bar thinner"     # free text, one-shot answer
@@ -129,7 +131,34 @@ caelestia-assist settings --wizard --answers 2,3,2,3,3,2
 
 # Config health lint + wallpaper palette (inert suggestions only)
 caelestia-assist settings --lint
+caelestia-assist settings --audit-env                # the full environment audit (F21)
 caelestia-assist settings --wallpaper-palette ~/Pictures/wall.png
+
+# Profiles: compose presets + macros + calls into one named bundle (later source wins, conflicts reported)
+caelestia-assist settings --profile-save evening preset:minimal --also setDockBadges=true
+caelestia-assist settings --profile evening                          # dry-run preview
+caelestia-assist settings --profile-whatif evening                   # per-source consequences (F11)
+caelestia-assist settings --profile-diff evening morning             # effective-value diff
+
+# Environment snapshots: capture the whole config, restore through the normal gates
+caelestia-assist settings --env-save clean && caelestia-assist settings --env-restore clean
+caelestia-assist settings --env-export clean --to clean.json         # portable bundle
+caelestia-assist settings --env-import clean.json --as laptop        # review-only import
+
+# Schedules: pull-based workspace automation (nothing runs by itself)
+caelestia-assist cortex schedule save --name evening --preset battery-saver --window 21:00-23:30
+caelestia-assist cortex schedule eval                                # what fires NOW (SUGGESTED_NOT_EXECUTED)
+
+# Monitors: target ONE screen's override file (the upstream forScreen layer)
+caelestia-assist settings --monitors                                 # the report
+caelestia-assist settings --monitor DP-1 "make the bar thinner"      # same gates, per screen
+
+# Context + personalization + the arena growing under review
+caelestia-assist cortex context --probe                              # battery/clock-aware proposals
+caelestia-assist cortex personalize list                             # habits mined from your approvals
+caelestia-assist eval grow mine && caelestia-assist eval grow list   # candidates (sealed sets refuse)
+caelestia-assist cortex refit                                        # guarded weight re-fit (regression ratchet)
+caelestia-assist doctor                                              # composite health check
 
 # The filesystem second-brain (propose-only, nothing moves)
 caelestia-assist genius fsbrain stale ~/Downloads
@@ -141,6 +170,10 @@ python3 -m assistant.diagnostics.telemetry
 
 # Batch-review near-threshold phrases (logged, never silently learned)
 caelestia-assist cortex review list
+
+# Accessible output (screen-reader friendly) + the reduced-motion recipe
+CAELESTIA_ASSISTANT_PLAIN=1 caelestia-assist settings --list-tools
+caelestia-assist settings --a11y-recipe
 
 # Local-ontology gaps: what fell through to the cloud sidebar, clustered
 caelestia-assist cortex gaps            # read-only summary
@@ -188,7 +221,7 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 2234 tests, ~1 min
+python3 -m unittest discover -s . -p "test_*.py"   # 2496 tests, ~1.5 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
 python3 -m assistant.settings.gen_adapter --verify --repo-root <caelestia-kde checkout>  # registry byte-identity guard
 ```

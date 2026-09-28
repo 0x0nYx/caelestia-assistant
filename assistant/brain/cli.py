@@ -22,9 +22,12 @@ operations with direct shell linkage:
 """
 import argparse
 import json
+import os
 import pathlib
 import sys
+from datetime import datetime, timezone
 
+from . import merkle
 from . import service
 from . import state as st
 
@@ -320,6 +323,135 @@ def cmd_prefs(args, out):
     return 0
 
 
+def cmd_bisect(args, out):
+    """F13 config bisect: mark good/bad, probe stepped, get a revert
+    proposal. Every probe application is the user's own, through the
+    settings consent gate; this command only reads config and stores
+    marks."""
+    from . import bisect as bs
+    state = st.load(args.state)
+    store = state.get("bisect") or {}
+    root = args.root
+
+    if args.action == "reset":
+        state.pop("bisect", None)
+        st.save(state, args.state)
+        out.write("bisect state cleared\n")
+        return 0
+
+    if args.action == "mark":
+        label = args.label
+        if label not in ("good", "bad"):
+            out.write("mark expects good|bad\n")
+            return 2
+        try:
+            leaves = bs.leaf_map(os.path.expanduser(root))
+        except bs.BisectError as e:
+            out.write(f"cannot snapshot {root}: {e}\n")
+            return 2
+        store[label] = {"leaves": leaves,
+                        "root": str(root),
+                        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        store.pop("engine", None)  # marks changed: search restarts
+        state["bisect"] = store
+        st.save(state, args.state)
+        out.write(f"marked {label}: {len(leaves)} leaves from {root}\n")
+        if "good" in store and "bad" in store:
+            keys = bs.changed_keys(store["good"]["leaves"], store["bad"]["leaves"])
+            out.write(f"changed keys between marks: {len(keys)}\n")
+        return 0
+
+    good, bad = store.get("good"), store.get("bad")
+    if not (good and bad):
+        out.write("need both marks first: brain bisect mark good ; brain bisect mark bad\n")
+        return 2
+    keys = bs.changed_keys(good["leaves"], bad["leaves"])
+    if not keys:
+        out.write("good and bad snapshots are identical — nothing to bisect\n")
+        return 2
+
+    eng = bs.NoisyBisect.from_state(store["engine"]) if "engine" in store else None
+
+    if args.action == "status":
+        out.write(f"marks: good {good['ts']}, bad {bad['ts']}; changed keys: "
+                  f"{len(keys)}; engine: "
+                  f"{eng.phase if eng else 'not started'}"
+                  + (f" ({eng.probe_count} probes)" if eng else "") + "\n")
+        return 0
+
+    if args.action == "next":
+        if eng is None:
+            eng = bs.NoisyBisect(keys)
+        if eng.phase == "done":
+            out.write("search finished — run: brain bisect proposal\n")
+            return 0
+        try:
+            subset = eng.next_subset()
+        except bs.BisectError as e:
+            out.write(f"bisect cannot continue: {e}\n")
+            return 2
+        store["engine"] = eng.to_state()
+        state["bisect"] = store
+        st.save(state, args.state)
+        out.write(f"probe #{eng.probe_count + 1}: set exactly these "
+                  f"{len(subset)} key(s) to their BAD values, everything "
+                  "else at the GOOD values:\n")
+        proposal = bs.revert_ops(bad["leaves"], subset)
+        for k in subset:
+            out.write(f"  key {k} -> {bad['leaves'].get(k, '<absent in bad>')!r}\n")
+        for op in proposal["ops"]:
+            out.write(f"  -call {op['raw']}\n")
+        for m in proposal["manual"]:
+            out.write(f"  manual: {m['key']} -> {bad['leaves'].get(m['key'])!r}\n")
+        out.write("apply through the settings consent gate, then answer:\n"
+                  "  brain bisect observe bad   # the break reproduces\n"
+                  "  brain bisect observe good  # it does not\n")
+        return 0
+
+    if args.action == "observe":
+        if eng is None or eng.last_subset is None:
+            out.write("no pending probe — run: brain bisect next\n")
+            return 2
+        if args.label not in ("good", "bad"):
+            out.write("observe expects good|bad\n")
+            return 2
+        is_bad = args.label == "bad"
+        eng.observe(is_bad)
+        store["engine"] = eng.to_state()
+        state["bisect"] = store
+        st.save(state, args.state)
+        out.write(f"recorded {args.label}; phase={eng.phase} "
+                  f"probes={eng.probe_count}\n")
+        if eng.phase == "done":
+            out.write("minimal failing set found — run: brain bisect proposal\n")
+        elif eng.phase == "inconclusive":
+            out.write("probe budget exhausted without a minimal set; the "
+                      "posterior ranking is the honest output so far\n")
+            for k, m in eng.ranking()[:5]:
+                out.write(f"  {k}: {m:.2f}\n")
+        return 0
+
+    if args.action == "proposal":
+        if eng is None or eng.phase != "done":
+            out.write("no finished search — run next/observe to completion "
+                      "first\n")
+            return 2
+        prop = eng.proposal()
+        rev = bs.revert_ops(good["leaves"], prop["minimal"])
+        out.write(f"minimal failing set ({prop['probes']} probes):\n")
+        for k in prop["minimal"]:
+            out.write(f"  {k} (blame {prop['confidence'][k]:.2f})\n")
+        out.write("revert proposal (dry-run; apply via the settings gate):\n")
+        for op in rev["ops"]:
+            out.write(f"  {op['tool']} = {json.dumps(op['value'])}\n")
+        for m in rev["manual"]:
+            out.write(f"  manual review: {m['key']} ({m['reason']})\n")
+        return 0
+
+    out.write(f"unknown bisect action {args.action!r}\n")
+    return 2
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -417,6 +549,20 @@ def build_parser():
     td.add_argument("--journal", default=None)
     td.add_argument("--json", action="store_true")
     td.set_defaults(fn=cmd_tidy)
+
+    bs_ = sub.add_parser("bisect", help="what change broke my look? — "
+                                        "noisy-answer Bayesian bisect + ddmin "
+                                        "over your own good/bad marks "
+                                        "(exp-build-5 F13); probes are plans "
+                                        "you apply through the settings gate")
+    bs_.add_argument("action", choices=["mark", "next", "observe", "status",
+                                        "proposal", "reset"])
+    bs_.add_argument("label", nargs="?", default="",
+                     help="mark: good|bad; observe: good|bad")
+    bs_.add_argument("--root", default=merkle.DEFAULT_CONFIG_ROOT,
+                     help="caelestia config root to snapshot (default: "
+                          "%(default)s)")
+    bs_.set_defaults(fn=cmd_bisect)
 
     pf = sub.add_parser("prefs", help="what the preference model believes "
                                       "about your approve/reject patterns")

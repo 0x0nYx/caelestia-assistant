@@ -613,6 +613,59 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="with --profile-save: an additional source (see "
              "--profile-save); repeatable, order matters",
     )
+    gate4 = arg_parser.add_mutually_exclusive_group()
+    gate4.add_argument(
+        "--env-save", metavar="NAME", default=None,
+        help="snapshot the current environment (shell.json content, "
+             "hash-pinned; macros/profiles as metadata) into the "
+             "history file's bounded environment list",
+    )
+    gate4.add_argument(
+        "--env-list", action="store_true",
+        help="read-only: list the saved environments and exit",
+    )
+    gate4.add_argument(
+        "--env-show", metavar="NAME", default=None,
+        help="read-only: one environment's metadata + integrity "
+             "verification (with --env-verify, default on) and per-area "
+             "summary",
+    )
+    gate4.add_argument(
+        "--env-diff", metavar="NAME", default=None,
+        help="read-only: what RESTORING NAME would change — registry "
+             "paths set back to snapshot values / reset to defaults, "
+             "unknown keys REPORTED and never touched",
+    )
+    gate4.add_argument(
+        "--env-restore", metavar="NAME", default=None,
+        help="restore environment NAME: the diff becomes a normal "
+             "planned multi-change apply (dry-run by default; --apply "
+             "still needs --confirm)",
+    )
+    gate4.add_argument(
+        "--env-delete", metavar="NAME", default=None,
+        help="delete one saved environment by name (an explicit command)",
+    )
+    gate4.add_argument(
+        "--env-export", metavar="NAME", default=None,
+        help="export a verified environment as a portable bundle (with "
+             "--to PATH); nothing else is written",
+    )
+    gate4.add_argument(
+        "--env-import", metavar="FROM_JSON", default=None,
+        help="import a bundle as a NEW snapshot, REVIEW-ONLY (with --as "
+             "NAME): schema/hash validated, drift measured, nothing "
+             "applied — restore stays the explicit F17 path",
+    )
+    arg_parser.add_argument(
+        "--to", metavar="PATH", default=None,
+        help="with --env-export: the bundle output path",
+    )
+    arg_parser.add_argument(
+        "--as", dest="as_name", metavar="NAME", default=None,
+        help="with --env-import: the local name for the imported "
+             "environment",
+    )
     arg_parser.add_argument(
         "--from-id", type=int, default=None, metavar="ID",
         help="with --macro-save: capture this history entry id instead "
@@ -1494,6 +1547,193 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         print("\n".join(profile_preview.render(view)))
+        return 0
+
+    if args.env_save is not None:
+        # F17: snapshot the current environment. Writes only the history
+        # file's bounded "environments" key; the target is untouched.
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            entry = env_mod.save(target, args.env_save)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"saved environment {entry['name']!r}: "
+              f"{entry['paths']} value(s), hash "
+              f"{entry['content_hash'][:12]}..., "
+              f"{len(entry.get('macros', []))} macro(s), "
+              f"{len(entry.get('profiles', []))} profile(s) metadata")
+        print("diff with --env-diff " + entry["name"] +
+              "; restore with --env-restore (dry-run first)")
+        return 0
+
+    if args.env_list:
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        saved = env_mod.list_environments(target)
+        print("\n".join(_header(False)))
+        print("")
+        if not saved:
+            print("no environments saved; snapshot one with "
+                  "--env-save NAME")
+        else:
+            print(f"saved environments (oldest first, {len(saved)} of "
+                  f"{env_mod.MAX_ENVIRONMENTS} slots):")
+            for e in saved:
+                print(f"  {e['name']:<24} {e.get('created_at', '?')} "
+                      f"hash {str(e.get('content_hash'))[:12]}..."
+                      + (" [imported]" if e.get("imported") else ""))
+            print("")
+            print("restore with --env-restore NAME (dry-run first; "
+                  "--apply --confirm to write)")
+        return 0
+
+    if args.env_show is not None:
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            env = env_mod.get(target, args.env_show, verify=True)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"environment {env['name']!r}: "
+              f"created {env.get('created_at', '?')}, hash "
+              f"{str(env.get('content_hash'))[:12]}... VERIFIED, "
+              f"captured against registryTools="
+              f"{env.get('registry_tools')} "
+              f"(local now: {len(registry.TOOL_SPECS)})")
+        if env.get("imported"):
+            print(f"  imported bundle; drift: {env.get('import_drift')}; "
+                  f"unknown paths: "
+                  f"{len(env.get('import_unknown_paths', []))}")
+        print(f"  metadata: {len(env.get('macros', []))} macro(s), "
+              f"{len(env.get('profiles', []))} profile(s) "
+              "(restored separately through their own commands)")
+        return 0
+
+    if args.env_diff is not None:
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            diff = env_mod.diff_to_ops(target, args.env_diff)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if diff["identical"]:
+            print(f"environment {args.env_diff!r} matches the live "
+                  f"config on every registry-managed path")
+        else:
+            print(f"restoring {args.env_diff!r} would "
+                  f"({len(diff['set_ops'])} set / "
+                  f"{len(diff['reset_ops'])} reset-to-default op(s)):")
+            for op in diff["set_ops"] + diff["reset_ops"]:
+                print(f"  {op['raw']}")
+        for label, keys in (("only in SNAPSHOT (untouched by the "
+                             "restore — not registry-managed)",
+                             diff["unknown_only_in_snapshot"]),
+                            ("only in LIVE file (untouched)",
+                             diff["unknown_only_in_live"])):
+            if keys:
+                print(f"{label}: {', '.join(keys)}")
+        return 0
+
+    if args.env_restore is not None:
+        # F17: restore = the diff becomes a PLAIN planned multi-change
+        # apply through the standard gates. No bespoke writer.
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            diff = env_mod.diff_to_ops(target, args.env_restore)
+            ops = diff["set_ops"] + diff["reset_ops"]
+            if not ops:
+                print(f"environment {args.env_restore!r} already matches "
+                      "the live config — no changes needed")
+                return 0
+            plan = planner.plan(ops, target)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        except planner.PlannerError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        label = f"env restore: {args.env_restore}"
+        if not args.apply:
+            print("\n".join(render_plan(plan, [], label, args.file,
+                                       False, None, None)))
+            return 0
+        confirmed, _why = _confirm_multi(plan, args)
+        if not confirmed:
+            print(
+                "multi-change restores need the second consent (re-run "
+                "with --confirm, or answer the interactive prompt); "
+                "nothing was written",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            apply_result = applier.apply(plan, target, write=True,
+                                          label=label)
+        except applier.ApplierError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(render_plan(plan, [], label, args.file, True,
+                                   apply_result, None)))
+        return 0
+
+    if args.env_delete is not None:
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            result = env_mod.delete(target, args.env_delete)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"deleted environment {result['deleted']!r}")
+        return 0
+
+    if args.env_export is not None:
+        # F18: export a verified environment as a portable bundle. The
+        # ONLY file written is the caller-chosen --to path.
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        if not args.to:
+            arg_parser.error("--env-export needs --to PATH")
+        try:
+            bundle = env_mod.export_bundle(target, args.env_export)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        Path(args.to).write_text(json.dumps(bundle, indent=2, sort_keys=True)
+                                 + "\n", encoding="utf-8")
+        print(f"exported environment {args.env_export!r} to {args.to} "
+              f"(schema {bundle['schema']}, hash verified)")
+        return 0
+
+    if args.env_import is not None:
+        # F18: import is REVIEW-ONLY: the bundle lands as a new stored
+        # snapshot (marked imported, drift measured); nothing is applied.
+        from . import environments as env_mod
+        target = Path(args.file) if args.file else default_target()
+        if not args.as_name:
+            arg_parser.error("--env-import needs --as NAME")
+        try:
+            bundle = json.loads(Path(args.env_import).read_text(
+                encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"error: cannot read the bundle: {exc}", file=sys.stderr)
+            return 1
+        try:
+            entry = env_mod.import_bundle(target, bundle, args.as_name)
+        except env_mod.EnvironmentError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"imported environment {entry['name']!r} (review-only: "
+              f"NOTHING was applied): drift {entry['import_drift']}, "
+              f"unknown paths "
+              f"{len(entry['import_unknown_paths'])}")
+        print("preview with --env-diff " + entry["name"] +
+              "; restore with --env-restore if you want it")
         return 0
 
     if args.list_tools:

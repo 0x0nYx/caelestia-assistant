@@ -31,76 +31,75 @@ works end to end: an answer, a pending plan, or a simulated agent plan.
 Every module keeps its own safety rules; this file only routes.
 """
 import sys
+from importlib import import_module
 from typing import List, Optional, Tuple
-
-from .cortex.lexicon import levenshtein
-
-from .agent import cli as agent_cli
-from .brain import bridge
-from .brain import cli as brain_cli
-from . import capabilities as capabilities_mod
-from .cortex import cli as cortex_cli
-from .cortex import inbox as cortex_inbox
-from .cortex import explain_unified as cortex_explain
-from .diagnostics import cli as diagnostics_cli
-from .genius import cli as genius_cli
-from .issues import cli as issues_cli
-from .pipeline import main as pipeline_main
-from .retrieval import cli as retrieval_cli
-from .scan import cli as scan_cli
-from .settings import cli as settings_cli
 
 USAGE = __doc__
 
-# Some modules parse their own subcommand name (pass full argv); others take
-# the remainder (the hub name is the routing token, not a module subcommand).
-def _lazy_eval(argv=None):
-    """eval: the measurement arena (exponential-build-5 F1). Imported
-    lazily: the arena pulls the full router/diagnostics stack and must
-    never sit on the cold-start path of other verbs."""
-    from .eval.cli import main as eval_main
-    return eval_main(argv)
-
-
+# R4 (exponential-build-5): every module CLI is imported LAZILY at
+# dispatch time. The previous eager imports put the agent (135ms of
+# import time) and the genius stack on the cold path of EVERY verb —
+# `--help` alone pulled the whole engine tree. Values are either
+# "module:func" specs (resolved on first use) or direct callables
+# (tests inject these); the second element is keep_name (the module
+# parses its own subcommand token).
 ROUTES = {
-    "diagnose": (diagnostics_cli.main, True),
-    "selfcheck": (diagnostics_cli.main, True),
+    "diagnose": ("assistant.diagnostics.cli:main", True),
+    "selfcheck": ("assistant.diagnostics.cli:main", True),
     # rulepack: the signed rule-pack surface (export/import/list/
     # render — exponential-build-3 F1; same parser as diagnose)
-    "rulepack": (diagnostics_cli.main, True),
-    "search": (retrieval_cli.main, True),
-    "scan": (scan_cli.main, False),
-    "ask": (pipeline_main, False),
-    "issue": (issues_cli.main, False),
-    "settings": (settings_cli.main, False),
-    "brain": (brain_cli.main, False),
+    "rulepack": ("assistant.diagnostics.cli:main", True),
+    "search": ("assistant.retrieval.cli:main", True),
+    "scan": ("assistant.scan.cli:main", False),
+    "ask": ("assistant.pipeline:main", False),
+    "issue": ("assistant.issues.cli:main", False),
+    "settings": ("assistant.settings.cli:main", False),
+    "brain": ("assistant.brain.cli:main", False),
     # brief/tidy are brain subcommands surfaced at the top level too
-    "brief": (lambda _argv=None: brain_cli.main(["brief"]), False),
-    "tidy": (brain_cli.main, False),
-    "api": (bridge.main, False),
+    "brief": (lambda _argv=None: import_module(
+        "assistant.brain.cli").main(["brief"]), False),
+    "tidy": ("assistant.brain.cli:main", False),
+    "api": ("assistant.brain.bridge:main", False),
     # cortex: chat/route keep their own subcommand token (argparse owns it)
-    "chat": (cortex_cli.main, True),
-    "route": (cortex_cli.main, True),
-    "cortex": (cortex_cli.main, False),
+    "chat": ("assistant.cortex.cli:main", True),
+    "route": ("assistant.cortex.cli:main", True),
+    "cortex": ("assistant.cortex.cli:main", False),
     # the unified pending-decisions inbox: one ranked view over the
     # ledger, gap clusters, the pending plan and agent consents
-    "inbox": (cortex_inbox.main, False),
+    "inbox": ("assistant.cortex.inbox:main", False),
     # one `why` over every engine's own explanation output (walks back
     # through whichever engine produced the last surfaced item)
-    "why": (cortex_explain.main, False),
+    "why": ("assistant.cortex.explain_unified:main", False),
     # genius: the universal intelligence layer (its own subcommands;
     # `do` is the one-word front door)
-    "do": (genius_cli.main, False),
-    "genius": (genius_cli.main, False),
+    "do": ("assistant.genius.cli:main", False),
+    "genius": ("assistant.genius.cli:main", False),
     # agent: the consent-gated orchestrator over every layer
-    "agent": (agent_cli.main, False),
+    "agent": ("assistant.agent.cli:main", False),
     # capabilities: the per-install manifest card (read-only listing)
     "capabilities": (lambda _argv=None: (_print_card(), 0)[1], False),
-    "eval": (_lazy_eval, False),
+    # eval: the measurement arena (exponential-build-5 F1). Lazily:
+    # the arena pulls the full router/diagnostics stack and must never
+    # sit on the cold-start path of other verbs.
+    "eval": ("assistant.eval.cli:main", False),
 }
 
 
+def _resolve(verb: str):
+    """(callable, keep_name) for a verb, importing its CLI lazily.
+    Direct callables (tests, brief/capabilities) pass through."""
+    entry = ROUTES.get(verb)
+    if entry is None:
+        return None, None
+    target, keep = entry
+    if callable(target):
+        return target, keep
+    module_name, func_name = target.split(":", 1)
+    return getattr(import_module(module_name), func_name), keep
+
+
 def _print_card() -> None:
+    from . import capabilities as capabilities_mod  # lazy (R4)
     print(capabilities_mod.render())
 
 
@@ -123,6 +122,7 @@ def suggest_verb(cmd: str) -> Optional[Tuple[str, int]]:
     only when exactly one verb is closest (ties are abstentions, mirroring
     the router's unique-correction rule); ``None`` otherwise.
     """
+    from .cortex.lexicon import levenshtein  # lazy: cold path stays cold
     if len(cmd) < _SUGGEST_MIN_LEN or not cmd.isalpha():
         return None
     lowered = cmd.lower()
@@ -152,7 +152,7 @@ def _route_free_text(argv: List[str]) -> int:
     # Guard argparse from a free-text phrase that happens to start with
     # a dash: everything after `--` is the positional, never an option.
     guard = ["--"] if text.startswith("-") else []
-    return cortex_cli.main(["route", *guard, text])
+    return _resolve("route")[0](["route", *guard, text])
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -171,7 +171,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"did you mean: {verb} (distance {distance})", file=sys.stderr)
             return 1
         return _route_free_text(argv)
-    fn, keep_name = ROUTES[cmd]
+    fn, keep_name = _resolve(cmd)
     return fn(argv if keep_name else rest)
 
 

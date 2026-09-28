@@ -66,4 +66,19 @@ test_scan_suite
 test_cortex_suite
 test_genius_suite
 
+test_lazy_imports() {
+  # R4 (exponential-build-5): `--help` must not import engine modules.
+  # Needs a fresh interpreter, so it lives here (the Python suite runs
+  # in-process and earlier tests may already have imported engines).
+  local hits
+  hits=$(python3 -X importtime -m assistant.hub --help 2>&1 >/dev/null \
+         | grep -cE "assistant\.(agent|genius|cortex\.router|diagnostics)" || true)
+  if [ "$hits" != "0" ]; then
+    echo "FAIL: --help imported engine modules ($hits hits)"
+    exit 1
+  fi
+  echo "lazy imports: --help pulls no engines (ok)"
+}
+test_lazy_imports
+
 finish

@@ -1109,7 +1109,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                    "summarize", "classify", "palette", "gen", "sys", "history",
                    "plan", "graphs", "optimize", "fsbrain", "schedule",
                    "report", "learn"}
-    if argv and not argv[0].startswith("-") and argv[0] not in subcommands:
+    # D10 (exponential-build-5): a leading FLAG used to bypass the
+    # universal form ("do --json 'solve x^2'" was parsed as a bad
+    # subcommand). Prepend unless a subcommand token is present anywhere.
+    if not (set(argv) & subcommands):
         argv = ["do"] + argv
     args = parser.parse_args(argv)
     if not getattr(args, "cmd", None):

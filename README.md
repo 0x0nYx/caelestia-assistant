@@ -188,9 +188,9 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 2165 tests, ~1 min
+python3 -m unittest discover -s . -p "test_*.py"   # 2234 tests, ~1 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
-python3 -m assistant.settings gen_adapter --verify # registry byte-identity guard
+python3 -m assistant.settings.gen_adapter --verify --repo-root <caelestia-kde checkout>  # registry byte-identity guard
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the import-policy contract and the discipline for adding tools to the settings registry. Design rationale (why rules-first, why BM25 over embeddings, why nothing is trained) lives in [`assistant/RATIONALE.md`](assistant/RATIONALE.md); the settings layer's full specification in [`assistant/settings/DESIGN.md`](assistant/settings/DESIGN.md).

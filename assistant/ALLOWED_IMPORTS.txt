@@ -67,3 +67,7 @@ struct
 # class as math/datetime: no I/O, no execution, no network. Guarded by
 # the policy tests and assistant/genius/tests/test_math_allroots.py.
 fractions
+# importlib (exponential-build-5 R4): lazy module dispatch in hub.py —
+# the CLI verbs resolve their module CLIs on first use so the cold path
+# stays cold. Pure stdlib loader, no I/O beyond imports.
+importlib

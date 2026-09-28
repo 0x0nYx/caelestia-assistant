@@ -457,6 +457,10 @@ class CortexResult:
         # were" — first such clause wins (deterministic)
         self.abstain_gap: Optional[Dict[str, Any]] = None
         self.learn_hook: Optional[Dict[str, Any]] = None
+        # D8 (exponential-build-5): False when this confidence is the
+        # flat Beta prior with no observations behind it — the card then
+        # says 'uncalibrated (no history)' instead of a fake 0.50.
+        self.calibrated: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         out = {
@@ -464,6 +468,7 @@ class CortexResult:
             "resolved_text": self.resolved_text,
             "ops": self.ops,
             "confidence": self.confidence,
+            "calibrated": self.calibrated,
             "questions": self.questions,
             "notes": self.notes,
             "evidence": self.evidence,
@@ -678,7 +683,13 @@ def process(
     if top_route is not None and top_route.top is not None:
         confidence = top_route.top.p
         if learner is not None:
+            from .learn import confidence_bucket
             confidence = learner.calibrated_confidence(top_route.top.p)
+            result.calibrated = (
+                learner.calibration.observations(
+                    confidence_bucket(top_route.top.p)) > 0)
+        else:
+            result.calibrated = False
     result.confidence = round(confidence, 3)
     result.strategy = strategy
     result.evidence = evidence

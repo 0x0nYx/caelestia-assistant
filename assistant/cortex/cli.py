@@ -119,7 +119,12 @@ def _render_turn(result, *, applied: bool = False,
         "LIST": "HISTORY",
         "INERT": "OUTSIDE SHELL.JSON",
     }.get(result.verdict, result.verdict)
-    lines.append(f"[cortex] {verdict_label}  (confidence {result.confidence:.2f}"
+    lines.append("[cortex] " + verdict_label + "  (confidence "
+                 # D8: a cold-start confidence is the flat Beta prior —
+                 # a fake number. Say so instead.
+                 + ("uncalibrated (no history)"
+                    if getattr(result, "calibrated", None) is False
+                    else f"{result.confidence:.2f}")
                  + (f", strategy {result.strategy}" if result.strategy else "") + ")")
     if result.session_note:
         lines.append(f"  {result.session_note}")

@@ -682,6 +682,30 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                             "so the same diff noised twice is reproducible "
                             "— reproducible noise is NOT independent "
                             "across exports; pass any int for fresh noise)")
+    cn = sub.add_parser("concept", help="taught concepts (F15): user-named "
+                                         "bundles of validated tool calls, "
+                                         "recalled by phrase, Beta-posterior "
+                                         "learning, reviewable share diffs")
+    cn.add_argument("action", choices=["teach", "list", "forget", "recall",
+                                        "outcome", "export", "import"])
+    cn.add_argument("name", nargs="?", default="",
+                    help="teach/forget/outcome/recall: the concept name "
+                         "(or free text for recall)")
+    cn.add_argument("--call", action="append", dest="calls", default=None,
+                    metavar="TOOL=VALUE",
+                    help="teach: a validated tool call (repeatable; every "
+                         "tool must exist in the registry)")
+    cn.add_argument("--example", action="append", dest="examples", default=None,
+                    help="teach: an example phrase that should recall this "
+                         "concept (repeatable, up to 4)")
+    cn.add_argument("--accept", action="store_true",
+                    help="outcome: the concept's plan was accepted (default "
+                         "with --accept; omit for reject)")
+    cn.add_argument("--force", action="store_true",
+                    help="import: overwrite existing concepts with the "
+                         "same name (default: skip them)")
+    cn.set_defaults(fn=None)
+
     pw = sub.add_parser("power", help="predictive battery/thermal advice "
                                       "(read-only; caller-supplied series, "
                                       "inert suggestions)")
@@ -874,6 +898,82 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
               "k*epsilon (Dwork & Roth 2014) — the practical bound is how "
               "often you export", file=sys.stderr)
         return 0
+
+    if args.cmd == "concept":
+        from . import concepts
+        state = brain_state.load()
+        try:
+            if args.action == "teach":
+                if not args.name or not args.calls:
+                    print("error: teach needs a NAME and at least one "
+                          "--call TOOL=VALUE", file=sys.stderr)
+                    return 2
+                hit = concepts.teach(state, args.name, args.calls,
+                                     examples=args.examples,
+                                     source="cli-explicit")
+                brain_state.save(state)
+                print(f"taught concept '{hit['name']}' with "
+                      f"{len(hit['calls'])} call(s) "
+                      f"({hit['n_concepts']} concepts stored); nothing "
+                      "applied — recall only proposes, the consent gate "
+                      "applies")
+                return 0
+            if args.action == "list":
+                rows = concepts.list_concepts(state)
+                if not rows:
+                    print("no taught concepts yet — teach one: cortex "
+                          "concept teach glassy --call setBlurEnabled=true")
+                    return 0
+                for r in rows:
+                    p = ", ".join(f"{x['tool']}={x['value']!r}"
+                                  + (f" p={x['p']} n={x['n']}"
+                                     if x["p"] is not None else "")
+                                  for x in r["posterior"])
+                    print(f"{r['name']}: {p}")
+                    if r["examples"]:
+                        print(f"  phrases: {'; '.join(r['examples'])}")
+                return 0
+            if args.action == "forget":
+                if concepts.forget(state, args.name):
+                    brain_state.save(state)
+                    print(f"forgot concept '{args.name}'")
+                    return 0
+                print(f"error: unknown concept '{args.name}'",
+                      file=sys.stderr)
+                return 2
+            if args.action == "recall":
+                from ..settings.curations import PRESETS
+                hit = concepts.recall(state, args.name, presets=PRESETS)
+                print(f"verdict: {hit['verdict']}")
+                if hit["verdict"] == "RECALL":
+                    for c in hit["calls"]:
+                        print(f"  {c['name']} = {c['value']!r}")
+                    print("  (proposal only — the consent gate applies)")
+                return 0
+            if args.action == "outcome":
+                hit = concepts.record_outcome(state, args.name,
+                                              accepted=bool(args.accept))
+                brain_state.save(state)
+                print(f"recorded {'accept' if hit['accepted'] else 'reject'} "
+                      f"for '{hit['name']}'")
+                return 0
+            if args.action == "export":
+                names = [args.name] if args.name else None
+                print(json.dumps(concepts.export_diff(state, names),
+                                 indent=1, ensure_ascii=False))
+                return 0
+            if args.action == "import":
+                entries = json.load(sys.stdin)
+                res = concepts.import_diff(state, entries,
+                                           force=bool(args.force))
+                brain_state.save(state)
+                print(f"import: {res['added']} added, {res['updated']} "
+                      f"updated, {res['skipped']} skipped (existing; "
+                      "use --force to overwrite)")
+                return 0
+        except concepts.ConceptError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
 
     if args.cmd == "lexicon":
         from .. import capabilities

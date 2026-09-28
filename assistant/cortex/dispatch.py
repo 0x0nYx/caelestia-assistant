@@ -313,6 +313,56 @@ def dispatch(text: str, *, state: Optional[Dict[str, Any]] = None,
         else:
             reason = f"delegate:{result.delegate}-inline-failed"
 
+    # Taught concepts (F15): when the cortex would hand this off, a
+    # user-taught concept may own the phrase. Recall only PROPOSES — the
+    # apply payload goes through the same gated surface as every plan,
+    # and a built-in preset match asks instead of replacing.
+    if reason:
+        from assistant.cortex import concepts as _concepts
+        from assistant.settings.curations import PRESETS as _PRESETS
+        try:
+            hit = _concepts.recall(state, text, presets=_PRESETS)
+        except Exception:
+            hit = None
+        if hit and hit.get("verdict") == "RECALL":
+            lines = [
+                f"taught concept '{hit['name']}' (similarity {hit['score']}): "
+                f"propose {len(hit['calls'])} call(s)",
+            ]
+            for c in hit["calls"]:
+                lines.append(f"  {c['name']} = {c['value']!r}")
+            for p in hit["posterior"]:
+                if p["p"] is not None:
+                    lines.append(f"  ({p['tool']} accepted {p['p']} over "
+                                 f"{p['n']} past uses)")
+            return {
+                "action": "local", "reason": None,
+                "confidence": hit["score"],
+                "session": session.to_dict(),
+                "result": result.to_dict(),
+                "answer": lines,
+                "apply": {"calls": hit["calls"],
+                          "label": f"taught concept: {hit['name']}"},
+                "concept": hit,
+            }
+        if hit and hit.get("verdict") in ("CONFLICT_ASK", "AMBIGUOUS"):
+            if hit["verdict"] == "CONFLICT_ASK":
+                lines = [hit["question"],
+                         f"  concept: {hit['concept']['name']} "
+                         f"({hit['concept']['score']})",
+                         f"  preset:  {hit['preset']['name']} "
+                         f"({hit['preset']['score']})"]
+            else:
+                lines = ["several taught concepts match:"]
+                for cand in hit["candidates"]:
+                    lines.append(f"  {cand['name']} ({cand['score']})")
+            return {
+                "action": "local", "reason": None,
+                "confidence": 0.5, "session": session.to_dict(),
+                "result": result.to_dict(), "answer": lines,
+                "concept": hit,
+            }
+
     outcome: Dict[str, Any] = {
         "action": "cloud" if reason else "local",
         "reason": reason,

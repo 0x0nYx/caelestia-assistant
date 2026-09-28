@@ -198,6 +198,22 @@ def explain_settings(query: str, target, ledger_path=None) -> Dict[str, Any]:
             # the failure is surfaced as the missing enrichment, loudly
             # enough in tests, and never silently fabricated
             lines.append("graph: enrichment unavailable (build error)")
+    # causal attribution (exponential-build-5 F14): the backward chain
+    # of ARMED, cited interactions explaining the key's CURRENT value,
+    # read live from the target file. No armed chain -> the honest
+    # "set directly" line; unknown needed values -> abstention lines.
+    if spec.get("path"):
+        try:
+            from pathlib import Path as _Path
+            from ..settings import causal as settings_causal
+            from ..settings import planner as settings_planner
+            live_target = (_Path(target) if isinstance(target, str)
+                           else target)
+            current, _notes = settings_planner._read_current(live_target)
+            chain = settings_causal.why_chain(str(spec["path"]), current)
+            lines.extend(settings_causal.render_chain(chain))
+        except (ValueError, KeyError, OSError):
+            lines.append("causal: chain unavailable (state read error)")
     return {"engine": "settings",
             "headline": str(result["answer"]),
             "lines": lines,

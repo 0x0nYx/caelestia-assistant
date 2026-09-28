@@ -46,6 +46,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -445,6 +446,22 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "reversibility); never writes, never applies",
     )
     arg_parser.add_argument(
+        "--why-chain", metavar="KEY", default=None,
+        help="read-only causal attribution (F14): the backward chain "
+             "of ARMED, cited interactions explaining the current "
+             "value of a registry path or tool — with the live state "
+             "read from the target file; unevaluable edges are listed, "
+             "never guessed",
+    )
+    arg_parser.add_argument(
+        "--counterfactual", nargs=2, metavar=("TOOL", "VALUE"),
+        default=None,
+        help="read-only forward counterfactual (F14): 'if TOOL were "
+             "VALUE' — the cited immediate projection plus every "
+             "curated edge that could not be evaluated against the "
+             "live state (abstained, not dropped)",
+    )
+    arg_parser.add_argument(
         "--rank", action="store_true",
         help="read-only: print the learned pairwise preference ladder for "
              "presets (Elo + Bradley-Terry, with comparison counts)",
@@ -693,6 +710,59 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("  the request resolves to no applicable changes")
         return 0
 
+    if args.why_chain is not None:
+        # F14: backward causal attribution — read-only, cited, live-state
+        from . import causal as causal_mod
+        from . import planner as chain_planner
+
+        target = Path(args.file) if args.file else default_target()
+        current: Dict[str, Any] = {}
+        if target.exists():
+            try:
+                current, _notes = chain_planner._read_current(target)
+            except Exception:
+                current = {}
+        result = causal_mod.why_chain(args.why_chain, current)
+        print("\n".join(_header(False)))
+        print("")
+        print("\n".join(causal_mod.render_chain(result)))
+        if args.json:
+            print(json.dumps(result, sort_keys=True, indent=1))
+        return 0 if result.get("verdict") == "OK" else 1
+
+    if args.counterfactual is not None:
+        # F14: forward counterfactual — the what-if projection for one
+        # explicit tool/value pair, with the unevaluated-edge honesty
+        from . import causal as causal_mod
+        from . import planner as cf_planner
+
+        tool_name, raw_value = args.counterfactual
+        parsed_value: Any
+        if raw_value == "true":
+            parsed_value = True
+        elif raw_value == "false":
+            parsed_value = False
+        elif re.fullmatch(r"-?\d+", raw_value):
+            parsed_value = int(raw_value)
+        elif re.fullmatch(r"-?\d+\.\d+", raw_value):
+            parsed_value = float(raw_value)
+        else:
+            parsed_value = raw_value
+        target = Path(args.file) if args.file else default_target()
+        current: Dict[str, Any] = {}
+        if target.exists():
+            try:
+                current, _notes = cf_planner._read_current(target)
+            except Exception:
+                current = {}
+        result = causal_mod.counterfactual(tool_name, parsed_value, current)
+        print("\n".join(_header(False)))
+        print("")
+        print("\n".join(causal_mod.render_counterfactual(result)))
+        if args.json:
+            print(json.dumps(result, sort_keys=True, indent=1))
+        return 0 if result.get("verdict") == "OK" else 1
+
     if args.what_if is not None:
         # Phase 2.7: the what-if consequence view — a DRY-RUN plan plus
         # the projection through the cited interaction table. Read-only:
@@ -745,6 +815,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\n".join(_header(False)))
         print("")
         print("\n".join(consequences_mod.render(projection)))
+        # F14 honesty extension: curated edges that could not be
+        # evaluated against the live state are listed, not dropped
+        from . import causal as whatif_causal
+
+        for u in whatif_causal.unevaluated_edges(current):
+            print(f"  unevaluated: edge {u['edge']}: {u['reason']}")
         print("")
         if plan is not None:
             print("\n".join(render_plan(plan, [],

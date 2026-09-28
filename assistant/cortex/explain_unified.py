@@ -170,6 +170,34 @@ def explain_settings(query: str, target, ledger_path=None) -> Dict[str, Any]:
                 lines.append(f"provenance: {hop.get('detail', '')}")
         except settings_explain.ExplainError:
             pass  # a question that is not a registry setting stays as-is
+    # knowledge-graph enrichment (exponential-build-5 F12): the curated
+    # interaction chain around this key, when one exists — read-only,
+    # citation-carrying, and ABSTAINING (no line) when the key has no
+    # curated upstream. `why` is not the cold path, so the graph build
+    # cost sits behind this engine import, not the CLI's.
+    if spec.get("path"):
+        try:
+            from ..graph import build as graph_build
+            from ..graph import queries as graph_queries
+            g = graph_build.build_graph()
+            aff = graph_queries.what_affects(g, str(spec["path"]))
+            if aff.get("verdict") == "OK" and aff.get("upstream"):
+                ups = ", ".join(
+                    f"{u['from']} ({u['confidence']}, {u['citation']})"
+                    for u in aff["upstream"][:3])
+                lines.append(f"graph: {len(aff['upstream'])} curated "
+                             f"interaction(s) act on this key — {ups} "
+                             f"(graph affects {spec['path']} for the "
+                             f"cited chain)")
+            elif aff.get("verdict") == "OK":
+                lines.append("graph: no curated interaction acts on this "
+                             "key (the table is bounded — absence is not "
+                             "a claim of independence)")
+        except (ValueError, KeyError):
+            # a graph build problem must not take the whole `why` down;
+            # the failure is surfaced as the missing enrichment, loudly
+            # enough in tests, and never silently fabricated
+            lines.append("graph: enrichment unavailable (build error)")
     return {"engine": "settings",
             "headline": str(result["answer"]),
             "lines": lines,

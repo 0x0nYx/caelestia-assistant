@@ -82,6 +82,11 @@ ROUTES = {
     # the arena pulls the full router/diagnostics stack and must never
     # sit on the cold-start path of other verbs.
     "eval": ("assistant.eval.cli:main", False),
+    # graph: the shell knowledge graph (exponential-build-5 F12) —
+    # rebuildable from tools.json + the curated consequences table +
+    # the diagnostic rules; read-only queries with provenance. Lazy for
+    # the same reason as eval: it pulls the settings + genius stacks.
+    "graph": ("assistant.graph.cli:main", True),
 }
 
 

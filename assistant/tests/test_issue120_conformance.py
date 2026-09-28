@@ -35,8 +35,10 @@ the surface it describes):
                                                   exist; no NL time-
                                                   expression surface
   b5a explain (Nexus complement)    IMPLEMENTED   same surfaces as b3
-  b5b recommend values              NOT_IMPLEMENTED  F29 planned; drift
-                                                  test pins the absence
+  b5b recommend values              IMPLEMENTED   settings --recommend (F29):
+                                                  partial pooling over
+                                                  default + presets +
+                                                  approved history
   b5c optimize profiles             IMPLEMENTED   presets (gaming,
                                                   battery-saver,
                                                   macos-like, minimal)
@@ -66,7 +68,7 @@ from pathlib import Path
 STATUS = {
     "b1": "IMPLEMENTED", "b2a": "IMPLEMENTED", "b2b": "IMPLEMENTED",
     "b3": "IMPLEMENTED", "b4a": "IMPLEMENTED", "b4b": "PARTIAL",
-    "b5a": "IMPLEMENTED", "b5b": "NOT_IMPLEMENTED", "b5c": "IMPLEMENTED",
+    "b5a": "IMPLEMENTED", "b5b": "IMPLEMENTED", "b5c": "IMPLEMENTED",
     "b6a": "NOT_IMPLEMENTED", "b6b": "PARTIAL", "b6c": "NOT_IMPLEMENTED",
     "b6d": "NOT_IMPLEMENTED", "b6e": "PARTIAL",
 }
@@ -127,6 +129,9 @@ class TableDriftTests(unittest.TestCase):
             self.assertFalse(
                 any("recommend" in f for f in flags),
                 "a recommend-values surface exists — flip b5b's row")
+        else:
+            self.assertIn("--recommend", flags,
+                          "b5b says IMPLEMENTED — the surface must exist")
         if STATUS["b6a"] == "NOT_IMPLEMENTED":
             self.assertFalse(
                 any("context" in f for f in flags),
@@ -304,6 +309,16 @@ class B5NexusComplements(unittest.TestCase):
         rc, out, _err, _t = _settings(["--rank"])
         self.assertEqual(rc, 0)
         self.assertIn("preset", out.lower())
+
+    def test_recommend_values_surfaces_the_pooled_proposal(self) -> None:
+        rc, out, _err, target = _settings(["--recommend",
+                                           "setDockIconSize"])
+        self.assertEqual(rc, 0)
+        self.assertIn("recommend:", out)
+        self.assertIn("95% interval", out)
+        self.assertIn("proposal only", out)
+        # nothing was written — the recommender is inert
+        self.assertEqual(json.loads(target.read_text()), {})
 
 
 class B6Phase3(unittest.TestCase):

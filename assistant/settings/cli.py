@@ -462,6 +462,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "live state (abstained, not dropped)",
     )
     arg_parser.add_argument(
+        "--recommend", metavar="TOOL", default=None,
+        help="read-only value recommendation (F29) for a numeric tool: "
+             "hierarchical partial pooling over the registry default, "
+             "the preset pool and your approved history, with a 95% "
+             "credible interval and the Pareto position against the "
+             "optimization profiles; a proposal, never applied",
+    )
+    arg_parser.add_argument(
         "--rank", action="store_true",
         help="read-only: print the learned pairwise preference ladder for "
              "presets (Elo + Bradley-Terry, with comparison counts)",
@@ -759,6 +767,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\n".join(_header(False)))
         print("")
         print("\n".join(causal_mod.render_counterfactual(result)))
+        if args.json:
+            print(json.dumps(result, sort_keys=True, indent=1))
+        return 0 if result.get("verdict") == "OK" else 1
+
+    if args.recommend is not None:
+        # F29: the value recommender — read-only, pooled, honest
+        from . import recommend as recommend_mod
+
+        ledger = None
+        target = Path(args.file) if args.file else default_target()
+        hist = target.parent / (target.name + ".assistant-history.json")
+        if hist.exists():
+            ledger = str(hist)
+        result = recommend_mod.recommend(args.recommend, ledger_path=ledger)
+        print("\n".join(_header(False)))
+        print("")
+        print("\n".join(recommend_mod.render_recommendation(result)))
         if args.json:
             print(json.dumps(result, sort_keys=True, indent=1))
         return 0 if result.get("verdict") == "OK" else 1

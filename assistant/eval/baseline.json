@@ -12,14 +12,14 @@
    "point": 0.95
   },
   "nlplan.exact_rate": {
-   "hi": 0.8333,
-   "lo": 0.5333,
-   "point": 0.7
+   "hi": 1.0,
+   "lo": 1.0,
+   "point": 1.0
   },
   "nlplan.tool_rate": {
-   "hi": 0.9667,
-   "lo": 0.6667,
-   "point": 0.8333
+   "hi": 1.0,
+   "lo": 1.0,
+   "point": 1.0
   },
   "routing.precision_among_routed": {
    "hi": 0.9855,

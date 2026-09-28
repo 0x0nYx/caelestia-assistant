@@ -591,12 +591,34 @@ def extract_cues(text: str) -> Dict[str, object]:
         cues["position"] = position.group(1)
     if _TRANSPARENCY_CUE_RE.search(lowered):
         cues["transparency"] = True
-    pct = re.search(r"(\d+(?:\.\d+)?)\s*%", lowered)
+    # F4: percent words, not just the % sign — "20 percent smaller" is a
+    # percent cue; the bare number must not also register as a value
+    # (that is how numbers hijacked unrelated numeric tools, D2).
+    pct = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|percent|pct|per\s?cent)(?![a-z])", lowered)
     if pct:
         cues["percent"] = float(pct.group(1))
-    num = re.search(r"\b-?\d+(?:\.\d+)?\b", lowered)
-    if num:
-        cues["number"] = float(num.group(0))
+    else:
+        num = re.search(r"\b-?\d+(?:\.\d+)?\b", lowered)
+        if num:
+            cues["number"] = float(num.group(0))
+    # F4: strong polarity verbs the parser's BOOL vocabulary does not
+    # carry ("stop", "mute") still communicate on/off intent; weak
+    # on-verbs (show/display/reveal) stay out — they are too often
+    # magnitude or enum phrasings.
+    if "bool" not in cues:
+        words = set(_WORD_SPLIT_RE.findall(lowered))
+        if words & _GATE_BOOL_WORDS:
+            cues["bool"] = False
+        elif words & {"on", "enable", "enabled", "activate", "unmute"}:
+            cues["bool"] = True
+    # F4: absolute words hyphen-normalized — "pitch black" must reach the
+    # "pitch-black" key.
+    if "absolute" not in cues:
+        squashed = re.sub(r"\s+", "-", lowered)
+        for word, value in ABSOLUTE_WORDS.items():
+            if word in squashed:
+                cues["absolute"] = value
+                break
     return cues
 
 

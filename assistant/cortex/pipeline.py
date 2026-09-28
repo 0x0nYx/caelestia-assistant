@@ -155,6 +155,48 @@ def _multiply_factor(cues: Dict[str, object], text: str) -> Optional[float]:
     return round(factor, 4)
 
 
+def _word_multiplier(text: str) -> Optional[float]:
+    """Directionless multiplier words: "half speed", "double the size".
+    F4: the multiply path needs no percent for these."""
+    lowered = text.lower()
+    if re.search(r"\bhalf\b", lowered):
+        return 0.5
+    if re.search(r"\b(?:double|twice)\b", lowered):
+        return 2.0
+    if re.search(r"\btriple\b", lowered):
+        return 3.0
+    return None
+
+
+_UNIT_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*(milliseconds?|ms|seconds?|secs?|s|minutes?|mins?|m)\b",
+    re.IGNORECASE,
+)
+
+
+def _unit_scaled_number(raw: str, spec) -> Optional[float]:
+    """F4 unit grammar: a number with a time suffix, scaled to the tool's
+    storage unit. The registry declares no units, so the tool's own
+    DEFAULT carries the convention honestly: a tool whose default is in
+    the thousands stores milliseconds ("2 seconds" -> 2000); a tool whose
+    default is small stores what the user said. Documented heuristic,
+    measured by the nlplan suite."""
+    match = _UNIT_RE.search(raw)
+    if not match:
+        return None
+    value = float(match.group(1))
+    unit = match.group(2).lower()
+    ms_scale = (spec.default if isinstance(spec.default, (int, float)) else 0) >= 1000
+    if unit.startswith("millisecond") or unit == "ms":
+        return value if ms_scale else value / 1000.0
+    if unit.startswith("second") or unit in ("secs", "s"):
+        return value * 1000.0 if ms_scale else value
+    if unit.startswith("minute") or unit in ("mins", "m"):
+        seconds = value * 60.0
+        return seconds * 1000.0 if ms_scale else seconds
+    return None
+
+
 def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[List[Dict[str, Any]], List[str]]:
     """Turn one routed tool + its cues into planner-shaped ops.
 
@@ -182,6 +224,10 @@ def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[
         elif cues.get("toggle"):
             op("set", "TOGGLE")  # resolved against the live file below
             notes.append("toggle resolved against the current value at plan time")
+        elif cues.get("absolute") is not None:
+            # F4: absolute words on a toggle are on/off statements —
+            # "make everything pitch black" enables setPitchBlack.
+            op("set", float(cues["absolute"]) >= 1.0)
         elif cues.get("direction"):
             value = cues.get("direction") == 1
             notes.append(f"{surface.replace('set', '').lower()} is on/off only — "
@@ -193,8 +239,16 @@ def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[
     elif kind in ("float", "int"):
         if cues.get("reset"):
             op("set", spec.default)
+        elif cues.get("percent") is not None and re.search(
+                r"\b(?:to|at)\b[^.]{0,15}$|\b(?:to|at)\b\s*(?:\d|the\s+\d)", raw.lower()) \
+                and spec.maximum is not None and spec.maximum <= 2.5:
+            # F4: "raise the max volume TO 120 percent" is an absolute
+            # percent target on a fraction-range tool (registry 0.5-2.0,
+            # UI shows percent) — stored as percent/100.
+            op("set", round(float(cues["percent"]) / 100.0, 4))
         elif cues.get("number") is not None and cues.get("percent") is None:
-            op("set", cues["number"])
+            scaled = _unit_scaled_number(raw, spec)
+            op("set", scaled if scaled is not None else cues["number"])
         elif cues.get("percent") is not None:
             factor = _multiply_factor(cues, raw)
             if factor is not None:
@@ -220,8 +274,12 @@ def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[
             if steps:
                 op("step", steps)
             else:
-                notes.append(f"{surface}: by how much? (a number, a percent like '20% smaller', "
-                             f"or a direction like 'smaller')")
+                word_factor = _word_multiplier(raw)
+                if word_factor is not None:
+                    op("multiply", word_factor)
+                else:
+                    notes.append(f"{surface}: by how much? (a number, a percent like '20% smaller', "
+                                 f"or a direction like 'smaller')")
 
     elif kind == "enum":
         position = cues.get("position")
@@ -233,12 +291,29 @@ def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[
         elif cues.get("reset"):
             op("set", spec.default)
         else:
-            # literal enum value in the text?
+            # literal enum value in the text? F4: camel-split values and
+            # digit-normalize the query so "24 hour" reaches
+            # "twenty four hour" -> TwentyFourHour (the fused
+            # "twentyfourhour" token was unreachable by any phrasing).
+            from .lexicon import camel_split
+            from .router import _digit_word_tokens
             matched = False
             if spec.enum:
+                # inline digit->word replacement keeps adjacency: "use the
+                # 24 hour clock" -> "use the twenty four hour clock"
+                # (letters AND digits as tokens — a letters-only splitter
+                # would silently drop the digits)
+                tokens = re.findall(r"[a-z]+|\d+", raw.lower())
+                digit_norm = " ".join(
+                    t if not t.isdigit() else " ".join(_digit_word_tokens(t))
+                    for t in tokens
+                )
                 for value in spec.enum:
-                    text_value = str(value).lower().replace("_", " ")
-                    if re.search(rf"\b{re.escape(text_value)}\b", lowered):
+                    text_words = " ".join(
+                        w.lower() for part in str(value).replace("_", " ").replace("-", " ").split()
+                        for w in camel_split(part) if w
+                    )
+                    if re.search(rf"\b{re.escape(text_words)}\b", digit_norm):
                         op("set", value)
                         matched = True
                         break

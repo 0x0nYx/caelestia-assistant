@@ -209,6 +209,9 @@ LEXICON_VERSION = 1
 # User words -> registry noun vocabulary. Keys are matched on RAW words and
 # STEMS in the router; values are the canonical words the registry nouns use.
 SYNONYMS: Dict[str, Tuple[str, ...]] = {
+    # compound joins (hyphenated keys are never tool atoms, so these map
+    # query-side only and cannot change the indexed corpus / fingerprints)
+    "time-out": ("timeout", "expire"),
     # bar / panel
     "bar": ("bar", "taskbar", "panel"),
     "panel": ("bar", "panel", "taskbar"),

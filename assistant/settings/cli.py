@@ -692,6 +692,19 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "fresh generation instead of rewriting them",
     )
     arg_parser.add_argument(
+        "--plain", action="store_true",
+        help="accessible output (F24): one fact per line, no tables or "
+             "decorations — also CAELESTIA_ASSISTANT_PLAIN=1; the "
+             "contract is test-enforced (no ANSI, no box-drawing, "
+             "stable order)",
+    )
+    arg_parser.add_argument(
+        "--a11y-recipe", action="store_true",
+        help="read-only reduced-motion recipe (F24): registry-validated "
+             "knobs composed into an inert one-line --profile-save "
+             "command; nothing is saved or applied by printing it",
+    )
+    arg_parser.add_argument(
         "--to", metavar="PATH", default=None,
         help="with --env-export: the bundle output path",
     )
@@ -1674,6 +1687,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("verify with --gen-catalog --verify")
         return 0
 
+    if args.a11y_recipe:
+        from . import plain as plain_mod
+        print("\n".join(plain_mod.render_recipe()))
+        return 0
+
     if args.env_save is not None:
         # F17: snapshot the current environment. Writes only the history
         # file's bounded "environments" key; the target is untouched.
@@ -1863,6 +1881,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.list_tools:
         # §5.1: --list-tools ignores TEXT (and writes nothing, ever).
+        from . import plain as plain_mod
         if args.group is not None:
             groups = tuple(registry.GROUPS)
             if args.group not in groups:
@@ -1872,6 +1891,28 @@ def main(argv: Optional[List[str]] = None) -> int:
                     file=sys.stderr,
                 )
                 return 1
+        if plain_mod.plain_requested(
+                True if getattr(args, "plain", False) else None):
+            # F24 linear form: one record per tool, one fact per line.
+            from .registry import TOOL_SPECS, TOOL_COUNT
+            wanted = (lambda s: s.group == args.group
+                      if args.group is not None else lambda s: True)
+            specs = [s for s in TOOL_SPECS if wanted(s)]
+            print(f"tool registry: {TOOL_COUNT} tools "
+                  f"({len(specs)} shown)")
+            rows = ([
+                ("tool", s.name), ("path", s.path), ("kind", s.kind),
+                ("range", s.minimum if s.minimum is not None else "-" if
+                 not s.enum else " | ".join(map(str, s.enum))),
+                ("max", s.maximum if s.maximum is not None else "-"),
+                ("default", s.default if s.default is not None else "-"),
+            ] for s in specs)
+            for line in plain_mod.to_linear_rows(
+                    ("tool", "path", "kind", "range", "max", "default"),
+                    [tuple(r[1] for r in row) for row in rows]):
+                plain_mod.assert_plain_safe(line)
+                print(line)
+            return 0
         print("\n".join(_list_tools_lines(args.group)))
         return 0
 

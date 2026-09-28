@@ -566,6 +566,46 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="delete one saved macro by name (an explicit command; "
              "never a silent overwrite)",
     )
+    gate3 = arg_parser.add_mutually_exclusive_group()
+    gate3.add_argument(
+        "--profile", metavar="NAME", default=None,
+        help="apply a saved profile (F9: a named composition of "
+             "presets, macros and direct calls, later source wins per "
+             "tool with conflicts reported): dry-run plan by default; "
+             "with --apply it needs --confirm like any multi-change "
+             "bundle",
+    )
+    gate3.add_argument(
+        "--profile-save", nargs=2, metavar=("NAME", "SRC"), default=None,
+        help="save a profile: NAME plus the first source; repeat "
+             "--also SRC for more. A source is preset:NAME, macro:NAME, "
+             "or TOOL=VALUE; sources compose in order, later wins per "
+             "tool (conflicts reported, never dropped)",
+    )
+    gate3.add_argument(
+        "--profile-list", action="store_true",
+        help="read-only: list the saved profiles and exit",
+    )
+    gate3.add_argument(
+        "--profile-show", metavar="NAME", default=None,
+        help="read-only: one profile's sources, composed ops and the "
+             "conflicts their order resolved; never writes",
+    )
+    gate3.add_argument(
+        "--profile-diff", nargs=2, metavar=("A", "B"), default=None,
+        help="read-only: effective-value diff of two saved profiles "
+             "(only A / only B / changed per tool)",
+    )
+    gate3.add_argument(
+        "--profile-delete", metavar="NAME", default=None,
+        help="delete one saved profile by name (an explicit command)",
+    )
+    arg_parser.add_argument(
+        "--also", action="append", dest="also_sources",
+        metavar="SRC", default=None,
+        help="with --profile-save: an additional source (see "
+             "--profile-save); repeatable, order matters",
+    )
     arg_parser.add_argument(
         "--from-id", type=int, default=None, metavar="ID",
         help="with --macro-save: capture this history entry id instead "
@@ -1274,6 +1314,160 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"deleted macro {result['deleted']!r} "
               f"({result['ops']} change(s), captured from history entry "
               f"#{result['from_id']})")
+        return 0
+
+    if args.also_sources is not None and args.profile_save is None:
+        arg_parser.error("--also is only valid together with --profile-save")
+
+    if args.profile is not None:
+        # F9: apply a saved profile. The composed ops are plain planner
+        # ops, so this rides the ordinary plan/render/confirm path — no
+        # bespoke writer. Conflicts the order resolved are listed on the
+        # preview so the consent is informed.
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            ops, conflicts = profiles_mod.profile_ops(target, args.profile)
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        try:
+            plan = planner.plan(ops, target)
+        except planner.PlannerError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        label = f"profile: {args.profile}"
+        if not args.apply:
+            print("\n".join(render_plan(plan, [], label, args.file,
+                                       False, None, None)))
+            for c in conflicts:
+                print(f"conflict (later source wins): {c['tool']}: "
+                      f"{c['dropped']['value']!r} "
+                      f"({c['dropped']['from']}) overridden by "
+                      f"{c['kept']['value']!r} ({c['kept']['from']})")
+            return 0
+        confirmed, _why = _confirm_multi(plan, args)
+        if not confirmed:
+            print(
+                "multi-change profiles need the second consent (re-run "
+                "with --confirm, or answer the interactive prompt); "
+                "nothing was written",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            apply_result = applier.apply(plan, target, write=True,
+                                          label=label)
+        except applier.ApplierError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(render_plan(plan, [], label, args.file, True,
+                                   apply_result, None)))
+        return 0
+
+    if args.profile_save is not None:
+        # F9: save a named composition. Sources resolve against the live
+        # registry and saved stores NOW; writes only the history file's
+        # profiles key (same bounded store as macros). Target untouched.
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        name, first = args.profile_save
+        specs = [first] + list(args.also_sources or [])
+        try:
+            sources = [profiles_mod.parse_source(s) for s in specs]
+            entry = profiles_mod.save(target, name, sources)
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"saved profile {entry['name']!r} "
+              f"({len(entry['sources'])} source(s))")
+        print("preview with --profile " + entry["name"] +
+              " (dry-run; --apply still needs --confirm)")
+        return 0
+
+    if args.profile_list:
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            saved = profiles_mod.list_profiles(target)
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n".join(_header(False)))
+        print("")
+        if not saved:
+            print("no profiles saved; compose one with --profile-save "
+                  "NAME SRC [--also SRC ...]")
+        else:
+            print(f"saved profiles (oldest first, {len(saved)} of "
+                  f"{profiles_mod.MAX_PROFILES} slots):")
+            for p in saved:
+                srcs = ", ".join(
+                    (f"{s.get('kind')}:{s.get('name')}" if s.get('kind') != 'call'
+                     else f"{s.get('tool')}={s.get('value')!r}")
+                    for s in p.get("sources", []))
+                print(f"  {p['name']:<24} {len(p.get('sources', []))} "
+                      f"source(s): {srcs}")
+            print("")
+            print("preview with --profile NAME; apply with --profile NAME "
+                  "--apply --confirm")
+        return 0
+
+    if args.profile_show is not None:
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            print("\n".join(profiles_mod.render_profile_lines(
+                target, args.profile_show)))
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.profile_diff is not None:
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        name_a, name_b = args.profile_diff
+        try:
+            result = profiles_mod.diff(target, name_a, name_b)
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        rows = result["rows"]
+        if not rows:
+            print(f"profiles {name_a!r} and {name_b!r} are effectively "
+                  f"identical")
+        else:
+            print(f"diff {name_a!r} -> {name_b!r} "
+                  f"({len(rows)} differing tool(s)):")
+            for row in rows:
+                if row["kind"] == "only_a":
+                    print(f"  only in {name_a!r}: {row['tool']} = "
+                          f"{row['a']!r}")
+                elif row["kind"] == "only_b":
+                    print(f"  only in {name_b!r}: {row['tool']} = "
+                          f"{row['b']!r}")
+                else:
+                    print(f"  changed: {row['tool']} {row['a']!r} -> "
+                          f"{row['b']!r}")
+        return 0
+
+    if args.profile_delete is not None:
+        from . import history as _history
+        from . import profiles as profiles_mod
+        target = Path(args.file) if args.file else default_target()
+        try:
+            result = profiles_mod.delete(target, args.profile_delete)
+        except (profiles_mod.ProfileError, _history.HistoryError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"deleted profile {result['deleted']!r} "
+              f"({result['sources']} source(s))")
         return 0
 
     if args.list_tools:

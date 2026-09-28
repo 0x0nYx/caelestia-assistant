@@ -678,6 +678,19 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "override files and the global tools that select monitor "
              "behavior, with citations; never writes",
     )
+    gate5 = arg_parser.add_mutually_exclusive_group()
+    gate5.add_argument(
+        "--gen-catalog", action="store_true",
+        help="community docs generator (F23): (re)write the generated "
+             "TOOL_CATALOG.md and bash completion from the frozen "
+             "registry; with --verify it only CHECKS byte-identity (CI "
+             "safe)",
+    )
+    arg_parser.add_argument(
+        "--verify", dest="gen_verify", action="store_true",
+        help="with --gen-catalog: verify the committed artifacts match a "
+             "fresh generation instead of rewriting them",
+    )
     arg_parser.add_argument(
         "--to", metavar="PATH", default=None,
         help="with --env-export: the bundle output path",
@@ -1638,6 +1651,28 @@ def main(argv: Optional[List[str]] = None) -> int:
         result = envaudit.audit(target, now=_dt.now())
         print("\n".join(envaudit.render_lines(result)))
         return 1 if result["critical"] else 0
+
+    if args.gen_catalog:
+        # F23: generated community docs. Byte-identity is the contract:
+        # the committed files are OUTPUT of this module, and a registry
+        # change that outdates them fails here instead of shipping
+        # stale docs (the gen_adapter --verify discipline).
+        from . import catalog
+        if args.gen_verify:
+            problems = catalog.verify()
+            if problems:
+                for problem in problems:
+                    print(f"STALE: {problem}", file=sys.stderr)
+                print("catalog verify FAILED", file=sys.stderr)
+                return 1
+            print("catalog verify OK: generated artifacts are "
+                  "byte-identical")
+            return 0
+        written = catalog.generate()
+        for rel, path in written.items():
+            print(f"wrote {path} ({rel})")
+        print("verify with --gen-catalog --verify")
+        return 0
 
     if args.env_save is not None:
         # F17: snapshot the current environment. Writes only the history

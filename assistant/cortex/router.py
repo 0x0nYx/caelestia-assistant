@@ -67,6 +67,111 @@ from .lexicon import (
     stem,
 )
 from .vectorize import TfidfIndex, embedder, tokenize
+from .lexicon import camel_split
+
+# ---------------------------------------------------------------------------
+# F2 type-gate vocabulary (exponential-build-5). The cue-kind agreement
+# above is a soft nudge; a polarity verb is a CONSTRAINT. Deliberately
+# asymmetric and high-precision: OFF verbs (off/hide/mute/disable/stop)
+# are unambiguous, ON verbs like "show" are not ("show temperature in
+# fahrenheit" is an enum request), so only off-verbs gate the bool kind.
+# Presets and coarse surfaces are NEVER gated: they legitimately combine
+# many kinds ("battery saving mode", "optimize for gaming").
+# ---------------------------------------------------------------------------
+
+_GATE_BOOL_WORDS = frozenset({
+    "off", "hide", "hidden", "hides", "hiding", "mute", "muted", "mutes",
+    "disable", "disabled", "disables", "deactivate", "stop", "stops",
+    "conceal", "silence", "silenced",
+})
+_GATE_MOVE_WORDS = frozenset({
+    "move", "put", "switch", "place", "position", "relocate",
+})
+
+# ON verbs for the Enabled PRIOR only (never the suppressive gate — ON
+# verbs are ambiguous about kind: "show temperature in fahrenheit" is an
+# enum request). The prior only floors enabled-toggles, so the blast
+# radius is "the toggle of the thing you named" — always a safe read of
+# an on-verb plus a group noun.
+_PRIOR_ON_WORDS = frozenset({
+    "on", "enable", "enabled", "enables", "activate", "unmute",
+    "show", "display", "reveal",
+})
+
+# Words never counted as a tool's PRIMARY atom (the group noun the
+# Enabled prior keys on).
+_PRIMARY_STOP_WORDS = frozenset({
+    "set", "enable", "enabled", "disable", "disabled", "show", "hide",
+    "use", "get", "on", "off", "in", "the", "a", "an", "and", "to",
+    "of", "at", "when", "until", "my", "with", "up", "down",
+})
+
+# Words never allowed INSIDE a name bigram (function words only — verb
+# words like show/hide/enable are the compound-addressing signal and
+# must stay: "show windows" addresses setWorkspacesShowWindows).
+_BIGRAM_STOP_WORDS = frozenset({
+    "set", "on", "off", "in", "the", "a", "an", "and", "to", "of",
+    "at", "when", "until", "my", "with", "up", "down", "use", "get",
+})
+
+# Query-side-only synonyms (NOT in lexicon.SYNONYMS: tool_document expands
+# SYNONYMS into the indexed corpus, and the embedder's corpus is
+# fingerprint-pinned). Size adjectives whose noun lives in tool names:
+# "wider osd hover area" must reach setOsdHoverWidth's "width" atom.
+_QUERY_SYNONYMS: Dict[str, Tuple[str, ...]] = {
+    "wider": ("width",),
+    "narrower": ("width",),
+    "widen": ("width",),
+}
+
+# Query-side-only spelling variants (same reasoning: never touch the
+# indexed corpus).
+_SPELL_VARIANTS: Dict[str, Tuple[str, ...]] = {
+    "visualizer": ("visualiser",),
+    "visualiser": ("visualizer",),
+}
+
+# Digit -> word normalization for enum vocabulary (F4, D2): "24 hour"
+# must reach setClockFormat's serialized enum words ("twenty four hour")
+# instead of letting the bare number hijack unrelated numeric tools.
+_DIGIT_WORDS = {
+    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+    6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+    11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen",
+    15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen",
+    19: "nineteen", 20: "twenty", 30: "thirty", 40: "forty",
+    50: "fifty", 60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety",
+}
+_DIGIT_RE = re.compile(r"\b(\d{1,2})\s*h\b|\b(\d{1,2})\b")
+
+
+def _digit_word_tokens(text: str) -> List[str]:
+    """Additive word forms of small digits in the query ("24 hour" ->
+    "twenty four", "12h" -> "twelve hour"). Only 0..99 with known word
+    forms; larger numbers are left alone (they are real values, not
+    vocabulary)."""
+    out: List[str] = []
+    for match in _DIGIT_RE.finditer(text):
+        hour_form, plain = match.group(1), match.group(2)
+        if hour_form is not None:
+            value = int(hour_form)
+            words = _DIGIT_WORDS.get(value)
+            if words:
+                out.extend(words.split())
+                out.append("hour")
+            continue
+        if plain is None:
+            continue
+        value = int(plain)
+        if value <= 20:
+            out.append(_DIGIT_WORDS[value])
+        elif value % 10 == 0 and value in _DIGIT_WORDS:
+            out.append(_DIGIT_WORDS[value])
+        elif value < 100:
+            tens, ones = (value // 10) * 10, value % 10
+            if tens in _DIGIT_WORDS and ones in _DIGIT_WORDS:
+                out.extend((_DIGIT_WORDS[tens], _DIGIT_WORDS[ones]))
+    return out
 
 # ---------------------------------------------------------------------------
 # Router state (the learnable part).
@@ -204,12 +309,21 @@ AGENT_SEQ_RE = re.compile(
     r"\bfirst\b[^.!?]{0,80}\bthen\b|\bone\s+by\s+one\b|\bdirectly\s+after\b"
 )
 
+# Lock-on-startup grammar (D1/p22): "lock the screen when the shell
+# starts" names setLockOnStartup — a lock word near a start/boot/login
+# word is startup-lock grammar, decisive over the "screen" noun that
+# otherwise drags in setShowScreenRecorder.
+_LOCK_START_RE = re.compile(
+    r"\block\b[^.!?]{0,40}\b(?:start(?:s|ing)?|boot|launch(?:es|ing)?|log\s?in)\b"
+)
+
 PATTERN_BOOSTS: Tuple[Tuple[re.Pattern[str], str, float], ...] = (
     (_WHY_RE, "explain", 0.78),
     (_EXPLAIN_HINT_RE, "explain", 0.66),
     (_UNDO_RE, "undo", 0.78),
     (_HISTORY_RE, "history", 0.80),
     (_GENIUS_RE, "genius", 0.82),
+    (_LOCK_START_RE, "setLockOnStartup", 0.80),
     # Sequencing grammar floors the agent surface on any route() call that
     # still sees the connective (single-clause requests and whole-text
     # calls). The pipeline applies the same regex pre-split for compound
@@ -290,14 +404,18 @@ _TRANSPARENCY_TOOL_RE = re.compile(r"(?:^|\.)(?:transparency|opacity)|transparen
 
 
 def _enum_value_words(spec) -> List[str]:
-    """Serialized enum values as addressable vocabulary ("bottom" for
-    setBarPosition, "timeOfDay" -> "time of day", metaenum keys split)."""
+    """Serialized enum values as addressable vocabulary. Camel humps are
+    split ("TwentyFourHour" -> "twenty four hour", "timeOfDay" -> "time
+    of day") so a query's words can actually reach enum vocabulary — a
+    fused "twentyfourhour" token is unreachable by any real phrasing
+    (F4/D2: "use 24 hour time" must reach setClockFormat)."""
     if spec.kind != "enum" or not spec.enum:
         return []
     out: List[str] = []
     for value in spec.enum:
-        text = str(value).replace("_", " ")
-        out.extend(w.lower() for w in text.replace("-", " ").split())
+        text = str(value).replace("_", " ").replace("-", " ")
+        for part in text.split():
+            out.extend(w.lower() for w in camel_split(part) if w)
     return [w for w in out if w]
 
 
@@ -387,18 +505,32 @@ def _typo_fix(text: str, vocab: Sequence[str], max_distance: int = 1) -> Tuple[s
 def _expand_query(text: str) -> Tuple[str, List[str]]:
     """Query-side expansion: typo fix, then synonym mapping of single
     words AND adjacent-pair bigrams ("see through" -> transparency via
-    the "see-through" lexicon key). Original words are KEPT — synonyms
-    are additive, never replacements."""
+    the "see-through" lexicon key), plus digit->word normalization for
+    enum vocabulary ("24 hour" -> "twenty four hour"). Original words
+    are KEPT — synonyms are additive, never replacements."""
     vocab = embedder().vocab
     fixed, evidence = _typo_fix(text, vocab)
     words = _WORD_SPLIT_RE.findall(fixed)
     expanded: List[str] = list(words)
+    for token in _digit_word_tokens(fixed):
+        if token not in expanded:
+            expanded.append(token)
+            if token != "hour":
+                evidence.append(f"digit: {token}")
     for word in words:
         for key in (word, stem(word)):
             for mapped in SYNONYMS.get(key, ()):
                 if mapped not in expanded:
                     expanded.append(mapped)
                     evidence.append(f"synonym: {word} -> {mapped}")
+        for mapped in _SPELL_VARIANTS.get(word, _SPELL_VARIANTS.get(stem(word), ())):
+            if mapped not in expanded:
+                expanded.append(mapped)
+                evidence.append(f"spelling: {word} -> {mapped}")
+        for mapped in _QUERY_SYNONYMS.get(word, _QUERY_SYNONYMS.get(stem(word), ())):
+            if mapped not in expanded:
+                expanded.append(mapped)
+                evidence.append(f"synonym(query-side): {word} -> {mapped}")
     for a, b in zip(words, words[1:]):
         for joined in (f"{a}-{b}", f"{a}{b}"):
             for mapped in SYNONYMS.get(joined, ()):
@@ -503,8 +635,47 @@ class Router:
         self.enum_words: Dict[str, List[str]] = {
             spec.name: _enum_value_words(spec) for spec in TOOL_SPECS if spec.kind == "enum"
         }
+        # F2 structural addressing surfaces (exponential-build-5):
+        # - primary atom: the tool's group noun (first non-stop camel word),
+        #   what the Enabled prior keys on ("disable the launcher" ->
+        #   setLauncherEnabled, whose primary atom "launcher" is present).
+        # - name bigrams: adjacent camel-word pairs of the tool name; a
+        #   bigram appearing ADJACENT in the query ("show windows") is
+        #   compound addressing of setWorkspacesShowWindows — stronger
+        #   than any single-word overlap.
+        self.primary_atom: Dict[str, str] = {}
+        self.name_bigrams: Dict[str, Tuple[Tuple[str, str], ...]] = {}
+        for spec in TOOL_SPECS:
+            words = [w.lower() for w in camel_split(spec.name)]
+            primary = next((w for w in words if w not in _PRIMARY_STOP_WORDS), "")
+            if primary:
+                self.primary_atom[spec.name] = primary
+            stemmed = [stem(w) for w in words if w not in {"set"}]
+            bigrams = tuple(
+                (a, b) for a, b in zip(stemmed, stemmed[1:])
+                if a not in _BIGRAM_STOP_WORDS and b not in _BIGRAM_STOP_WORDS
+            )
+            if bigrams:
+                self.name_bigrams[spec.name] = bigrams
 
     # -- structural layers --------------------------------------------------
+
+    @staticmethod
+    def _is_enabled_tool(name: str) -> bool:
+        """An "on/off toggle for the thing it names": setXEnabled,
+        setEnableX, or path *.enabled. Exclude setDisable* tools (their
+        polarity is inverted and they gate on different vocabulary)."""
+        from ..settings.registry import tool_by_name
+        spec = tool_by_name(name)
+        if spec is None or spec.kind != "bool":
+            return False
+        if spec.name.startswith("setDisable"):
+            return False
+        return (
+            spec.name.endswith("Enabled")
+            or spec.name.startswith("setEnable")
+            or spec.path.endswith(".enabled")
+        )
 
     def _pattern_floor(self, raw: str) -> Dict[str, float]:
         """{surface: floor} from pattern boosts, preset triggers, the
@@ -620,6 +791,54 @@ class Router:
 
         w_lex, w_sem, w_fuzz, w_noun, bias = state.weights_vector()
 
+        # F2 gate flags (exponential-build-5): polarity verbs constrain
+        # candidate kind. Computed from the RAW text (typo fix and synonym
+        # expansion are hints, never gate triggers).
+        raw_words = _WORD_SPLIT_RE.findall(raw)
+        raw_stems = {stem(w) for w in raw_words}
+        gate_bool = any(
+            w in _GATE_BOOL_WORDS or stem(w) in _GATE_BOOL_WORDS
+            for w in raw_words
+        )
+        gate_enum = (
+            any(w in _GATE_MOVE_WORDS or stem(w) in _GATE_MOVE_WORDS
+                for w in raw_words)
+            and bool(cues.get("position"))
+        )
+        gate_numeric = bool(cues.get("direction")) and not gate_bool
+        if gate_numeric:
+            # Participle forms ("expanded", "enlarged", "minimized") are
+            # STATE descriptions, not magnitude requests — "notifications
+            # should open expanded" is a bool request about the expanded
+            # state. The soft cue-kind nudge keeps them; the GATE does not.
+            gate_numeric = any(
+                (w in DIRECTION_WORDS)
+                or (stem(w) in DIRECTION_WORDS
+                    and not (w.endswith("ed") or w.endswith("ing")))
+                for w in raw_words
+            )
+        prior_polarity = gate_bool or any(
+            w in _PRIOR_ON_WORDS or stem(w) in _PRIOR_ON_WORDS
+            for w in raw_words
+        )
+        # Adjacent stemmed word pairs of the raw query (bigram floor).
+        raw_seq = [stem(w) for w in raw_words]
+        query_bigrams = {(raw_seq[i], raw_seq[i + 1]) for i in range(len(raw_seq) - 1)}
+
+        # F2 specificity map: for each primary atom, the best name-atom
+        # coverage any tool with that primary achieves on this query. The
+        # Enabled prior must not fire when a MORE SPECIFIC sibling of the
+        # same group noun is better addressed ("turn off the charging
+        # sound" names setSoundsChargingStarted, not the whole sounds
+        # toggle).
+        _best_cov_by_primary: Dict[str, float] = {}
+        for key, atoms in self.name_atom_sets.items():
+            if key not in self.primary_atom:
+                continue
+            cov = coverage_hits.get(key, 0.0)
+            if cov > _best_cov_by_primary.get(self.primary_atom[key], 0.0):
+                _best_cov_by_primary[self.primary_atom[key]] = cov
+
         scored: List[Tuple[float, str]] = []
         features: Dict[str, Dict[str, float]] = {}
         for key, (doc, kind) in self.documents.items():
@@ -630,6 +849,11 @@ class Router:
             fuzz = ngram_similarity(raw, self.name_atoms.get(key, key))
             noun = 1.0 if key in noun_hits else 0.0
             score = w_lex * lex + w_sem * sem + w_fuzz * fuzz + w_noun * noun + bias
+            # F2: the structural lift (noun floor, pattern floors, coverage
+            # floor, Enabled prior, name bigram) is tracked per candidate
+            # and exposed as the "struct" feature so the learner's student
+            # models can see what actually drove the score.
+            score_base = score
             if key in noun_hits:
                 # A noun hit is decisive by construction: floor the hybrid
                 # at a level vague lexical overlap cannot reach.
@@ -643,18 +867,101 @@ class Router:
             # hit on the font tool.
             coverage = coverage_hits.get(key, 0.0)
             if coverage >= 0.999:
-                score = max(score, w_lex + w_noun + bias)
+                # Full name-atom coverage is SPECIFIC addressing: every
+                # word of the tool's own name is present. That outranks
+                # any generic lexical overlap a sibling tool can muster
+                # ("let the bar hide until I hover" must beat the
+                # greeter's coincidental "hover" lexical mass).
+                if kind == "tool":
+                    score = max(score, 0.85)
+                else:
+                    score = max(score, w_lex + w_noun + bias)
             elif coverage >= 0.5:
                 score += 0.5 * w_noun
+            # F2 Enabled prior: a polarity verb plus the tool's group
+            # noun floors its Enabled toggle ("disable the launcher" ->
+            # setLauncherEnabled, "mute all shell sounds" ->
+            # setSoundsEnabled). The noun grammar cannot hit these
+            # noun-silent toggles; the polarity verb is the disambiguator.
+            if prior_polarity and key in self.primary_atom and self._is_enabled_tool(key):
+                primary = self.primary_atom[key]
+                if (primary in expanded_stems or stem(primary) in expanded_stems) \
+                        and coverage_hits.get(key, 0.0) >= \
+                        _best_cov_by_primary.get(primary, 0.0):
+                    score = max(score, 0.80)
+            # F2 name-bigram floor: an adjacent camel-word pair of the
+            # tool's own name appearing verbatim ("show windows") is
+            # compound addressing — "show windows in the workspace
+            # indicators" is setWorkspacesShowWindows, not the
+            # active-indicator tool one lexical word closer.
+            for bigram in self.name_bigrams.get(key, ()):
+                if bigram in query_bigrams:
+                    score = max(score, 0.82)
+                    break
+            struct_lift = max(0.0, score - score_base)
             cue_delta, cue_evidence = self._cue_kind_delta(cues, key, raw)
             score += cue_delta * w_noun
             scored.append((score, key))
             features[key] = {"lex": round(lex, 4), "sem": round(sem, 4),
                              "fuzz": round(fuzz, 4), "noun": noun,
                              "cue": round(cue_delta, 4),
-                             "coverage": round(coverage, 4)}
+                             "coverage": round(coverage, 4),
+                             "struct": round(struct_lift, 4)}
 
-        scored.sort(key=lambda pair: (-pair[0], pair[1]))
+        # F2 TYPE GATE (exponential-build-5): with a polarity verb
+        # present, disagreeing TOOL candidates are suppressed — the cue
+        # becomes a constraint, not a nudge. Presets and coarse surfaces
+        # are never gated (they legitimately combine kinds), and a tool
+        # the query SPECIFICALLY addresses (name-atom coverage >= 0.5)
+        # survives any gate — "hide notifications during fullscreen"
+        # names setFullscreen even though "hide" is a bool verb. If the
+        # gate would remove every tool, fall back to the unfiltered
+        # ranking and say so in the evidence — never gate silently to
+        # nothing.
+        gate_note = ""
+        if gate_bool or gate_numeric or gate_enum:
+            if gate_bool:
+                wanted, gate_name = ("bool", "off/hide/mute/disable/stop -> bool")
+            elif gate_enum:
+                wanted, gate_name = ("enum", "move/put/switch + position -> enum")
+            else:
+                wanted, gate_name = (("float", "int"), "direction -> numeric")
+            kept: List[Tuple[float, str]] = []
+            n_tools_kept = 0
+            for pair in scored:
+                key = pair[1]
+                if self.documents[key][1] != "tool":
+                    kept.append(pair)
+                    continue
+                if coverage_hits.get(key, 0.0) >= 0.5:
+                    kept.append(pair)  # specific addressing survives the gate
+                    n_tools_kept += 1
+                    continue
+                spec = self.spec_by_name.get(key)
+                tool_kind = spec.kind if spec else None
+                if tool_kind == wanted or (
+                    isinstance(wanted, tuple) and tool_kind in wanted
+                ):
+                    kept.append(pair)
+                    n_tools_kept += 1
+            if n_tools_kept > 0:
+                scored = kept
+                gate_note = f"type gate: {gate_name} kept {n_tools_kept} tool candidates"
+            else:
+                gate_note = ("type gate emptied the tool candidates; "
+                             "fell back to the unfiltered ranking (low confidence)")
+
+        # Ranking: score desc, then MOST MATCHED NAME ATOMS desc (a
+        # 4-atom-specific tool beats a 3-atom-generic one at equal score
+        # — "only show the dock on the current desktop" is the dock
+        # toggle, not the tab-switch one), then name asc for determinism.
+        def _matched_atoms(key: str) -> int:
+            atoms = self.name_atom_sets.get(key)
+            if not atoms:
+                return 0
+            return round(coverage_hits.get(key, 0.0) * len(atoms))
+
+        scored.sort(key=lambda pair: (-pair[0], -_matched_atoms(pair[1]), pair[1]))
         top_pairs = scored[:k]
 
         # Softmax with temperature over the top-k (probabilities are the
@@ -674,6 +981,8 @@ class Router:
                 cues=dict(cues),
             )
             cand.evidence.extend(evidence)
+            if gate_note:
+                cand.evidence.append(gate_note)
             if key in noun_hits:
                 cand.evidence.append("exact noun grammar hit")
             if key in floors:

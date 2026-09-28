@@ -270,12 +270,16 @@ class TestCalibrationSurfacing(unittest.TestCase):
         from assistant.cortex.learn import CortexLearner
 
         learner = CortexLearner()
-        # the ROUTE's raw softmax p (~0.32) selects the bucket, so the
-        # observations must land there (the calibrated confidence is a
-        # different quantity)
+        # The note needs >= 5 observations in the bucket the LIVE route's
+        # softmax p lands in. The pipeline's p depends on the sampled
+        # strategy state and its route call, so the fixture observes into
+        # EVERY bucket (0.2 / 0.4 / 0.6 / 0.9 cover p30-, p30-50, p50-75,
+        # p75+): with history in all buckets the note must surface for
+        # any honest route — no stale p pinning.
         for i in range(30):
-            learner.observe(f"make my bar thinner {i}", "setBarScale",
-                            {"lex": 0.9}, 0.35, "applied")
+            for p in (0.2, 0.4, 0.6, 0.9):
+                learner.observe(f"make my bar thinner {i}", "setBarScale",
+                                {"lex": 0.9}, p, "applied")
         target = Path(tempfile.mkdtemp()) / "shell.json"
         target.write_text(json.dumps({"bar": {"scale": 1.0}}))
         from assistant.brain import state as brain_state
@@ -292,12 +296,12 @@ class TestCalibrationSurfacing(unittest.TestCase):
 
         state = {"cortex_learn": None}
         learner = CortexLearner()
-        # the ROUTE's raw softmax p (~0.32) selects the bucket, so the
-        # observations must land there (the calibrated confidence is a
-        # different quantity)
+        # observe into every bucket (see test_note_in_chat_card): the note
+        # must surface wherever the live route's softmax p lands
         for i in range(30):
-            learner.observe(f"make my bar thinner {i}", "setBarScale",
-                            {"lex": 0.9}, 0.35, "applied")
+            for p in (0.2, 0.4, 0.6, 0.9):
+                learner.observe(f"make my bar thinner {i}", "setBarScale",
+                                {"lex": 0.9}, p, "applied")
         target = Path(tempfile.mkdtemp()) / "shell.json"
         target.write_text(json.dumps({"bar": {"scale": 1.0}}))
         state = {"cortex_learn": learner.to_dict()}

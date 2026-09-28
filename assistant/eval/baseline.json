@@ -12,29 +12,29 @@
    "point": 0.95
   },
   "nlplan.exact_rate": {
-   "hi": 0.7667,
-   "lo": 0.4333,
-   "point": 0.6
+   "hi": 0.8333,
+   "lo": 0.5333,
+   "point": 0.7
   },
   "nlplan.tool_rate": {
-   "hi": 0.8667,
-   "lo": 0.5667,
-   "point": 0.7333
+   "hi": 0.9667,
+   "lo": 0.6667,
+   "point": 0.8333
   },
   "routing.precision_among_routed": {
-   "hi": 0.9296,
-   "lo": 0.7746,
-   "point": 0.8592
+   "hi": 0.9855,
+   "lo": 0.8841,
+   "point": 0.942
   },
   "routing.top1_rate": {
-   "hi": 0.8667,
-   "lo": 0.6889,
-   "point": 0.7778
-  },
-  "routing.top3_rate": {
    "hi": 0.9667,
    "lo": 0.8444,
    "point": 0.9111
+  },
+  "routing.top3_rate": {
+   "hi": 1.0,
+   "lo": 0.9111,
+   "point": 0.9556
   }
  },
  "note": "Ratchet floors for the dev arena. A metric fails the ratchet test when it drops below its recorded bootstrap lower bound (lo). Baselines move only through a reviewed commit that states why. Latency/RSS are measurements, not ratchets (machine-dependent).",

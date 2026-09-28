@@ -49,7 +49,14 @@ LEARN_VERSION = 1
 MAX_EXAMPLES = 500
 
 # Feature order (must match the router's feature dict keys).
-_FEATURES = ("lex", "sem", "fuzz", "noun", "cue")
+# The six router features the student models see. "struct" (added in
+# exponential-build-5 F2) is the structural lift: how much the deterministic
+# layers (noun floor, pattern floors, coverage floor, Enabled prior, name
+# bigram) raised a candidate above its pure weighted-feature score. Without
+# it, structurally-floored candidates are invisible to the logistic student
+# and the CART/logistic agreement gate degrades — the feature rows must
+# describe what actually drove the score.
+_FEATURES = ("lex", "sem", "fuzz", "noun", "cue", "struct")
 
 # Fixed routing-strategy profiles for the bandit.
 STRATEGY_PROFILES: Dict[str, RouterState] = {
@@ -70,9 +77,9 @@ class OnlineLogistic:
     the identity prior (all 1.0 on the raw feature scale, bias 0) —
     i.e. "trust every signal equally until the user teaches otherwise"."""
 
-    weights: Tuple[float, ...] = (1.0, 1.0, 1.0, 1.0, 1.0)
+    weights: Tuple[float, ...] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
     bias: float = 0.0
-    acc_sq: Tuple[float, ...] = (1e-6, 1e-6, 1e-6, 1e-6, 1e-6)
+    acc_sq: Tuple[float, ...] = (1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6)
     bias_acc_sq: float = 1e-6
     lr: float = 0.15
     examples: int = 0
@@ -112,15 +119,26 @@ class OnlineLogistic:
         if not isinstance(data, dict):
             return model
         try:
-            model.weights = tuple(float(w) for w in data.get("weights", model.weights))
+            model.weights = OnlineLogistic._fit_len(
+                tuple(float(w) for w in data.get("weights", model.weights)))
             model.bias = float(data.get("bias", 0.0))
-            model.acc_sq = tuple(float(a) for a in data.get("acc_sq", model.acc_sq))
+            model.acc_sq = OnlineLogistic._fit_len(
+                tuple(float(a) for a in data.get("acc_sq", model.acc_sq)), 1e-6)
             model.bias_acc_sq = float(data.get("bias_acc_sq", 1e-6))
             model.lr = float(data.get("lr", 0.15))
             model.examples = int(data.get("examples", 0))
         except (TypeError, ValueError):
             return OnlineLogistic()
         return model
+
+    @staticmethod
+    def _fit_len(values: Tuple[float, ...], pad: float = 1.0) -> Tuple[float, ...]:
+        """Pad/truncate a persisted weight vector to the current feature
+        count — pre-struct learner states (5 weights) load with the new
+        feature's weight at its identity prior instead of crashing."""
+        n = len(_FEATURES)
+        values = values[:n]
+        return values + (pad,) * (n - len(values))
 
 
 # ---------------------------------------------------------------------------
@@ -350,13 +368,15 @@ class CortexLearner:
         if total <= 0:
             return base
         fitted = [w / total for w in fitted]
-        # map [lex, sem, fuzz, noun, cue-kind handled via w_noun] onto the
-        # RouterState weight slots; 'cue' folds into w_noun (both are the
-        # structural/agreement signals).
+        # map [lex, sem, fuzz, noun, cue-kind, struct] onto the
+        # RouterState weight slots; 'cue' and 'struct' fold into w_noun
+        # (all three are the structural/agreement signals).
         w_lex = fitted[0]
         w_sem = fitted[1]
         w_fuzz = fitted[2]
         w_noun = fitted[3] + fitted[4]
+        if len(fitted) > 5:
+            w_noun += fitted[5]
         # renormalize the four slots to the strategy profile's total mass
         mass = base.w_lex + base.w_sem + base.w_fuzz + base.w_noun
         slot_total = w_lex + w_sem + w_fuzz + w_noun

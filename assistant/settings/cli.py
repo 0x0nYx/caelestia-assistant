@@ -658,6 +658,20 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "applied — restore stays the explicit F17 path",
     )
     arg_parser.add_argument(
+        "--monitor", metavar="SCREEN", default=None,
+        help="F20: target ONE screen's override file "
+             "(monitors/SCREEN/shell.json, the upstream forScreen layer — "
+             "same schema, same validation, same gates) instead of the "
+             "global config; combine with a request or --call; cannot be "
+             "combined with --file",
+    )
+    arg_parser.add_argument(
+        "--monitors", action="store_true",
+        help="read-only monitor report (F20): the discovered per-screen "
+             "override files and the global tools that select monitor "
+             "behavior, with citations; never writes",
+    )
+    arg_parser.add_argument(
         "--to", metavar="PATH", default=None,
         help="with --env-export: the bundle output path",
     )
@@ -1547,6 +1561,64 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         print("\n".join(profile_preview.render(view)))
+        return 0
+
+    if args.monitor is not None and args.file is not None:
+        arg_parser.error(
+            "--monitor and --file are mutually exclusive: --monitor "
+            "resolves the target to that screen's override file")
+
+    if args.monitor is not None:
+        # F20: --monitor is a TARGET RESOLVER — the ordinary machinery
+        # (parser, planner, applier, backup sibling, history) then runs
+        # against the screen's override file unchanged. Naming a screen
+        # explicitly is the consent for its override directory to exist
+        # (upstream creates monitors/<screen>/ on the first per-screen
+        # write too); the applier's own no-directory-creation rule is
+        # untouched.
+        from . import monitors as monitors_mod
+        try:
+            resolved = monitors_mod.resolve_target(
+                default_target(), args.monitor)
+        except ValueError as exc:
+            arg_parser.error(str(exc))
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        args.file = str(resolved)
+
+    if args.monitors:
+        # F20 read-only report: discovered override files + the global
+        # monitor-behavior tools, cited. Never writes.
+        from . import monitors as monitors_mod
+        target = Path(args.file) if args.file else default_target()
+        discovered = monitors_mod.discover(target)
+        print("monitor-aware planning (F20) — read-only report")
+        print("")
+        print("per-screen override files (upstream forScreen layer, "
+              "shell/plugin/src/Caelestia/Config/rootnodes.cpp:87 + "
+              "common.cpp:15):")
+        if not discovered:
+            print(f"  none yet under {monitors_mod.monitors_dir(target)} — "
+                  "target one with --monitor SCREEN (the file is created "
+                  "on the first --apply, like any config target)")
+        for d in discovered:
+            if d.get("error"):
+                print(f"  {d['screen']}: {d['error']}")
+                continue
+            print(f"  {d['screen']}: {d['managed_keys']} registry-managed "
+                  f"key(s), {d['unknown_keys']} unknown")
+        print("")
+        print("global tools that select monitor behavior (same schema, "
+              "cited):")
+        for row in monitors_mod.monitor_behavior_tools():
+            enum = (f" {'|'.join(row['enum'])}" if row.get("enum") else "")
+            cite = row["citations"][0][0] if row["citations"] else "-"
+            print(f"  {row['name']:<28} {row['path']} "
+                  f"(default {row['default']!r}{enum}) [{cite}]")
+        print("")
+        print("NOTE: connected-screen enumeration lives in "
+              "Quickshell/Wayland; this report only sees override files "
+              "that already exist. per-screen values use the SAME "
+              "planner/confirm/undo gates as the global config.")
         return 0
 
     if args.env_save is not None:

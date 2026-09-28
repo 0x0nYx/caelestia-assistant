@@ -559,6 +559,37 @@ def process(
         if top is None:
             questions.append(f"{clause.text!r}: nothing matched")
             continue
+        # F6 (D5): an out-of-ontology clause surfaces honestly with
+        # inert suggestions — never a forced route, never a crash.
+        if clause_route.verdict == "OUT_OF_ONTOLOGY":
+            result.verdict = "OUT_OF_ONTOLOGY"
+            result.questions.append(clause_route.question or "outside the settings ontology")
+            result.candidates = [
+                {"clause": clause.text, "surface": c.surface, "kind": c.kind,
+                 "score": c.score} for c in clause_route.candidates[:3]
+            ]
+            # carry the same top-2 gap evidence the ABSTAIN path keeps —
+            # "how close the best local guesses were" explains the
+            # boundary honestly
+            if len(clause_route.candidates) >= 2:
+                first, second = clause_route.candidates[:2]
+                result.abstain_gap = {
+                    "clause": clause.text,
+                    "top": first.surface, "top_score": round(first.score, 4),
+                    "runner_up": second.surface,
+                    "runner_up_score": round(second.score, 4),
+                    "gap": round(first.score - second.score, 4),
+                }
+            result.suggestions = [
+                "SUGGESTED_NOT_EXECUTED: search the docs — "
+                "caelestia-assist search \"...\"",
+                "SUGGESTED_NOT_EXECUTED: diagnose a log — "
+                "caelestia-assist diagnose <file>",
+                "SUGGESTED_NOT_EXECUTED: math/logic — caelestia-assist do \"...\"",
+            ]
+            result.confidence = round(top.p, 3)
+            result.evidence = list(compound.notes)
+            return result
         if top_route is None:
             top_route = clause_route
         evidence.extend(f"[{clause.text[:40]}] {e}" for e in top.evidence[:4])
@@ -601,10 +632,27 @@ def process(
                 result.explain_answer = answer
             except SettingsExplainError:
                 # It looked like a why-question but names no registry
-                # setting — the genius layer is the honest fallback for
-                # universal questions, not a crash.
-                result.delegate = "genius"
-                notes.append("not a settings question — trying the genius layer")
+                # setting. Genius-SHAPED questions (arithmetic, solve,
+                # tautology...) honestly belong to the genius layer
+                # (D5b: that delegation used to crash on non-math text
+                # with a ValueError — "what is the capital of France").
+                # Anything else is out of the ontology: say so, suggest,
+                # never crash.
+                from .router import _GENIUS_RE
+                if _GENIUS_RE.search(clause.text.lower()):
+                    result.delegate = "genius"
+                    notes.append("a math/logic question — the genius layer owns it")
+                else:
+                    result.verdict = "OUT_OF_ONTOLOGY"
+                    result.suggestions = [
+                        "SUGGESTED_NOT_EXECUTED: search the docs — "
+                        "caelestia-assist search \"...\"",
+                        "SUGGESTED_NOT_EXECUTED: math/logic — "
+                        "caelestia-assist do \"...\"",
+                    ]
+                    notes.append("not a settings question and not a local-domain "
+                                 "question — outside the ontology")
+                    return result
         elif surface in ("undo", "history"):
             query = parse_history_query(clause.text, now=now)
             entries = settings_history.entries(target)

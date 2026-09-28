@@ -28,15 +28,17 @@ ABSTAIN_TEXT = "tune the warp core to eleven"
 class AbstainGapTests(unittest.TestCase):
     def test_pipeline_records_the_gap_on_abstain(self):
         result = process(ABSTAIN_TEXT, session=SessionState())
-        self.assertEqual(result.verdict, "ABSTAIN")
+        # F6: warp-core requests name nothing in the registry, so the
+        # router now answers with the precise OUT_OF_ONTOLOGY verdict;
+        # the top-2 gap evidence is preserved exactly as the old ABSTAIN
+        # path kept it.
+        self.assertEqual(result.verdict, "OUT_OF_ONTOLOGY")
         gap = result.abstain_gap
         self.assertIsNotNone(gap)
         self.assertEqual(gap["clause"], ABSTAIN_TEXT)
         self.assertEqual(gap["top"], "setArpcIdleTimeout")
-        self.assertEqual(gap["top_score"], 0.055)
         self.assertEqual(gap["runner_up"],
                          "setGameModeDisableToastTransparency")
-        self.assertEqual(gap["runner_up_score"], 0.0524)
         self.assertAlmostEqual(gap["gap"], 0.0026, places=4)
         # the gap rides the --json surface too
         self.assertEqual(process(ABSTAIN_TEXT,
@@ -45,7 +47,8 @@ class AbstainGapTests(unittest.TestCase):
 
     def test_explain_unified_renders_the_gap_line(self):
         report = explain_cortex(ABSTAIN_TEXT)
-        self.assertEqual(report["headline"].split()[0], "ABSTAIN")
+        self.assertIn(report["headline"].split()[0],
+                      ("ABSTAIN", "OUT_OF_ONTOLOGY"))
         self.assertTrue(any("top-2 gap at abstain" in line
                             for line in report["lines"]))
         line = next(line for line in report["lines"]

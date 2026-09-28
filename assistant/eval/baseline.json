@@ -3,8 +3,8 @@
  "metrics": {
   "abstention.abstain_rate": {
    "hi": 1.0,
-   "lo": 0.75,
-   "point": 0.9
+   "lo": 1.0,
+   "point": 1.0
   },
   "diagnosis.rule_hit_rate": {
    "hi": 1.0,

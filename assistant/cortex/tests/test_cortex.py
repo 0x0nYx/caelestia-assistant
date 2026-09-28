@@ -309,8 +309,13 @@ class RouterHonestyTests(unittest.TestCase):
     def test_garbage_abstains(self):
         for text in ("flurb the wozzle", "asdkjhqwe", "the meaning of life"):
             result = route(text)
-            self.assertIn(result.verdict, ("ABSTAIN", "AMBIGUOUS"), text)
-            if result.verdict == "ABSTAIN":
+            # OUT_OF_ONTOLOGY (F6) is the precise verdict for garbage that
+            # names nothing in the registry — the protection is the same:
+            # never a confident route.
+            self.assertIn(
+                result.verdict,
+                ("ABSTAIN", "AMBIGUOUS", "OUT_OF_ONTOLOGY"), text)
+            if result.verdict in ("ABSTAIN", "OUT_OF_ONTOLOGY"):
                 self.assertIsNotNone(result.question, text)
 
     def test_empty_input(self):

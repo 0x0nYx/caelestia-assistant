@@ -139,6 +139,11 @@ def _hand_off_reason(result, state: Dict[str, Any]) -> Optional[str]:
     own verdict only — no new thresholds are introduced anywhere."""
     if result.verdict == "ABSTAIN":
         return "router-abstain"
+    if result.verdict == "OUT_OF_ONTOLOGY":
+        # F6: the request names nothing in the local ontology — the
+        # cloud tier is exactly the escape hatch for this, and the gap
+        # bucket records the shape for later clustering.
+        return "out-of-ontology"
     if result.verdict == "DELEGATE":
         return f"delegate:{result.delegate or 'unknown'}"
     if result.verdict == "QUESTION" and not result.candidates:
@@ -317,9 +322,11 @@ def dispatch(text: str, *, state: Optional[Dict[str, Any]] = None,
     }
     if reason:
         log_gap(state, text, reason, now)
-        if result.verdict in ("ABSTAIN", "QUESTION"):
+        if result.verdict in ("ABSTAIN", "QUESTION", "OUT_OF_ONTOLOGY"):
             # the same near-threshold phrases the CLI chat loop parks for
             # batch review — sidebar traffic feeds the same surface.
+            # OUT_OF_ONTOLOGY phrases are exactly the review material for
+            # "should a local capability cover this?" (F6).
             state[REVIEW_KEY] = log_review_candidate(
                 list(state.get(REVIEW_KEY, [])), text, result.verdict,
                 result.candidates or [], at=now)

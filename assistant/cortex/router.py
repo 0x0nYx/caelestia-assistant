@@ -317,6 +317,14 @@ _LOCK_START_RE = re.compile(
     r"\block\b[^.!?]{0,40}\b(?:start(?:s|ing)?|boot|launch(?:es|ing)?|log\s?in)\b"
 )
 
+# F6 question shape: a leading question word or a trailing question mark.
+# Questions are not change requests unless they carry a value cue —
+# "can you make the bar thinner?" carries one and plans normally.
+_QUESTION_RE = re.compile(
+    r"^\s*(?:why|what|when|where|who|how|which|whose|is|are|can|could|"
+    r"does|do|did|will|would|should)\b|\?\s*$"
+)
+
 PATTERN_BOOSTS: Tuple[Tuple[re.Pattern[str], str, float], ...] = (
     (_WHY_RE, "explain", 0.78),
     (_EXPLAIN_HINT_RE, "explain", 0.66),
@@ -818,6 +826,8 @@ class Router:
         # expansion are hints, never gate triggers).
         raw_words = _WORD_SPLIT_RE.findall(raw)
         raw_stems = {stem(w) for w in raw_words}
+        is_question = bool(_QUESTION_RE.search(raw))
+        why_question = bool(_WHY_RE.search(raw) or _EXPLAIN_HINT_RE.search(raw))
         gate_bool = any(
             w in _GATE_BOOL_WORDS or stem(w) in _GATE_BOOL_WORDS
             for w in raw_words
@@ -930,18 +940,36 @@ class Router:
                              "coverage": round(coverage, 4),
                              "struct": round(struct_lift, 4)}
 
+        # F6 out-of-ontology signal: how many content tokens of the RAW
+        # query (no typo correction, no synonyms — the user's own words)
+        # appear ANYWHERE in the indexed registry vocabulary. Zero hits
+        # means the request names nothing the ontology knows ('order a
+        # pizza' — where the typo fixer would happily bend 'order' into
+        # 'border' and manufacture a setBorderThickness route).
+        vocab_hits = sum(
+            1 for tok in tokenize(raw) if tok in self.index.df
+        )
+
         # F2 TYPE GATE (exponential-build-5): with a polarity verb
         # present, disagreeing TOOL candidates are suppressed — the cue
         # becomes a constraint, not a nudge. Presets and coarse surfaces
         # are never gated (they legitimately combine kinds), and a tool
         # the query SPECIFICALLY addresses (name-atom coverage >= 0.5)
         # survives any gate — "hide notifications during fullscreen"
-        # names setFullscreen even though "hide" is a bool verb. If the
-        # gate would remove every tool, fall back to the unfiltered
+        # names setFullscreen even though "hide" is a bool verb. A
+        # WHY-question is not a change request at all: its TOOL candidates
+        # are suppressed entirely so the explain surface answers (D4). If
+        # the gate would remove every tool, fall back to the unfiltered
         # ranking and say so in the evidence — never gate silently to
         # nothing.
         gate_note = ""
-        if gate_bool or gate_numeric or gate_enum:
+        if why_question:
+            why_kept = [(s, key) for s, key in scored
+                        if self.documents[key][1] != "tool"]
+            if why_kept:
+                scored = why_kept
+                gate_note = "why-question: tools suppressed; the explain surface answers"
+        elif gate_bool or gate_numeric or gate_enum:
             if gate_bool:
                 wanted, gate_name = ("bool", "off/hide/mute/disable/stop -> bool")
             elif gate_enum:
@@ -1042,6 +1070,33 @@ class Router:
             return RouteResult(verdict="ABSTAIN", candidates=[], question=_ABSTAIN_QUESTION)
         top_score = candidates[0].score
         margin = top_score - (candidates[1].score if len(candidates) > 1 else 0.0)
+
+        # F6 out-of-ontology (D5): a thin question or a request that names
+        # nothing in the registry vocabulary is outside the ontology — an
+        # honest verdict, never a confident route to a coincidental tool.
+        # Candidates ride along as evidence.
+        top_cand = candidates[0]
+        has_value_cue = any(
+            key in cues for key in (
+                "number", "percent", "position", "bool", "toggle",
+                "direction", "absolute", "reset", "transparency",
+            )
+        )
+        thin_question = (
+            is_question and not why_question and not has_value_cue
+            and top_cand.kind == "tool"
+            and top_cand.surface not in noun_hits
+            and coverage_hits.get(top_cand.surface, 0.0) < 0.5
+        )
+        if (thin_question or vocab_hits == 0) and top_cand.kind == "tool":
+            return RouteResult(
+                verdict="OUT_OF_ONTOLOGY", candidates=candidates,
+                question=("that's outside the settings I know about — I can "
+                          "change shell settings, explain why something looks "
+                          "a certain way, search the docs, diagnose logs, or "
+                          "answer math/logic questions"),
+                features=features,
+            )
 
         if top_score < state.min_score:
             return RouteResult(

@@ -85,7 +85,10 @@ class DispatchDecisionTests(unittest.TestCase):
         outcome = dispatch("wibble frobnicate the quux", state=state,
                            file_path=self.target)
         self.assertEqual(outcome["action"], "cloud")
-        self.assertEqual(outcome["reason"], "router-abstain")
+        # F6: garbage that names nothing in the registry now gets the
+        # precise OUT_OF_ONTOLOGY verdict — still a hand-off, still a
+        # logged gap shape, never a local guess.
+        self.assertIn(outcome["reason"], ("router-abstain", "out-of-ontology"))
         gaps = state.get(GAPS_KEY) or []
         self.assertEqual(len(gaps), 1)
         entry = gaps[0]
@@ -93,7 +96,7 @@ class DispatchDecisionTests(unittest.TestCase):
         self.assertNotIn("text", entry)
         self.assertIsInstance(entry["shape"], list)
         self.assertTrue(all(isinstance(t, str) for t in entry["shape"]))
-        self.assertEqual(entry["category"], "router-abstain")
+        self.assertIn(entry["category"], ("router-abstain", "out-of-ontology"))
         self.assertEqual(entry["n"], 1)
         # near-threshold hand-offs also feed the batch-review surface
         self.assertTrue(state.get(REVIEW_KEY))

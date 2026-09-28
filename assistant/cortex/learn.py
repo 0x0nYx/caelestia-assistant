@@ -581,7 +581,7 @@ def log_review_candidate(bucket: List[Dict[str, object]], text: str,
     are deduplicated (the newest occurrence wins). Bounded at
     MAX_CANDIDATES, oldest evicted.
     """
-    if verdict not in ("ABSTAIN", "AMBIGUOUS"):
+    if verdict not in ("ABSTAIN", "AMBIGUOUS", "OUT_OF_ONTOLOGY"):
         return bucket
     # ``at`` is declared str, but two call sites (cli.py, dispatch.py)
     # pass the live ``_now()`` datetime — coerce once, here, so the

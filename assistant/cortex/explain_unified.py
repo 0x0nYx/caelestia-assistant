@@ -142,7 +142,7 @@ def explain_cortex(text: str, state: Optional[Dict[str, Any]] = None
     # close the best guesses were" (the router's own ranking, its own
     # numbers; nothing new is computed here)
     gap = getattr(result, "abstain_gap", None)
-    if result.verdict == "ABSTAIN" and gap:
+    if result.verdict in ("ABSTAIN", "OUT_OF_ONTOLOGY") and gap:
         lines.append(
             f"top-2 gap at abstain: '{gap['top']}' scored "
             f"{gap['top_score']:.3f} vs '{gap['runner_up']}' at "

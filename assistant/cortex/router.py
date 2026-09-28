@@ -68,6 +68,7 @@ from .lexicon import (
 )
 from .vectorize import TfidfIndex, embedder, tokenize
 from .lexicon import camel_split
+from . import guard
 
 # ---------------------------------------------------------------------------
 # F2 type-gate vocabulary (exponential-build-5). The cue-kind agreement
@@ -122,6 +123,11 @@ _QUERY_SYNONYMS: Dict[str, Tuple[str, ...]] = {
     "wider": ("width",),
     "narrower": ("width",),
     "widen": ("width",),
+    # F3 (2026-09-28): "keep more notifications in history" asks for a
+    # higher STORED-notification cap (notifs.maxNotifs, whose own noun
+    # grammar says "stored notifications"); "keep" is the request's verb
+    # for storage. Query-side only, additive, never re-indexed.
+    "keep": ("stored",),
 }
 
 # Query-side-only spelling variants (same reasoning: never touch the
@@ -645,6 +651,13 @@ class Router:
         self.index = TfidfIndex({k: doc for k, (doc, _kind) in self.documents.items()})
         self.embedder = embedder()
         self.doc_vectors = {k: self.embedder.embed(doc) for k, (doc, _kind) in self.documents.items()}
+        # F3 guard input: stemmed document tokens per surface (the guard
+        # checks which surfaces actually address the request's content
+        # words). Built once; frozen for determinism.
+        self._doc_stem_cache = {
+            k: frozenset(stem(t) for t in self.index.doc_tokens.get(k, ()))
+            for k in self.documents
+        }
         # Fuzzy-matching surface: the addressable name atoms per candidate
         # (tool atoms from the registry; preset/surface names split as words).
         # name_atom_sets feeds the coverage signal: a tool whose compound
@@ -1029,6 +1042,20 @@ class Router:
             return round(coverage_hits.get(key, 0.0) * len(atoms))
 
         scored.sort(key=lambda pair: (-pair[0], -_matched_atoms(pair[1]), pair[1]))
+
+        # F3 evidence guard: two structural checks a blended score cannot
+        # express (specific addressing vs non-tool tops; prepositional
+        # -object mentions of coarse surfaces). Pure reordering with the
+        # evidence attached — see cortex/guard.py.
+        scored, guard_notes = guard.apply(
+            scored,
+            documents=self.documents,
+            coverage=coverage_hits,
+            raw_words=raw_words,
+            stems={w: stem(w) for w in raw_words},
+            doc_stems=self._doc_stem_cache,
+            min_margin=state.min_margin,
+        )
         top_pairs = scored[:k]
 
         # Softmax with temperature over the top-k (probabilities are the
@@ -1048,6 +1075,8 @@ class Router:
                 cues=dict(cues),
             )
             cand.evidence.extend(evidence)
+            if guard_notes and not candidates:
+                cand.evidence.extend(guard_notes)
             if gate_note:
                 cand.evidence.append(gate_note)
             if key in noun_hits:

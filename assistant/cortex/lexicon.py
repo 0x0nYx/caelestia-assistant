@@ -350,6 +350,18 @@ SYNONYMS: Dict[str, Tuple[str, ...]] = {
     "game-mode": ("game",),
     "gamemode": ("game",),
     "gaming": ("game",),
+    # F3 (2026-09-28): the overview's animation timing is the OVERVIEW
+    # config's baseDuration — upstream declares it in
+    # shell/plugin/src/Caelestia/Config/overviewconfig.hpp
+    # ("overview.baseDuration", cited on the tool itself). Without this
+    # the phrase "overview animation" lexicalizes as the generic
+    # animation-speed tool, which is the confident-wrong the arena
+    # measures. Hyphenated key: query-side only, never re-indexed.
+    "overview-animation": ("base", "duration"),
+    # F3 (2026-09-28): Nexus's "performance panel" IS the dashboard
+    # surface (shell/modules/nexus/pages/panels/DashboardPanel.qml — the
+    # panel that renders performance.* tools). Query-side only.
+    "performance-panel": ("dashboard",),
     # sound / audio
     "sound": ("sound",),
     "sounds": ("sound",),

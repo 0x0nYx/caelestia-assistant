@@ -39,9 +39,10 @@ from ..settings import history as settings_history
 from ..settings import planner as settings_planner
 from ..settings import presets as settings_presets
 from ..settings.cli import default_target
+from ..settings.consequences import EDGES
 from ..settings.explain import ExplainError as SettingsExplainError
 from ..settings.explain import explain as settings_explain
-from ..settings.registry import tool_by_name
+from ..settings.registry import TOOL_SPECS, tool_by_name, tool_by_path
 from . import compound as compound_mod
 from .compound import CompoundResult, route_compound
 from .learn import CortexLearner
@@ -326,6 +327,71 @@ def ops_for_candidate(surface: str, cues: Dict[str, object], raw: str) -> Tuple[
                      "string values are not parsed from free text — use --call")
 
     return ops, notes
+
+
+def _absence_explanation(ops: List[Dict[str, Any]], plan: Dict[str, Any]) -> Dict[str, Any]:
+    """F5: an all-no-op plan means the requested magnitude does not
+    exist on that setting. Explain the setting's real nature and cite
+    the nearest real magnitude controls — consequences-table neighbors
+    first (cited edges, not guesses), then same-family steppable tools.
+    Never a no-op plan."""
+    tool_names = [op["tool"] for op in ops if op.get("tool")]
+    spec = tool_by_name(tool_names[0]) if tool_names else None
+    if spec is None:
+        return {"ok": True, "absence": True, "answer": "", "cites": []}
+    kind_words = {"bool": "on/off only", "enum": "a fixed set of options",
+                  "string": "a text value, not a magnitude"}
+    nature = kind_words.get(spec.kind, spec.kind)
+    neighbors: List[Dict[str, Any]] = []
+    cites: List[str] = []
+    # 1) cited cross-key neighbors: any edge touching this tool's path
+    edge_paths = set()
+    for edge in EDGES:
+        if edge.get("trigger_path") == spec.path or edge.get("effect_path") == spec.path:
+            edge_paths.add(edge.get("trigger_path"))
+            edge_paths.add(edge.get("effect_path"))
+            if edge.get("citation") and edge["citation"] not in cites:
+                cites.append(str(edge["citation"]))
+    edge_paths.discard(spec.path)
+    # same-path-prefix family (appearance.blur -> appearance.transparency.*
+    # via the edge family, and the tool's own family)
+    families = {".".join(p.split(".")[:-1]) for p in edge_paths}
+    families.add(".".join(spec.path.split(".")[:-1]))
+    seen = set()
+    for other in TOOL_SPECS:
+        if other.name == spec.name or other.name in seen:
+            continue
+        if other.kind not in ("float", "int"):
+            continue
+        family = ".".join(other.path.split(".")[:-1])
+        if family not in families:
+            continue
+        seen.add(other.name)
+        reg_cite = other.citations[0][0] if other.citations else None
+        neighbors.append({
+            "name": other.name, "path": other.path, "kind": other.kind,
+            "minimum": other.minimum, "maximum": other.maximum,
+            "step": other.step, "citation": reg_cite,
+        })
+        if reg_cite and reg_cite not in cites:
+            cites.append(reg_cite)
+    neighbors.sort(key=lambda n: n["name"])
+    parts = [f"{spec.path} is {nature} — there is no strength to change"]
+    if neighbors:
+        named = ", ".join(
+            f"{n['name']} ({n['path']}, {n['kind']}"
+            + (f" {n['minimum']}-{n['maximum']}" if n["minimum"] is not None else "")
+            + ")" for n in neighbors[:3])
+        parts.append(f"the closest magnitude controls are {named}")
+    else:
+        parts.append("no magnitude control exists in this family")
+    return {
+        "ok": True, "absence": True,
+        "answer": ". ".join(parts) + ".",
+        "cites": cites,
+        "spec": {"name": spec.name, "path": spec.path, "kind": spec.kind},
+        "nearest": neighbors[:5],
+    }
 
 
 def _resolve_toggle(plan_ops: List[Dict[str, Any]], file_path: Path) -> List[str]:
@@ -616,6 +682,21 @@ def process(
     result.ops = ops
     result.notes = notes
     result.questions = questions
+
+    # F5 (D3): an all-no-op plan is not a plan — the requested magnitude
+    # does not exist on that setting. Explain + cite the nearest real
+    # controls instead of presenting a no-op change.
+    entries = plan.get("entries") or []
+    if (entries and not plan.get("apply_blocked")
+            and all(bool(e.get("no_op")) for e in entries)
+            and not any(e.get("error") for e in entries)):
+        result.explain_answer = _absence_explanation(ops, plan)
+        result.verdict = "EXPLAIN"
+        result.plan = None
+        result.ops = ops
+        result.notes = notes + ["no exposed magnitude for this setting — "
+                                "explaining instead of planning a no-op"]
+        return result
 
     if plan.get("apply_blocked"):
         result.verdict = "QUESTION"

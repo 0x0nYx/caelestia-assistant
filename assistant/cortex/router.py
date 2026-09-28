@@ -967,8 +967,25 @@ class Router:
                     kept.append(pair)
                     n_tools_kept += 1
             if n_tools_kept > 0:
-                scored = kept
-                gate_note = f"type gate: {gate_name} kept {n_tools_kept} tool candidates"
+                # The gate only stands when what it keeps clears the
+                # score bar; a gate that leaves only sub-bar candidates
+                # while a suppressed tool clears it ("increase the blur":
+                # the numeric gate drops on/off-only setBlurEnabled, the
+                # numeric survivors all score ~0.2) found nothing — fall
+                # back so the honest no-op/absence path can answer (F5).
+                best_kept = max(
+                    (pair[0] for pair in kept
+                     if self.documents[pair[1]][1] == "tool"), default=0.0)
+                best_any = max(
+                    (pair[0] for pair in scored
+                     if self.documents[pair[1]][1] == "tool"), default=0.0)
+                if best_kept >= state.min_score or best_any < state.min_score:
+                    scored = kept
+                    gate_note = f"type gate: {gate_name} kept {n_tools_kept} tool candidates"
+                else:
+                    gate_note = ("type gate survivors all scored below the bar while a "
+                                 "suppressed tool clears it; fell back to the unfiltered "
+                                 "ranking (low confidence)")
             else:
                 gate_note = ("type gate emptied the tool candidates; "
                              "fell back to the unfiltered ranking (low confidence)")

@@ -462,6 +462,24 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "live state (abstained, not dropped)",
     )
     arg_parser.add_argument(
+        "--accessibility-check", nargs=2, metavar=("FG", "BG"),
+        default=None,
+        help="read-only WCAG 2.x contrast verdicts (F22) for an "
+             "fg/bg pair of #rrggbb colors, with the Machado (2009) "
+             "CVD simulation of each color under --cvd/--severity; "
+             "pure math, never writes",
+    )
+    arg_parser.add_argument(
+        "--cvd", default=None,
+        choices=["protanopia", "deuteranopia", "tritanopia"],
+        help="accessibility-check: simulate this color-vision deficiency",
+    )
+    arg_parser.add_argument(
+        "--severity", type=float, default=1.0,
+        help="accessibility-check: CVD severity in [0, 1] (default 1.0; "
+             "partial severities are the documented linear blend)",
+    )
+    arg_parser.add_argument(
         "--recommend", metavar="TOOL", default=None,
         help="read-only value recommendation (F29) for a numeric tool: "
              "hierarchical partial pooling over the registry default, "
@@ -787,6 +805,54 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.json:
             print(json.dumps(result, sort_keys=True, indent=1))
         return 0 if result.get("verdict") == "OK" else 1
+
+    if args.accessibility_check is not None:
+        # F22: WCAG 2.x contrast verdicts + optional Machado CVD
+        # simulation — pure published math, read-only.
+        from . import accessibility as ax
+
+        fg_hex, bg_hex = args.accessibility_check
+        try:
+            fg, bg = ax.hex_to_rgb(fg_hex), ax.hex_to_rgb(bg_hex)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print("\n".join(_header(False)))
+        print("")
+        print(f"contrast {fg_hex} on {bg_hex}: "
+              f"{ax.contrast_ratio(fg, bg):.2f}:1")
+        for f in ax.wcag_findings(fg, bg):
+            mark = "pass" if f["pass"] else "FAIL"
+            print(f"  [{mark}] {f['level']}: {f['ratio']}:1 "
+                  f"(threshold {f['threshold']})")
+        if args.cvd:
+            sev = args.severity
+            if not 0.0 <= sev <= 1.0:
+                print("error: --severity must be in [0, 1]",
+                      file=sys.stderr)
+                return 2
+            sim_fg = ax.rgb_to_hex(ax.simulate_cvd(fg, args.cvd, sev))
+            sim_bg = ax.rgb_to_hex(ax.simulate_cvd(bg, args.cvd, sev))
+            ratio = ax.contrast_ratio(
+                ax.simulate_cvd(fg, args.cvd, sev),
+                ax.simulate_cvd(bg, args.cvd, sev))
+            print(f"  under {args.cvd} (severity {sev}): {sim_fg} on "
+                  f"{sim_bg}, contrast {ratio:.2f}:1")
+        print(f"  cite: {ax.WCAG_CITATION}")
+        if args.cvd:
+            print(f"  cite: {ax.SIMULATE_CITATION}")
+        if args.json:
+            import json as _json
+            print(_json.dumps({
+                "fg": fg_hex, "bg": bg_hex,
+                "ratio": round(ax.contrast_ratio(fg, bg), 4),
+                "findings": ax.wcag_findings(fg, bg),
+                "cvd": ({"kind": args.cvd, "severity": args.severity,
+                         "fg": ax.rgb_to_hex(ax.simulate_cvd(fg, args.cvd, args.severity)),
+                         "bg": ax.rgb_to_hex(ax.simulate_cvd(bg, args.cvd, args.severity))}
+                        if args.cvd else None),
+            }, sort_keys=True, indent=1))
+        return 0
 
     if args.what_if is not None:
         # Phase 2.7: the what-if consequence view — a DRY-RUN plan plus

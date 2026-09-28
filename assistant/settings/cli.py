@@ -525,6 +525,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "customizations); never writes",
     )
     arg_parser.add_argument(
+        "--audit-env", action="store_true",
+        help="read-only environment audit (F21): config lint, cited "
+             "interaction INERT states, snapshot freshness (F17), "
+             "per-screen overrides (F20) and backup coverage in one "
+             "report; exit 1 on CRITICAL findings",
+    )
+    arg_parser.add_argument(
         "--wallpaper-palette", metavar="PATH", default=None,
         help="read-only: derive a WCAG-checked accent candidate from a "
              "wallpaper PNG (k-means in OKLab) and surface it through the "
@@ -1620,6 +1627,17 @@ def main(argv: Optional[List[str]] = None) -> int:
               "that already exist. per-screen values use the SAME "
               "planner/confirm/undo gates as the global config.")
         return 0
+
+    if args.audit_env:
+        # F21: the environment audit — one read-only pass composing the
+        # existing engines. Exit 1 only on CRITICAL findings (states the
+        # applier itself would refuse); WARN/INFO never block.
+        from datetime import datetime as _dt
+        from . import envaudit
+        target = Path(args.file) if args.file else default_target()
+        result = envaudit.audit(target, now=_dt.now())
+        print("\n".join(envaudit.render_lines(result)))
+        return 1 if result["critical"] else 0
 
     if args.env_save is not None:
         # F17: snapshot the current environment. Writes only the history

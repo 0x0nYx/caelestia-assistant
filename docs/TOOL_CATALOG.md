@@ -71,7 +71,7 @@ ride the preview -> consent -> applier gate.
 | `setGreeterSlideshowInterval` | `bar.greeter.slideshowInterval` | float | min 5, max 3600 | `60.0` | — |
 | `setGreeterSlideshowRandom` | `bar.greeter.slideshowRandom` | bool | — | `False` | — |
 | `setLivePreviews` | `bar.livePreviews` | bool | — | `True` | minimal |
-| `setPopoutsGreeter` | `bar.popouts.greeter` | bool | — | `True` | — |
+| `setPopoutsGreeter` | `bar.popouts.greeter` | bool | — | `False` | — |
 | `setPopoutsStatusIcons` | `bar.popouts.statusIcons` | bool | — | `True` | — |
 | `setPopoutsTray` | `bar.popouts.tray` | bool | — | `True` | — |
 | `setPreviewScale` | `bar.previewScale` | float | min 0.5, max 1.6 | `1.0` | — |

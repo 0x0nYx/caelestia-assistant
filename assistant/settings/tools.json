@@ -25,14 +25,14 @@
       "utilities": 27,
       "audio": 10
     },
-    "not_exposed_count": 364,
+    "not_exposed_count": 339,
     "excluded_by_rule": {
       "ai-provider-selfconfig": 30,
       "ai-credentials": 5,
       "ai-endpoints": 7,
       "ai-internal-state": 2,
       "ai-executables": 2,
-      "no-shipped-control": 289,
+      "no-shipped-control": 264,
       "complex-control": 2,
       "dynamic-enum": 4,
       "master-switch": 1,
@@ -60,7 +60,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:227",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:224",
           "CONFIG declaration: int dragThreshold = 20"
         ],
         [
@@ -87,7 +87,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:223",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:220",
           "CONFIG declaration: bool persistent = true"
         ],
         [
@@ -122,7 +122,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:228",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:225",
           "CONFIG declaration: QString position = u\"bottom\"_s"
         ],
         [
@@ -152,7 +152,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:214",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:211",
           "CONFIG declaration: qreal scale = 1.0"
         ],
         [
@@ -180,7 +180,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:226",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:223",
           "CONFIG declaration: bool showOnHover = true"
         ],
         [
@@ -204,7 +204,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:140",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:139",
           "CONFIG declaration: bool background = false"
         ],
         [
@@ -228,7 +228,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:141",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:140",
           "CONFIG declaration: bool showDate = false"
         ],
         [
@@ -252,7 +252,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:142",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:141",
           "CONFIG declaration: bool showIcon = true"
         ],
         [
@@ -276,7 +276,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:144",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:143",
           "CONFIG declaration: bool showSeconds = false"
         ],
         [
@@ -300,7 +300,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:225",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:222",
           "CONFIG declaration: bool dodgeFocusedOnly = false"
         ],
         [
@@ -324,7 +324,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:224",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:221",
           "CONFIG declaration: bool dodgeWindows = false"
         ],
         [
@@ -348,7 +348,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:219",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:216",
           "CONFIG declaration: qreal fontScaleOffset = 0.0"
         ],
         [
@@ -372,7 +372,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:162",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:161",
           "CONFIG declaration: bool background = false"
         ],
         [
@@ -396,7 +396,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:84",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:83",
           "CONFIG declaration: int afternoonStart = 12"
         ],
         [
@@ -420,7 +420,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:72",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:71",
           "CONFIG declaration: bool compact = false"
         ],
         [
@@ -444,7 +444,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:85",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:84",
           "CONFIG declaration: int eveningStart = 17"
         ],
         [
@@ -468,7 +468,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:73",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:72",
           "CONFIG declaration: bool inverted = false"
         ],
         [
@@ -495,7 +495,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:76",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:75",
           "CONFIG declaration: QString mode = u\"timeOfDay\"_s"
         ],
         [
@@ -519,7 +519,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:83",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:82",
           "CONFIG declaration: int morningStart = 5"
         ],
         [
@@ -543,7 +543,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:86",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:85",
           "CONFIG declaration: int nightStart = 20"
         ],
         [
@@ -567,7 +567,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:74",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:73",
           "CONFIG declaration: bool showOnHover = true"
         ],
         [
@@ -591,7 +591,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:97",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:96",
           "CONFIG declaration: qreal slideshowInterval = 60.0"
         ],
         [
@@ -615,7 +615,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:98",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:97",
           "CONFIG declaration: bool slideshowRandom = false"
         ],
         [
@@ -641,7 +641,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:220",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:217",
           "CONFIG declaration: bool livePreviews = true"
         ],
         [
@@ -659,7 +659,7 @@
       "path": "bar.popouts.greeter",
       "group": "bar",
       "kind": "bool",
-      "default": true,
+      "default": false,
       "minimum": null,
       "maximum": null,
       "step": null,
@@ -670,7 +670,7 @@
       "citations": [
         [
           "shell/plugin/src/Caelestia/Config/barconfig.hpp:27",
-          "CONFIG declaration: bool greeter = true"
+          "CONFIG declaration: bool greeter = false"
         ],
         [
           "shell/modules/nexus/pages/panels/taskbar/BarGreeter.qml:126",
@@ -693,7 +693,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:30",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:29",
           "CONFIG declaration: bool statusIcons = true"
         ],
         [
@@ -717,7 +717,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:29",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:28",
           "CONFIG declaration: bool tray = true"
         ],
         [
@@ -741,7 +741,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:215",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:212",
           "CONFIG declaration: qreal previewScale = 1.0"
         ],
         [
@@ -765,7 +765,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:216",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:213",
           "CONFIG declaration: bool previewScaleWithBar = false"
         ],
         [
@@ -789,7 +789,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:176",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:174",
           "CONFIG declaration: qreal audio = 0.0"
         ],
         [
@@ -813,7 +813,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:177",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:175",
           "CONFIG declaration: qreal battery = 0.0"
         ],
         [
@@ -837,7 +837,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:178",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:176",
           "CONFIG declaration: qreal bluetooth = 0.0"
         ],
         [
@@ -861,7 +861,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:180",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:178",
           "CONFIG declaration: qreal dock = 0.0"
         ],
         [
@@ -885,7 +885,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:181",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:179",
           "CONFIG declaration: qreal github = 0.0"
         ],
         [
@@ -909,7 +909,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:174",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:173",
           "CONFIG declaration: qreal greeter = 0.0"
         ],
         [
@@ -933,7 +933,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:183",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:181",
           "CONFIG declaration: qreal lockStatus = 0.0"
         ],
         [
@@ -957,7 +957,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:184",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:182",
           "CONFIG declaration: qreal network = 0.0"
         ],
         [
@@ -981,7 +981,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:185",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:183",
           "CONFIG declaration: qreal notifications = 0.0"
         ],
         [
@@ -1005,7 +1005,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:186",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:184",
           "CONFIG declaration: qreal peripheralBattery = 0.0"
         ],
         [
@@ -1029,7 +1029,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:187",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:185",
           "CONFIG declaration: qreal trayMenu = 0.0"
         ],
         [
@@ -1053,7 +1053,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:188",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:186",
           "CONFIG declaration: qreal wirelessPassword = 0.0"
         ],
         [
@@ -1149,7 +1149,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:127",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:126",
           "CONFIG declaration: bool showWifi = true"
         ],
         [
@@ -1173,7 +1173,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:113",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:112",
           "CONFIG declaration: bool background = false"
         ],
         [
@@ -1197,7 +1197,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:115",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:114",
           "CONFIG declaration: bool compact = true"
         ],
         [
@@ -1221,7 +1221,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:114",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:113",
           "CONFIG declaration: bool recolour = false"
         ],
         [
@@ -1245,7 +1245,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:38",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:37",
           "CONFIG declaration: bool activeIndicator = true"
         ],
         [
@@ -1269,7 +1269,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:44",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:43",
           "CONFIG declaration: bool activeTrail = false"
         ],
         [
@@ -1296,7 +1296,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:50",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:49",
           "CONFIG declaration: caelestia::config::BarWorkspaceDisplay::Enum displayType = BarWorkspaceDisplay::Shapes"
         ],
         [
@@ -1320,7 +1320,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:43",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:42",
           "CONFIG declaration: int maxWindowIcons = 5"
         ],
         [
@@ -1344,7 +1344,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:39",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:38",
           "CONFIG declaration: bool occupiedBg = false"
         ],
         [
@@ -1368,7 +1368,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:46",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:45",
           "CONFIG declaration: bool perMonitor = true"
         ],
         [
@@ -1392,7 +1392,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:40",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:39",
           "CONFIG declaration: bool showUnoccupied = true"
         ],
         [
@@ -1416,7 +1416,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:41",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:40",
           "CONFIG declaration: bool showWindows = true"
         ],
         [
@@ -1440,7 +1440,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:42",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:41",
           "CONFIG declaration: bool showWindowsOnSpecialWorkspaces = true"
         ],
         [
@@ -1464,7 +1464,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:37",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:36",
           "CONFIG declaration: int shown = 5"
         ],
         [
@@ -1490,7 +1490,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:152",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:151",
           "CONFIG declaration: bool showBadges = true"
         ],
         [
@@ -1518,7 +1518,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:154",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:153",
           "CONFIG declaration: bool currentDesktopOnly = false"
         ],
         [
@@ -1544,7 +1544,7 @@
       ],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:153",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:152",
           "CONFIG declaration: int iconSize = 32"
         ],
         [
@@ -1572,7 +1572,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:155",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:154",
           "CONFIG declaration: bool previewOnDesktop = true"
         ],
         [
@@ -1596,7 +1596,7 @@
       "nouns": [],
       "citations": [
         [
-          "shell/plugin/src/Caelestia/Config/barconfig.hpp:151",
+          "shell/plugin/src/Caelestia/Config/barconfig.hpp:150",
           "CONFIG declaration: bool recolourIcons = false"
         ],
         [
@@ -7273,94 +7273,6 @@
       "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
-      "path": "bar.activeWindow.afternoonGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.afternoonStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.afternoonText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.compact",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.eveningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.eveningStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.eveningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.inverted",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.mode",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.morningGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.morningStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.morningText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.nightGif",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.nightStart",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.nightText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.showOnHover",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowFolders",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowGifs",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowIcon",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowInterval",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowRandom",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.activeWindow.slideshowText",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
       "path": "bar.clock.centerClock",
       "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
@@ -7441,15 +7353,7 @@
       "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
-      "path": "bar.popouts.activeWindow",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
       "path": "bar.popouts.clock",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.previewFontScales.activeWindow",
       "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {
@@ -7506,10 +7410,6 @@
     },
     {
       "path": "bar.previewFontScales.wirelessPassword",
-      "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
-    },
-    {
-      "path": "bar.previewScales.activeWindow",
       "reason": "[no-shipped-control] no Nexus control touches this leaf; not exposed without a UI-grounded citation"
     },
     {

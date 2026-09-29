@@ -4,4 +4,7 @@
 into the caelestia-assistant safety spine (inert suggestions, ledger
 proposals, honest verdicts). See genius/README.md for the full map.
 """
-__version__ = "0.1.0"
+# ONE version source: assistant/__init__.py. This re-export keeps
+# ``assistant.genius.__version__`` working without a second copy of the
+# number that can drift from the package's own.
+from .. import __version__  # noqa: F401

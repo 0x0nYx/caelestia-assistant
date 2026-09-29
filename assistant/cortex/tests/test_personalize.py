@@ -26,7 +26,7 @@ import io
 import json
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Tuple
 
@@ -136,7 +136,18 @@ class FileTests(unittest.TestCase):
              "label": "preset: battery-saver", "ops": []}
             for i in range(1, 4)
         ]
-        self.now = datetime(2026, 9, 28, 19, 0)
+        # HERMETIC anchor (fixes a time bomb): Ledger.decide stamps the
+        # REAL UTC clock, and the reject-cooldown compares that stamp
+        # against the injected ``now``. A fixed 2026-09-28 anchor meant
+        # ``later - decided_at`` shrank below REJECT_COOLDOWN_DAYS as
+        # the real calendar advanced, so this suite started failing on
+        # its own date. Anchor ``now`` to the real clock instead: the
+        # decision stamp always lands ~0 days after ``now`` and ~15
+        # days before ``later`` — the relations under test hold at any
+        # real date.
+        real = datetime.now(timezone.utc).replace(tzinfo=None)
+        self.now = real
+        self.later = real + timedelta(days=personalize.REJECT_COOLDOWN_DAYS + 1)
 
     def test_files_once_and_dedupes(self) -> None:
         mined = personalize.mine(self.entries)
@@ -161,9 +172,8 @@ class FileTests(unittest.TestCase):
         stats = personalize.file_suggestions(mined, self.ledger, now=self.now)
         self.assertEqual(stats["filed"], 0)
         self.assertEqual(stats["skipped_cooldown"], 1)
-        later = self.now + timedelta(days=personalize.REJECT_COOLDOWN_DAYS + 1)
         stats_later = personalize.file_suggestions(mined, self.ledger,
-                                                   now=later)
+                                                   now=self.later)
         self.assertEqual(stats_later["filed"], 1)
 
     def test_bounded_pending_evicts_oldest(self) -> None:

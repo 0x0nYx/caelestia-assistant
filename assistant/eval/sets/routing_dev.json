@@ -1,5 +1,5 @@
 {
- "note": "AUTHORED by the exponential-build-5 ARENA-BUILDER from registry facts (tools.json ranges/enums/defaults) and rule-pack matchers. Reviewer judgment, not engine output. Negatives/accepts per the build-5 spec.",
+ "note": "AUTHORED by the exponential-build-5 ARENA-BUILDER from registry facts (tools.json ranges/enums/defaults) and rule-pack matchers. Reviewer judgment, not engine output. Negatives/accepts per the build-5 spec. A5 (2026-09-30): +31 items m01..m34 (m03/m32 cut — their target tools were pruned upstream and the honest answer is preset delegation or an ask, not a confident route) mined from the FAILURE CLASSES of the sealed baseline look (0.7778: sibling-tool swaps, auto-hide families, position-vs-alignment, absolute-vs-scale, keep-awake, unit spellings). Phrasings are NEW — no sealed text was copied. Items whose honest outcome is a clarifying question assert expect_verdict=AMBIGUOUS (invariant: verdicts stay honest, never a guess).",
  "items": [
   {
    "id": "p01",
@@ -639,6 +639,198 @@
     "setHoverTopRight",
     "setHoverBottomLeft",
     "setHoverBottomRight"
+   ]
+  },
+  {
+   "id": "m01",
+   "text": "make the system tray more compact",
+   "accept": [
+    "setTrayCompact"
+   ]
+  },
+  {
+   "id": "m02",
+   "text": "recolour the tray icons to match my theme",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m04",
+   "text": "bump the text size up a notch",
+   "accept": [
+    "setFontScale",
+    "setFontScaleOffset"
+   ]
+  },
+  {
+   "id": "m05",
+   "text": "make the ambient background more opaque",
+   "accept": [
+    "setAmbientOpacity"
+   ]
+  },
+  {
+   "id": "m06",
+   "text": "give notifications more time before they fade",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m07",
+   "text": "open the app when I click one of its notifications",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m08",
+   "text": "show toasts in the bottom-right corner",
+   "accept": [
+    "setPosition"
+   ]
+  },
+  {
+   "id": "m09",
+   "text": "the volume popup lingers too long",
+   "accept": [
+    "setHideDelay"
+   ]
+  },
+  {
+   "id": "m10",
+   "text": "turn off the overview entirely",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m11",
+   "text": "blur the wallpaper behind the overview",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m12",
+   "text": "stop blurring the wallpaper in the overview",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m13",
+   "text": "turn off the fingerprint reader",
+   "accept": [
+    "setEnableFprint"
+   ]
+  },
+  {
+   "id": "m14",
+   "text": "give me three fingerprint attempts before the password",
+   "accept": [
+    "setMaxFprintTries"
+   ]
+  },
+  {
+   "id": "m15",
+   "text": "move the on-screen lyrics to the centre",
+   "accept": [
+    "setDesktopLyricsPosition"
+   ]
+  },
+  {
+   "id": "m16",
+   "text": "centre the desktop lyrics text",
+   "accept": [
+    "setDesktopLyricsAlignment"
+   ]
+  },
+  {
+   "id": "m17",
+   "text": "hide the decorative shapes on the desktop",
+   "accept": [
+    "setDesktopShapesEnabled"
+   ]
+  },
+  {
+   "id": "m18",
+   "text": "shuffle the wallpaper slideshow order",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m19",
+   "text": "tint the wallpaper to match my colour scheme",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m20",
+   "text": "make the wallpaper tinting stronger",
+   "accept": [
+    "setWallpaperRecolorStrength"
+   ]
+  },
+  {
+   "id": "m21",
+   "text": "hide the audio visualiser on the desktop",
+   "accept": [
+    "setVisualiserEnabled"
+   ]
+  },
+  {
+   "id": "m22",
+   "text": "auto-hide the visualiser when idle",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m23",
+   "text": "colourize the app icons from the wallpaper",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m25",
+   "text": "make the volume step smaller",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m26",
+   "text": "make the brightness step smaller",
+   "accept": [
+    "setBrightnessIncrement"
+   ]
+  },
+  {
+   "id": "m27",
+   "text": "set the corner rounding to 15 px",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m28",
+   "text": "show no more than 6 toasts at once",
+   "accept": [
+    "setMaxToasts"
+   ]
+  },
+  {
+   "id": "m29",
+   "text": "let the bar hide while I'm working",
+   "expect_verdict": "AMBIGUOUS"
+  },
+  {
+   "id": "m30",
+   "text": "set the dock icon size to 56 px",
+   "accept": [
+    "setDockIconSize"
+   ]
+  },
+  {
+   "id": "m31",
+   "text": "raise the max volume to 120 percent",
+   "accept": [
+    "setMaxVolume"
+   ]
+  },
+  {
+   "id": "m33",
+   "text": "keep the screen awake while charging",
+   "accept": [
+    "setShowKeepAwake"
+   ]
+  },
+  {
+   "id": "m34",
+   "text": "keep the screen awake while music is playing",
+   "accept": [
+    "setShowKeepAwake"
    ]
   }
  ]

@@ -107,6 +107,21 @@ _PRIMARY_STOP_WORDS = frozenset({
     "of", "at", "when", "until", "my", "with", "up", "down",
 })
 
+# A5: enable/disable-style polarity words INSIDE a tool's camel name.
+# They carry the toggle's polarity, never its subject, so they are
+# stripped when deciding what a request "fully addresses".
+_POLARITY_NAME_WORDS = frozenset({
+    "enable", "enables", "enabled", "disable", "disables", "disabled",
+    "show", "shows", "display", "displays", "hide", "hides", "use",
+})
+
+# A5: words that open a prepositional/time TAIL of a request — everything
+# after the first of these is location/context, not the request's object.
+_PREP_TAIL_WORDS = frozenset({
+    "on", "in", "at", "when", "while", "for", "from", "until", "till",
+    "during", "near", "of", "behind", "inside", "over", "under", "by",
+})
+
 # Words never allowed INSIDE a name bigram (function words only — verb
 # words like show/hide/enable are the compound-addressing signal and
 # must stay: "show windows" addresses setWorkspacesShowWindows).
@@ -114,6 +129,12 @@ _BIGRAM_STOP_WORDS = frozenset({
     "set", "on", "off", "in", "the", "a", "an", "and", "to", "of",
     "at", "when", "until", "my", "with", "up", "down", "use", "get",
 })
+
+# A5: a number followed by a NATIVE unit (px) — the request targets
+# an absolute property in registry units, so the range check applies.
+# Time units are excluded: the planner converts them ("2 seconds" ->
+# 2000 ms), so the raw number says nothing about the range.
+_UNIT_NUMBER_RE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:px|pixels?)\b")
 
 # Query-side-only synonyms (NOT in lexicon.SYNONYMS: tool_document expands
 # SYNONYMS into the indexed corpus, and the embedder's corpus is
@@ -128,6 +149,44 @@ _QUERY_SYNONYMS: Dict[str, Tuple[str, ...]] = {
     # grammar says "stored notifications"); "keep" is the request's verb
     # for storage. Query-side only, additive, never re-indexed.
     "keep": ("stored",),
+
+    # A5 (2026-09-30) sibling-disambiguation entries. Each cites the
+    # upstream fact that justifies the equivalence. Query-side ONLY:
+    # the lexicon.SYNONYMS home was tried first and cut — tool_document
+    # expands that map into the indexed corpus, and the re-indexing
+    # drifted BM25 enough to regress three previously-correct dev items
+    # (0.9556 -> 0.9333). These never touch the index.
+    # lock.enableFprint / lock.maxFprintTries: the C++ property spells
+    # it "fprint" — "fingerprint" never lexically reaches the tool.
+    "fingerprint": ("fprint",),
+    "fingerprints": ("fprint",),
+    # maxFprintTries: "N fingerprint attempts" IS the tries stepper.
+    "attempts": ("tries",),
+    "attempt": ("tries",),
+    # notifications defaultExpireTimeout: a notification that "fades"
+    # is one whose expire timeout elapsed.
+    "fades": ("expire",),
+    "fade": ("expire",),
+    # desktopLyricsPosition enum value is "center"; the British
+    # spelling never matched the enum word (paired with the A5
+    # enum-value cue reading the expanded text).
+    "centre": ("center",),
+    # slideshowRandom: "shuffle" is the user's word for random order
+    # (bar.slideshow.random, Nexus ToggleRow "random order").
+    "shuffle": ("random",),
+    # wallpaperRecolor(Strength): "tint" is the recolour family's own
+    # word (background.wallpaperRecolor). ("colourize"/"colorize" ->
+    # "recolour" was tried and CUT: setColorizeMediaGif is itself a
+    # registry tool and the expansion degraded its confident route.)
+    "tint": ("recolour",),
+    "tinting": ("recolour",),
+    # audioIncrement/brightnessIncrement: Nexus StepperRow "step" IS
+    # the increment control. Measured on the grown dev set: WITH this
+    # entry "make the volume step smaller" stays an honest AMBIGUOUS
+    # ask; without it the same phrase confidently misroutes to
+    # setMaxVolume (a confident-wrong). Restored on that evidence.
+    "step": ("increment",),
+    "steps": ("increment",),
 }
 
 # Query-side-only spelling variants (same reasoning: never touch the
@@ -687,12 +746,23 @@ class Router:
         #   compound addressing of setWorkspacesShowWindows — stronger
         #   than any single-word overlap.
         self.primary_atom: Dict[str, str] = {}
+        self.post_prefix_atoms: Dict[str, Tuple[str, ...]] = {}
         self.name_bigrams: Dict[str, Tuple[Tuple[str, str], ...]] = {}
+        # A5: the toggle's SUBJECT atoms — the camel name minus its
+        # enable/disable-style polarity words. "turn off the overview"
+        # must fully address setOverviewEnabled ([overview]) and NOT
+        # floor setEnableOverviewBlur ([overview, blur], blur unaddressed).
         for spec in TOOL_SPECS:
             words = [w.lower() for w in camel_split(spec.name)]
             primary = next((w for w in words if w not in _PRIMARY_STOP_WORDS), "")
             if primary:
                 self.primary_atom[spec.name] = primary
+            post_prefix = tuple(
+                w for w in words
+                if w not in _PRIMARY_STOP_WORDS
+                and w not in _POLARITY_NAME_WORDS)
+            if post_prefix:
+                self.post_prefix_atoms[spec.name] = post_prefix
             stemmed = [stem(w) for w in words if w not in {"set"}]
             bigrams = tuple(
                 (a, b) for a, b in zip(stemmed, stemmed[1:])
@@ -742,7 +812,8 @@ class Router:
                 floors["wallpaper"] = max(floors.get("wallpaper", 0.0), _WALLPAPER_FLOOR)
         return floors
 
-    def _cue_kind_delta(self, cues: Dict[str, object], surface: str, raw: str) -> Tuple[float, List[str]]:
+    def _cue_kind_delta(self, cues: Dict[str, object], surface: str, raw: str,
+                        expanded: str = "") -> Tuple[float, List[str]]:
         """Cue-kind agreement adjustment for one candidate. Returns the
         score delta (a multiple of w_noun) plus evidence strings."""
         spec = self.spec_by_name.get(surface)
@@ -780,9 +851,17 @@ class Router:
             delta += _K_POSITION_OTHER
         if kind == "enum":
             for word in self.enum_words.get(surface, ()):  # literal enum value present
+                # A5: match on the EXPANDED text, not just the raw query —
+                # "centre" only becomes the enum value "center" through the
+                # synonym map, which is exactly the hint surface this cue
+                # is allowed to consume (same policy as noun hits).
                 if re.search(rf"\b{re.escape(word)}\b", raw):
                     delta += _K_ENUM_WORD
                     evidence.append(f"enum value '{word}' present")
+                    break
+                if re.search(rf"\b{re.escape(word)}\b", expanded):
+                    delta += _K_ENUM_WORD
+                    evidence.append(f"enum value '{word}' present (expanded)")
                     break
         if ("number" in cues or "percent" in cues) and kind in ("float", "int"):
             delta += _K_NUMBER_NUMERIC
@@ -824,6 +903,17 @@ class Router:
         floors = self._pattern_floor(raw)
         cues = extract_cues(raw)
         expanded_stems = frozenset(tokenize(expanded))
+        # A5 object span: the expanded tokens BEFORE the first
+        # prepositional/time tail ("... on the desktop", "... while
+        # charging"). The Enabled prior may only floor a toggle whose
+        # primary atom the request actually NAMES as its object —
+        # a location tail is not the object.
+        _object_span: List[str] = []
+        for _tok in tokenize(expanded):
+            if _tok in _PREP_TAIL_WORDS:
+                break
+            _object_span.append(_tok)
+        object_span_stems = frozenset(stem(w) for w in _object_span)
         coverage_hits: Dict[str, float] = {}
         for key, atoms in self.name_atom_sets.items():
             if len(atoms) < 2:
@@ -928,6 +1018,9 @@ class Router:
             # setLauncherEnabled, "mute all shell sounds" ->
             # setSoundsEnabled). The noun grammar cannot hit these
             # noun-silent toggles; the polarity verb is the disambiguator.
+            # (A5 tried object-span + full-post-prefix-addressing
+            # refinements here; they LOST on the dev arena — 0.9222 vs
+            # 0.9556 top1 — and were cut per the merge gate.)
             if prior_polarity and key in self.primary_atom and self._is_enabled_tool(key):
                 primary = self.primary_atom[key]
                 if (primary in expanded_stems or stem(primary) in expanded_stems) \
@@ -944,8 +1037,33 @@ class Router:
                     score = max(score, 0.82)
                     break
             struct_lift = max(0.0, score - score_base)
-            cue_delta, cue_evidence = self._cue_kind_delta(cues, key, raw)
+            cue_delta, cue_evidence = self._cue_kind_delta(cues, key, raw, expanded)
             score += cue_delta * w_noun
+            # A5 value-range agreement (hard, post-floor): an explicit
+            # NUMBER WITH A UNIT ("set the corner rounding to 15 px")
+            # targets a property in that unit; a candidate whose
+            # validated registry range cannot accept the number would be
+            # REJECTED by the planner ("15" is no rounding *scale* —
+            # that lives in 0.5..2.0). A confident route the planner
+            # will refuse is the confident-wrong pattern in its purest
+            # form, so the mismatch subtracts from the FINAL score —
+            # noun floors included — not as a soft cue. Percent-shaped
+            # requests ("120 percent") are exempt: the planner
+            # normalizes them, so the raw number says nothing about the
+            # range. Deterministic, registry-cited, evidence-carrying.
+            if "number" in cues and kind == "tool":
+                spec = self.spec_by_name.get(key)
+                if spec is not None and spec.kind in ("float", "int") \
+                        and spec.minimum is not None \
+                        and spec.maximum is not None \
+                        and _UNIT_NUMBER_RE.search(raw):
+                    value = float(cues["number"])
+                    if not (spec.minimum <= value <= spec.maximum):
+                        score -= 0.5
+                        cue_evidence.append(
+                            f"value {value:g} outside {spec.name}'s "
+                            f"validated range {spec.minimum:g}.."
+                            f"{spec.maximum:g}")
             scored.append((score, key))
             features[key] = {"lex": round(lex, 4), "sem": round(sem, 4),
                              "fuzz": round(fuzz, 4), "noun": noun,

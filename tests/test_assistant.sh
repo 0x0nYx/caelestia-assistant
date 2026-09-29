@@ -119,7 +119,8 @@ test_lazy_imports() {
   echo "lazy imports: --help pulls no engines (ok)"
 }
 test_golden_lock() {
-  # Stage C1 behavior lock: 316 golden CLI outputs, byte-identical.
+  # Stage C1 behavior lock: the golden CLI outputs, byte-identical.
+  # (count lives in the manifest: cases + min_cases — never a constant)
   # Lives in scripts/ (the import policy forbids subprocess inside
   # assistant/ Python); the unittest tree pins manifest structure.
   if [ ! -f "$REPO_ROOT/assistant/tests/goldens/manifest.json" ]; then
@@ -127,7 +128,7 @@ test_golden_lock() {
     exit 1
   fi
   PYTHONPATH="$REPO_ROOT" python3 "$REPO_ROOT/scripts/golden_check.py" >/dev/null 2>&1
-  assert_status 0 "$?" "golden lock: 316 CLI outputs byte-identical"
+  assert_status 0 "$?" "golden lock: golden CLI outputs byte-identical"
 }
 
 test_lazy_imports

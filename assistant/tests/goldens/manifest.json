@@ -993,6 +993,347 @@
    "bytes": 909
   },
   {
+   "id": "route-m01",
+   "argv": [
+    "route",
+    "make the system tray more compact",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5cab98134ad73e3611305f5b489efff74e12b7f6badce356553a0569421233dc",
+   "bytes": 2403
+  },
+  {
+   "id": "route-m02",
+   "argv": [
+    "route",
+    "recolour the tray icons to match my theme",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0523a134f5650a622f5aafe9bb7f33e3be0817652fdfff35ee2a5a769b28d44e",
+   "bytes": 887
+  },
+  {
+   "id": "route-m04",
+   "argv": [
+    "route",
+    "bump the text size up a notch",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fab7d6312798da4703e3a36b06949a05ba7b2ed246cd9269abb0a1f91d1fb30b",
+   "bytes": 723
+  },
+  {
+   "id": "route-m05",
+   "argv": [
+    "route",
+    "make the ambient background more opaque",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1855967c16e4ffed8d9586a88348a8b7bdddbf3948f44912d232850c2aa8f36b",
+   "bytes": 1636
+  },
+  {
+   "id": "route-m06",
+   "argv": [
+    "route",
+    "give notifications more time before they fade",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "017dbfb6c14fca43f25a05914fc1fd0a7b314e5f47ae98fb2de6a8d105682864",
+   "bytes": 1712
+  },
+  {
+   "id": "route-m07",
+   "argv": [
+    "route",
+    "open the app when I click one of its notifications",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d5662943b2b06bd8837f9dbf83950e97b3fea75f84d4f501308e7028587ade6d",
+   "bytes": 892
+  },
+  {
+   "id": "route-m08",
+   "argv": [
+    "route",
+    "show toasts in the bottom-right corner",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dc16d3b0e55f7d68c0f9978fbc32ab7dee9a371f8baada0f5f32d36bd8cac41f",
+   "bytes": 1468
+  },
+  {
+   "id": "route-m09",
+   "argv": [
+    "route",
+    "the volume popup lingers too long",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bfde73975d2c0b818be563b999fc8b71bd4f7b0d68bf1cb39a5fab933af44375",
+   "bytes": 774
+  },
+  {
+   "id": "route-m10",
+   "argv": [
+    "route",
+    "turn off the overview entirely",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f1f2b2c563a1701b9608a257ab545dc8a3ee381b33d70ba7a70e4b95e3889abe",
+   "bytes": 1498
+  },
+  {
+   "id": "route-m11",
+   "argv": [
+    "route",
+    "blur the wallpaper behind the overview",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "621d19419190c0d887a17e16d9c700a353e337a8fff4d81823d3ce1b5a3d1603",
+   "bytes": 889
+  },
+  {
+   "id": "route-m12",
+   "argv": [
+    "route",
+    "stop blurring the wallpaper in the overview",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "63cba77020eff7c47e2a98e2e1ef6d90270235e2b1b2440974ebe91591007627",
+   "bytes": 1673
+  },
+  {
+   "id": "route-m13",
+   "argv": [
+    "route",
+    "turn off the fingerprint reader",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ae8ba609b5ad9a953a06e260b463aa2144c7eb40515b3ad943d1c4cda6ef236b",
+   "bytes": 1428
+  },
+  {
+   "id": "route-m14",
+   "argv": [
+    "route",
+    "give me three fingerprint attempts before the password",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c9aaecd2650d00ca1116f0c23af99046bb447e909f2ee87f9771ff937375dc76",
+   "bytes": 841
+  },
+  {
+   "id": "route-m15",
+   "argv": [
+    "route",
+    "move the on-screen lyrics to the centre",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "916fd43cd669dc7c5ac06bb78de14c333b2dbb0c8a5300afaaedee32f1561908",
+   "bytes": 2301
+  },
+  {
+   "id": "route-m16",
+   "argv": [
+    "route",
+    "centre the desktop lyrics text",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3df273a6b3e0dbfa31e1f2e011bfb007b591a527e6fc84ab2d773f66d25af9e5",
+   "bytes": 783
+  },
+  {
+   "id": "route-m17",
+   "argv": [
+    "route",
+    "hide the decorative shapes on the desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "07b219d50191e0a99257232f2e57c746d35f8c6c49a4f122915136261c9bdede",
+   "bytes": 768
+  },
+  {
+   "id": "route-m18",
+   "argv": [
+    "route",
+    "shuffle the wallpaper slideshow order",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0928b9832baea5abeeca99593a3d3c213760677416d42a0aa20eb2653dbec702",
+   "bytes": 875
+  },
+  {
+   "id": "route-m19",
+   "argv": [
+    "route",
+    "tint the wallpaper to match my colour scheme",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "69e2c0e02c916d3877e988747f09a282cb1d357348763bd0567bc85686d0288f",
+   "bytes": 875
+  },
+  {
+   "id": "route-m20",
+   "argv": [
+    "route",
+    "make the wallpaper tinting stronger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ab7fff64974b34380b1243de86cdf285e481b41548ee0726be00bac4d46e9c3f",
+   "bytes": 763
+  },
+  {
+   "id": "route-m21",
+   "argv": [
+    "route",
+    "hide the audio visualiser on the desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e97fdd4503d16db1541b6365d614c43dc44e3f35fa56b1f7be0ec6175fdc2e59",
+   "bytes": 886
+  },
+  {
+   "id": "route-m22",
+   "argv": [
+    "route",
+    "auto-hide the visualiser when idle",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "eefc474d605e98f9d18fcb256226c843c9f8011c230a84e72a7312ca23e768a8",
+   "bytes": 1619
+  },
+  {
+   "id": "route-m23",
+   "argv": [
+    "route",
+    "colourize the app icons from the wallpaper",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "70e06555ff0c1b2ecc8a48ee4145ab23cdfe0af46fd11d8beef7b47796e8c0e9",
+   "bytes": 926
+  },
+  {
+   "id": "route-m25",
+   "argv": [
+    "route",
+    "make the volume step smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3fde3e08d8e8275c7f986e1830148f7948c1b8ad507c96159d65102d2fcdbcbe",
+   "bytes": 1415
+  },
+  {
+   "id": "route-m26",
+   "argv": [
+    "route",
+    "make the brightness step smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c536c1da622c85c221246a34a481ee494cca87a1b0f414775c1716b22eb778b8",
+   "bytes": 1516
+  },
+  {
+   "id": "route-m27",
+   "argv": [
+    "route",
+    "set the corner rounding to 15 px",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "226f33e7a1032368dade740042244494a67b2692421d6f4d2468f571fcb1bb0f",
+   "bytes": 1637
+  },
+  {
+   "id": "route-m28",
+   "argv": [
+    "route",
+    "show no more than 6 toasts at once",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f66a7fcae5493f2f93fe8c88997173e04aff71adb40ee0fad004fb04fc04c932",
+   "bytes": 1436
+  },
+  {
+   "id": "route-m29",
+   "argv": [
+    "route",
+    "let the bar hide while I'm working",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "62b26698b0d960486368980d6b2e6ba22207d176d73ef1574b388785915879f1",
+   "bytes": 1560
+  },
+  {
+   "id": "route-m30",
+   "argv": [
+    "route",
+    "set the dock icon size to 56 px",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1bb77b46a1073190c2b200840115be231b45afca7b5cdba5e79b077014646cd1",
+   "bytes": 1356
+  },
+  {
+   "id": "route-m31",
+   "argv": [
+    "route",
+    "raise the max volume to 120 percent",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4aed1a76ba4dd47f0aad69efca8e7ae25b9421e8de8b2a110aa26ce9a4bfc5e8",
+   "bytes": 1438
+  },
+  {
+   "id": "route-m33",
+   "argv": [
+    "route",
+    "keep the screen awake while charging",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "95ad6bde61ed87627b97d8171bad969c7128134fd2141d59f29a5dca04aca3ee",
+   "bytes": 576
+  },
+  {
+   "id": "route-m34",
+   "argv": [
+    "route",
+    "keep the screen awake while music is playing",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1c8e0acb8a2000f723394dc3c717c93e4dbfa5c0d59d9d59b0a5983df9530763",
+   "bytes": 600
+  },
+  {
    "id": "route-n01",
    "argv": [
     "route",
@@ -1253,7 +1594,7 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "f2612781416460706a3ecc046ffb7b49ea02719f8d03c869f4e6347fa1eeaf55",
+   "sha": "b63435270e2b6e305227e4195de67695130244edb23ee15ba03498736ad0fbf1",
    "bytes": 1346
   },
   {
@@ -3023,8 +3364,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "80b75b279f5626aaa2d43c3f8fc41c102074a37798681a8ebd403ca7faa8a63b",
-   "bytes": 1094
+   "sha": "261275ee1449eaca57397404c5fbf6a0e0fa11f81d85e27f316a0b8726e888b9",
+   "bytes": 3923
   },
   {
    "id": "eval-nlplan",
@@ -3056,8 +3397,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "115073c8615aba1d0d24593b8780c679c47efde3815d68cd5f8b06ac06715456",
-   "bytes": 323
+   "sha": "aca56b17df3cdd581d6e4cdb16c90eba7283c577dab970067f8f85faaff2b27e",
+   "bytes": 324
   },
   {
    "id": "a11y-01",
@@ -3500,8 +3841,8 @@
     "capabilities"
    ],
    "rc": 0,
-   "sha": "1afc09c2fbed50862c340f62525b7a230ea1e05ea3574b7761a418219331449c",
-   "bytes": 460
+   "sha": "a2c0dbd47e1ad802aeadb1081bd87187b87d0a3adc08b8fb0006e17fe0e61745",
+   "bytes": 480
   },
   {
    "id": "misc-graph-rank",

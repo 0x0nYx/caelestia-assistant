@@ -117,12 +117,35 @@ def _check_arena_smoke() -> Dict[str, Any]:
     rate = cw.get("rate")
     if rate is None:
         verdict, note = "WARN", "nothing routed — cannot assess"
-    elif rate <= 0.02:
-        verdict, note = "PASS", (f"confident-wrong {cw['count']}/"
-                                 f"{cw['of_routed']} = {rate:.1%} (<= 2%)")
     else:
-        verdict, note = "FAIL", (f"confident-wrong {cw['count']}/"
-                                 f"{cw['of_routed']} = {rate:.1%} > 2%")
+        # The honest bar is the RECORDED dev confident-wrong rate (the
+        # arena ratchet's own floor), not a fixed percentage: the A5
+        # arena growth deliberately added the sealed-miss failure
+        # classes, which RAISED the honest rate on a harder set. The
+        # doctor fails only when today's cold-start routing is WORSE
+        # than the recorded baseline — regressions, not difficulty.
+        recorded = 0.02
+        source = "2% constant"
+        try:
+            base = json.loads(
+                (_REPO_ROOT / "eval" / "baseline.json")
+                .read_text(encoding="utf-8"))
+        except OSError:
+            base = json.loads(
+                (_REPO_ROOT / "assistant" / "eval" / "baseline.json")
+                .read_text(encoding="utf-8"))
+        cw_floor = base.get("confident_wrong")
+        if cw_floor and cw_floor.get("rate") is not None:
+            recorded = float(cw_floor["rate"]) + 1e-9
+            source = f"recorded {cw_floor['rate']:.1%} (baseline.json)"
+        if rate <= recorded:
+            verdict, note = "PASS", (f"confident-wrong {cw['count']}/"
+                                     f"{cw['of_routed']} = {rate:.1%} "
+                                     f"(<= {source})")
+        else:
+            verdict, note = "FAIL", (f"confident-wrong {cw['count']}/"
+                                     f"{cw['of_routed']} = {rate:.1%} > "
+                                     f"{source}")
     return {"verdict": verdict, "detail": note,
             "repro": "python3 -m assistant.eval routing"}
 

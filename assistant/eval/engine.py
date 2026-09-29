@@ -158,15 +158,25 @@ def run_routing(split: str = "dev",
             # out-of-ontology verdict, never a confident route to a
             # coincidental tool. A confident ROUTE here counts as a
             # confident-wrong, which is exactly the signal we want.
+            # A5 generalization: expect_verdict may also be AMBIGUOUS —
+            # items mined from genuinely confusable classes assert the
+            # ASK itself (invariant 2: verdicts stay honest, never a
+            # guess) instead of picking a side the reviewer cannot
+            # defend. verdict items count as top1-ok/top3-ok when the
+            # honest verdict is delivered.
             top1_ok = res.verdict == expect_verdict
+            top3_ok = top1_ok
+            accept: list = []
         else:
-            top1_ok = bool(cands and cands[0][0] in item["accept"])
+            accept = item["accept"]
+            top1_ok = bool(cands and cands[0][0] in accept)
+            top3_ok = any(s in accept for s, _k in cands)
         results.append({
             "id": item["id"], "text": item["text"],
             "verdict": res.verdict, "top3": cands,
             "top1_ok": top1_ok,
-            "top3_ok": any(s in item["accept"] for s, _k in cands),
-            "accept": item["accept"],
+            "top3_ok": top3_ok,
+            "accept": accept,
         })
     return _routing_report(split, results)
 
@@ -335,6 +345,13 @@ def run_calibration(split: str = "dev") -> Dict[str, Any]:
     probs: List[float] = []
     outcomes: List[int] = []
     for item in routing["items"]:
+        if not item.get("accept"):
+            # expect_verdict items (removed-tool and A5
+            # expect-AMBIGUOUS classes) assert a VERDICT, not a surface:
+            # they have no correctness label for a confident route and
+            # are excluded from the calibration histogram, not silently
+            # scored as wrong.
+            continue
         res = router.route(item["text"], state=DEFAULT_STATE, k=1)
         if res.verdict == "ROUTED" and res.candidates:
             probs.append(res.candidates[0].p)

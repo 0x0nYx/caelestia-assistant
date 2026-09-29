@@ -42,7 +42,10 @@ DEFAULTS: Dict[str, bool] = {
     "lexicon_sharing": True,      # cortex lexicon export/import/forget (CLI,
                                   # offline, no network; import is an explicit
                                   # user command with rollback — phase 2.6)
-    "eval_arena": True,           # the measurement arena incl. the
+    "eval_arena": True,
+    "confusable_clarifier": True,  # upgrades the generic ambiguity ask to
+                                   # the mined pair's own question (read-only
+                                   # text swap over the committed artifact)           # the measurement arena incl. the
                                   # metamorphic suite (read-only, in-process,
                                   # dev sets only unless --sealed is asked for)
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +

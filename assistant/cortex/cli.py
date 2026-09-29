@@ -619,6 +619,13 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
                                          "default 14, bounds 0.5-365)")
     hl.add_argument("days", nargs="?", type=float, default=None,
                     help="new half-life in days (omit to read)")
+    conf_p = sub.add_parser("confusables", help="list the mined confusable "
+                            "tool pairs and their clarifying questions "
+                            "(A4: the ambiguity ask, made answerable)")
+    conf_p.add_argument("--mine", action="store_true",
+                        help="rebuild the committed pairs artifact "
+                             "(assistant/cortex/confusable_pairs.json) — a "
+                             "reviewed change like a registry re-pin")
     gaps_p = sub.add_parser("gaps", help="cluster the logged local-ontology gaps "
                                          "(cloud hand-offs) and surface candidates")
     gaps_p.add_argument("--propose", action="store_true",
@@ -1350,6 +1357,26 @@ def cmd_cortex(argv: Optional[List[str]] = None) -> int:
         except (ValueError, KeyError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+
+    if args.cmd == "confusables":
+        from assistant.capabilities import enabled
+        if not enabled("confusable_clarifier"):
+            print("confusable_clarifier is disabled in the capability "
+                  "manifest (edit capabilities.json to enable; it cannot "
+                  "be enabled from a request)", file=sys.stderr)
+            return 1
+        from . import confusables
+        if args.mine:
+            data = confusables.mine_pairs()
+            confusables.PAIRS_PATH.write_text(
+                json.dumps(data, indent=1, ensure_ascii=False) + "\n",
+                encoding="utf-8")
+            print(f"wrote {confusables.PAIRS_PATH.name}: "
+                  f"{data['n_pairs']} pairs")
+            return 0
+        for line in confusables.render_lines():
+            print(line)
+        return 0
 
     if args.cmd == "gaps":
         from .dispatch import (cluster_gaps, propose_gap_clusters,

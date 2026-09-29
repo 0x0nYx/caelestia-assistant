@@ -101,7 +101,21 @@ OPS = {
     # eval arena over the bridge (read-only, gated on the eval_arena
     # capability): run one suite and return its report dict
     "eval_suite": lambda q, s, l: _eval_suite(q),
+    "confusables_report": lambda q, s, l: _confusables_report(),
 }
+
+
+def _confusables_report():
+    from assistant.capabilities import enabled
+    if not enabled("confusable_clarifier"):
+        return {"error": "confusable_clarifier capability is off on this "
+                         "install"}
+    from assistant.cortex.confusables import load_pairs
+    pairs = load_pairs()
+    return {"n_pairs": len(pairs),
+            "pairs": [{"a": p["a"], "b": p["b"], "question": p["question"]}
+                      for p in pairs]}
+
 
 
 def _eval_suite(q):

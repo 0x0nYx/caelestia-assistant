@@ -676,7 +676,19 @@ def process(
             ops.extend(clause_ops)
             notes.extend(f"[{clause.text[:40]}] {n}" for n in clause_notes)
             if clause_route.verdict == "AMBIGUOUS" and clause_route.question:
-                questions.append(clause_route.question)
+                # A4 confusable clarifier: when the ranked candidates
+                # contain a mined pair, the generic "several settings
+                # could match" ask is replaced by the pair's own
+                # highest-information-gain question. Read-only, verdict
+                # untouched — the same honest ASK, answerable.
+                from assistant.capabilities import enabled
+                if enabled("confusable_clarifier"):
+                    from .confusables import clarify
+                    surfaces = [c.surface for c in clause_route.candidates]
+                    q, upgraded = clarify(clause_route.question, surfaces)
+                    questions.append(q)
+                else:
+                    questions.append(clause_route.question)
 
     # 3. Confidence (calibrated when a learner is attached).
     confidence = 0.0

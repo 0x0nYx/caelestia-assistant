@@ -6,7 +6,7 @@ No language model in the critical path. No training. No network in the offline c
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-2165%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-2501%20passing-brightgreen)
 ![LLM required](https://img.shields.io/badge/LLM%20required-none-success) *(offline core)*
 
 ---
@@ -221,7 +221,7 @@ Optional (Layer 3 only): `CAELESTIA_ASSISTANT_OLLAMA_URL` (loopback only; defaul
 ## Development
 
 ```bash
-python3 -m unittest discover -s . -p "test_*.py"   # 2496 tests, ~1.5 min
+python3 -m unittest discover -s . -p "test_*.py"   # 2501 tests, ~2 min
 python3 -m assistant.hub selfcheck                 # rules + import-policy lint
 python3 -m assistant.settings.gen_adapter --verify --repo-root <caelestia-kde checkout>  # registry byte-identity guard
 ```

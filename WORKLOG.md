@@ -283,9 +283,13 @@ Honest findings (the ones a human should read before trusting):
 - The cold-start hostile-artifact finding from the adversarial sweep:
   an unbounded imported prior could permanently silence an arm;
   fixed with a 1000-pseudo-observation ceiling, clipped and reported.
-- The CRF-vs-perceptron calibration comparison (Brier 0.094 vs 0.219
+- The CRF-vs-perceptron calibration comparison (Brier 0.0521 vs 0.1673
   on the build fixture) is ONE synthetic corpus's result; it may flip
   as real supervised history grows — both taggers stay selectable.
+  (Stage B note: an earlier revision of this entry recorded 0.094 vs
+  0.219; git bisect shows even its own commit tree reproduces 0.0521
+  vs 0.1673 deterministically across hash seeds, so the earlier numbers
+  never held — corrected during the Stage B calibration retest.)
 - The adaptive RK45's one-knob mixed tolerance bounds ABSOLUTE error:
   solutions decaying tens of orders of magnitude (e.g. y' = -1000y)
   are resolved only to ~tol*span; a two-knob rtol/atol controller is

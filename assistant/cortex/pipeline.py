@@ -621,6 +621,31 @@ def process(
             notes.append(f"keep-clause honored (no change to {top.surface})")
             continue
 
+        # A2 label fusion (demote-only, before any surface dispatch so
+        # presets are covered too): when the Dawid-Skene posterior over
+        # the router's own signal votes CONTRADICTS the blend's
+        # confident winner, the clause asks instead of planning. A plan
+        # the voters disagree with is the confident-wrong pattern — the
+        # honest verdict is the ask.
+        from assistant.capabilities import enabled as _cap_enabled
+        if (clause_route.verdict == "ROUTED"
+                and _cap_enabled("label_fusion")):
+            from .label_fusion import refine, vote_router_signals, \
+                load_model
+            from .router import router as _router_singleton
+            from .router import DEFAULT_STATE as _DS
+            ballots = vote_router_signals(
+                _router_singleton(), clause.text,
+                state if state is not None else _DS)
+            fused, fused_note, _post = refine(
+                clause_route, ballots["votes"], load_model(),
+                state if state is not None else _DS)
+            if fused == "AMBIGUOUS":
+                questions.append(fused_note or clause_route.question
+                                 or "which setting?")
+                result.confidence = round(top.p, 3)
+                continue  # no ops: ask instead of a contested plan
+
         surface = top.surface
         if surface.startswith("preset:"):
             preset_name = surface.split(":", 1)[1]
@@ -681,8 +706,7 @@ def process(
                 # could match" ask is replaced by the pair's own
                 # highest-information-gain question. Read-only, verdict
                 # untouched — the same honest ASK, answerable.
-                from assistant.capabilities import enabled
-                if enabled("confusable_clarifier"):
+                if _cap_enabled("confusable_clarifier"):
                     from .confusables import clarify
                     surfaces = [c.surface for c in clause_route.candidates]
                     q, upgraded = clarify(clause_route.question, surfaces)

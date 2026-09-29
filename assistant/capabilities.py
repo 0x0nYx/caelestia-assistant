@@ -45,6 +45,11 @@ DEFAULTS: Dict[str, bool] = {
     "eval_arena": True,
     "confusable_clarifier": True,  # upgrades the generic ambiguity ask to
                                    # the mined pair's own question (read-only
+                                   # text swap over the committed artifact)
+    "label_fusion": True,          # Dawid-Skene vote fusion may demote a
+                                   # contested confident route to an ask
+                                   # (never promotes; read-only)  # upgrades the generic ambiguity ask to
+                                   # the mined pair's own question (read-only
                                    # text swap over the committed artifact)           # the measurement arena incl. the
                                   # metamorphic suite (read-only, in-process,
                                   # dev sets only unless --sealed is asked for)

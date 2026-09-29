@@ -113,7 +113,10 @@ def _check_arena_smoke() -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         return {"verdict": "UNAVAILABLE", "detail": f"arena: {exc}",
                 "repro": "python3 -m assistant.eval routing"}
-    cw = report["confident_wrong"]
+    # The shipped behavior includes A2 label fusion (demote-only), so
+    # the honest smoke check measures the FUSED rate; the raw router
+    # rate rides along in the detail for comparison.
+    cw = report.get("confident_wrong_fused") or report["confident_wrong"]
     rate = cw.get("rate")
     if rate is None:
         verdict, note = "WARN", "nothing routed — cannot assess"

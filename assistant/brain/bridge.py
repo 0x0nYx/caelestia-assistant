@@ -102,7 +102,18 @@ OPS = {
     # capability): run one suite and return its report dict
     "eval_suite": lambda q, s, l: _eval_suite(q),
     "confusables_report": lambda q, s, l: _confusables_report(),
+    "label_fusion_report": lambda q, s, l: _label_fusion_report(),
 }
+
+
+def _label_fusion_report():
+    from assistant.capabilities import enabled
+    if not enabled("label_fusion"):
+        return {"error": "label_fusion capability is off on this install"}
+    from assistant.cortex.label_fusion import load_model, render_lines
+    model = load_model()
+    return {"model": model, "lines": render_lines()}
+
 
 
 def _confusables_report():

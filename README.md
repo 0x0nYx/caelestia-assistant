@@ -159,6 +159,7 @@ caelestia-assist cortex personalize list                             # habits mi
 caelestia-assist eval grow mine && caelestia-assist eval grow list   # candidates (sealed sets refuse)
 caelestia-assist eval metamorphic                                    # auto-generated variants (paraphrase/synonym/unit/typo/polarity) with ratcheted floors
 caelestia-assist cortex confusables                                  # mined sibling-tool pairs + the one question that tells them apart
+python3 -m assistant.cortex.label_fusion                             # Dawid-Skene voter reliabilities behind the demote-only honesty guard
 caelestia-assist cortex refit                                        # guarded weight re-fit (regression ratchet)
 caelestia-assist doctor                                              # composite health check
 

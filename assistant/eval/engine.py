@@ -142,9 +142,13 @@ def run_routing(split: str = "dev",
     weights (the refit ratchet measures candidate vs current). None
     means DEFAULT_STATE — the cold-start measurement, unchanged."""
     from assistant.cortex.router import DEFAULT_STATE, Router
+    from assistant.cortex.label_fusion import refine, vote_router_signals, \
+        load_model as load_fusion_model
 
     data = load_set("routing", split)
     router = Router()
+    fusion_model = load_fusion_model()
+    eff_state = state if state is not None else DEFAULT_STATE
     results: List[Dict[str, Any]] = []
     for item in data["items"]:
         res = router.route(item["text"],
@@ -171,14 +175,34 @@ def run_routing(split: str = "dev",
             accept = item["accept"]
             top1_ok = bool(cands and cands[0][0] in accept)
             top3_ok = any(s in accept for s, _k in cands)
+        # A2 fused verdict (the pipeline's SHIPPED demote-only behavior):
+        # a contested confident route becomes an honest ask and leaves
+        # the fused confident-wrong count.
+        fused_verdict = res.verdict
+        if res.verdict == "ROUTED":
+            ballots = vote_router_signals(router, item["text"], eff_state)
+            fused_verdict, _note, _post = refine(
+                res, ballots["votes"], fusion_model, eff_state)
         results.append({
             "id": item["id"], "text": item["text"],
             "verdict": res.verdict, "top3": cands,
             "top1_ok": top1_ok,
             "top3_ok": top3_ok,
             "accept": accept,
+            "fused_verdict": fused_verdict,
         })
-    return _routing_report(split, results)
+    report = _routing_report(split, results)
+    fused_routed = [r for r in results if r["fused_verdict"] == "ROUTED"]
+    fused_wrong = [r for r in fused_routed if not r["top1_ok"]]
+    report["confident_wrong_fused"] = {
+        "count": len(fused_wrong), "of_routed": len(fused_routed),
+        "rate": (round(len(fused_wrong) / len(fused_routed), 4)
+                 if fused_routed else None),
+        "note": ("after Dawid-Skene demote-only fusion — the pipeline's "
+                 "shipped behavior; contested confident routes become "
+                 "honest asks and leave this count"),
+    }
+    return report
 
 
 def _routing_report(split: str, results: List[Dict[str, Any]]) -> Dict[str, Any]:

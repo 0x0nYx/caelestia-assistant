@@ -188,5 +188,31 @@ class RatchetTests(unittest.TestCase):
         )
 
 
+    def test_sealed_sets_load_and_manifest_pins_content(self):
+        # Stage B regression: the sealed CLI could never run as shipped —
+        # load_set demanded `{suite}_sealed.json` while the files were
+        # committed as `sealed_{suite}.json` (F1 birth defect, found and
+        # fixed at Stage B). This test pins BOTH halves of that contract:
+        # every suite's sealed split loads through the real loader, and
+        # the sealed manifest's sha256 entries still match the content
+        # (so the loader fix provably did not touch sealed content).
+        import hashlib
+        from assistant.eval import engine
+        sealed = engine.available("sealed")
+        self.assertIn("routing", sealed)
+        for suite in sealed:
+            data = engine.load_set(suite, "sealed")
+            self.assertGreaterEqual(len(data.get("items", [])), 1)
+        manifest = engine.SET_DIR / "sealed_manifest.sha256"
+        for line in manifest.read_text().splitlines():
+            digest, name = line.split(maxsplit=1)
+            path = engine.SET_DIR / name.strip()
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertEqual(
+                digest, actual,
+                f"sealed content drift in {name}: the sealed set must "
+                f"never change without re-authoring discipline")
+
+
 if __name__ == "__main__":
     unittest.main()

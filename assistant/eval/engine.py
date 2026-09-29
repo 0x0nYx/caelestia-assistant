@@ -59,9 +59,17 @@ BOOT_SEED = 120
 
 
 def load_set(suite: str, split: str) -> Dict[str, Any]:
-    path = SET_DIR / f"{suite}_{split}.json"
+    # Stage B finding: the sealed files were committed as
+    # `sealed_{suite}.json` while this loader demanded
+    # `{suite}_sealed.json` — the sealed CLI could never run as shipped
+    # (birth defect, F1). The loader now accepts the committed names;
+    # set CONTENT is untouched and the sealed manifest still pins it.
+    candidates = [SET_DIR / f"{suite}_{split}.json"]
+    if split == "sealed":
+        candidates.append(SET_DIR / f"sealed_{suite}.json")
+    path = next((c for c in candidates if c.exists()), candidates[0])
     if not path.exists():
-        raise FileNotFoundError(f"no such set: {path.name}")
+        raise FileNotFoundError(f"no such set: {candidates[0].name}")
     data = json.loads(path.read_text())
     for item in data.get("items", []):
         if "id" not in item or "text" not in item:
@@ -70,7 +78,13 @@ def load_set(suite: str, split: str) -> Dict[str, Any]:
 
 
 def available(split: str) -> List[str]:
-    return [s for s in SUITES if (SET_DIR / f"{s}_{split}.json").exists()]
+    out = []
+    for s in SUITES:
+        if (SET_DIR / f"{s}_{split}.json").exists():
+            out.append(s)
+        elif split == "sealed" and (SET_DIR / f"sealed_{s}.json").exists():
+            out.append(s)
+    return out
 
 
 # ---------------------------------------------------------------------------

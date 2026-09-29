@@ -368,6 +368,7 @@ def run_calibration(split: str = "dev") -> Dict[str, Any]:
     router = Router()
     probs: List[float] = []
     outcomes: List[int] = []
+    calib_rows: List[Tuple[float, int]] = []
     for item in routing["items"]:
         if not item.get("accept"):
             # expect_verdict items (removed-tool and A5
@@ -379,7 +380,9 @@ def run_calibration(split: str = "dev") -> Dict[str, Any]:
         res = router.route(item["text"], state=DEFAULT_STATE, k=1)
         if res.verdict == "ROUTED" and res.candidates:
             probs.append(res.candidates[0].p)
-            outcomes.append(int(res.candidates[0].surface in item["accept"]))
+            outcome = int(res.candidates[0].surface in item["accept"])
+            outcomes.append(outcome)
+            calib_rows.append((res.candidates[0].p, outcome))
     for item in abst["items"]:
         res = router.route(item["text"], state=DEFAULT_STATE, k=1)
         if res.verdict == "ROUTED" and res.candidates:
@@ -387,17 +390,30 @@ def run_calibration(split: str = "dev") -> Dict[str, Any]:
             if top.kind in ("tool", "preset"):
                 probs.append(top.p)
                 outcomes.append(0)  # a negative confidently routed is wrong
-    return {
+    metrics = {
+        "ece_5bin": round(ece(probs, outcomes), 4),
+        "brier": round(brier(probs, outcomes), 4),
+    }
+    note = ("cold-start: DEFAULT_STATE softmax probabilities, no learned "
+            "calibration history — treat as uncalibrated until the learner "
+            "has approvals (D8 labeling applies at the CLI surface)")
+    out = {
         "suite": "calibration", "split": split, "n": len(probs),
-        "metrics": {
-            "ece_5bin": round(ece(probs, outcomes), 4),
-            "brier": round(brier(probs, outcomes), 4),
-        },
-        "note": ("cold-start: DEFAULT_STATE softmax probabilities, no learned "
-                 "calibration history — treat as uncalibrated until the learner "
-                 "has approvals (D8 labeling applies at the CLI surface)"),
+        "metrics": metrics,
+        "note": note,
         "thin": len(probs) < 30,
     }
+    # A3: ECE before/after honest calibrators (isotonic PAVA,
+    # Venn-Abers intervals), out-of-sample over deterministic folds.
+    # These are the COLD-START numbers by construction; they move once
+    # a real calibration stream exists in user state.
+    if len(calib_rows) >= 20:
+        try:
+            from assistant.cortex.abers import ece_report
+            out["calibration_report"] = ece_report(calib_rows)
+        except Exception as exc:  # noqa: BLE001 — the arena reports, never crashes
+            out["calibration_report_error"] = str(exc)
+    return out
 
 
 # ---------------------------------------------------------------------------

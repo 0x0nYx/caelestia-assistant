@@ -103,7 +103,24 @@ OPS = {
     "eval_suite": lambda q, s, l: _eval_suite(q),
     "confusables_report": lambda q, s, l: _confusables_report(),
     "label_fusion_report": lambda q, s, l: _label_fusion_report(),
+    "abers_interval": lambda q, s, l: _abers_interval(q),
 }
+
+
+def _abers_interval(q):
+    """Venn-Abers interval + isotonic point for one score, over the
+    caller-provided calibration rows (read-only pure math)."""
+    rows = [(float(r["p"]), int(r["ok"])) for r in q.get("rows", [])]
+    score = float(q["score"])
+    if len(rows) < 5:
+        return {"error": "need >= 5 calibration rows", "n": len(rows)}
+    from assistant.cortex.abers import isotonic_fit, isotonic_predict,         venn_abers
+    lo, hi, mid = venn_abers(rows, score)
+    point = isotonic_predict(isotonic_fit(rows), score)
+    return {"score": score, "va_low": round(lo, 4),
+            "va_high": round(hi, 4), "va_mid": round(mid, 4),
+            "isotonic": round(point, 4)}
+
 
 
 def _label_fusion_report():

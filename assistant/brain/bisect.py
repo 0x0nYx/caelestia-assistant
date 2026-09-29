@@ -28,7 +28,7 @@ import json
 import math
 import os
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from assistant.brain import merkle
 from assistant.settings.registry import tool_by_path

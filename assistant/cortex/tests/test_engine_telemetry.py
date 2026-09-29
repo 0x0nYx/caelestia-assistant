@@ -26,8 +26,6 @@ Under test (values hand-derived from a fixed 6-example log):
 import io
 import sys
 import unittest
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from unittest import mock
 
 from assistant.cortex import engine_telemetry

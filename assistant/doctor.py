@@ -154,7 +154,6 @@ def _budget_probe() -> Dict[str, Any]:
     then import-and-route — the same import + index-build work the cold
     CLI does. Warm p50 follows. Machine-dependent by nature: the caveat
     travels on the result."""
-    import importlib
 
     def _vmhwm_kb() -> int:
         try:

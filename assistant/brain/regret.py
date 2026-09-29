@@ -27,7 +27,7 @@ surfaces it, nothing acts on it.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 __all__ = ["audit_from_arms", "audit_from_draws"]
 

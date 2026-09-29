@@ -25,7 +25,7 @@ Pure math over stdlib; no I/O; deterministic.
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 __all__ = ["hex_to_rgb", "rgb_to_hex", "relative_luminance",
            "contrast_ratio", "wcag_findings", "simulate_cvd",

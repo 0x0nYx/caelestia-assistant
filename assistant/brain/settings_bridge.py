@@ -35,7 +35,6 @@ from ..settings import applier, planner, presets
 from ..settings import history as settings_history
 from ..settings.presets import PresetError
 from .calibrate import acceptance_rate, fold_undo_negatives
-from .ledger import Ledger
 from .preset_bandit import NamedBandit
 
 TOOL_ARM_PREFIX = "tool:"

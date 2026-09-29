@@ -63,7 +63,7 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from ..brain.naive_bayes import NaiveBayes
 from ..brain.personal.graph import Graph

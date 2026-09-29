@@ -45,7 +45,7 @@ fire together (G1 wins; G2 refuses to stack on a G1 swap).
 from __future__ import annotations
 
 import re
-from typing import Dict, FrozenSet, List, Mapping, Sequence, Tuple
+from typing import FrozenSet, List, Mapping, Sequence, Tuple
 
 __all__ = ["apply", "PREPOSITIONS", "STOPWORD_FLOOR"]
 

@@ -15,7 +15,6 @@ The contract under test:
 - binary files are skipped and counted; unreadable files are counted;
   deterministic builds are byte-identical.
 """
-import json
 import tempfile
 import unittest
 from pathlib import Path

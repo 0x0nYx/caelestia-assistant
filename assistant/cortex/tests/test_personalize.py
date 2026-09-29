@@ -28,7 +28,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
 from assistant.brain.ledger import Ledger
 from assistant.brain.prefs import PreferenceModel

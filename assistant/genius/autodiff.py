@@ -29,7 +29,7 @@ choose, and the round-off honesty of THAT is the point).
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Sequence, Union
 
 __all__ = ["Dual", "var", "const", "derivative", "jacobian", "propagate_error",
            "SUPPORTED_FUNCS", "AutodiffError"]
@@ -64,9 +64,6 @@ class Dual:
             return other
         return const(float(other), len(self.grad))
 
-    @staticmethod
-    def _wrap(val: float, grad: Tuple[float, ...]) -> "Dual":
-        return Dual(val, grad)
 
     # -- arithmetic ----------------------------------------------------
 

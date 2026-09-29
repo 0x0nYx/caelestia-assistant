@@ -31,10 +31,10 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 from . import linalg
-from .probability import normal_cdf, normal_quantile
+from .probability import normal_cdf
 
 __all__ = [
     "describe", "quantile", "pearson", "spearman", "kendall",

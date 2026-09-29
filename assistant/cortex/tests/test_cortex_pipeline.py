@@ -34,7 +34,6 @@ from assistant.cortex.memory import (
 )
 from assistant.cortex.nlhistory import parse_query, plan as plan_history
 from assistant.cortex.pipeline import episode_for, ops_for_candidate, process
-from assistant.cortex.router import extract_cues
 from assistant.cortex.session import SessionState, turn as session_turn
 from assistant.settings import history as settings_history
 

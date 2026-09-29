@@ -36,7 +36,7 @@ learned-state JSON; nothing here writes.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from .dp import N_SENSITIVITY, laplace_noise
 

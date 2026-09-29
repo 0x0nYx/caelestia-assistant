@@ -64,7 +64,7 @@ from __future__ import annotations
 import hashlib
 import re
 from collections import deque
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 __all__ = ["simhash", "hamming", "near_duplicate", "NearDupTracker",
            "mask_digits"]

@@ -97,8 +97,6 @@ class PromoteTests(unittest.TestCase):
         self.assertIn(candidate["text"], texts)
         self.assertNotIn(candidate, self.state[grow.QUARANTINE_KEY])
         # the writer's format must match the loader
-        from assistant.eval import engine
-        import os
         from assistant.settings.registry import TOOL_COUNT  # noqa: F401
         sets_dir = self.dev_set.parent
         # load_set resolves by suite/split names inside the package; the

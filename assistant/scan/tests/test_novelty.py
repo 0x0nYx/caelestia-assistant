@@ -25,7 +25,7 @@ import random
 import unittest
 
 from assistant.scan.ac import Automaton
-from assistant.scan.scanner import render, scan_stream, scan_text
+from assistant.scan.scanner import render, scan_stream
 from assistant.scan.sketch import NgramDivergence
 
 

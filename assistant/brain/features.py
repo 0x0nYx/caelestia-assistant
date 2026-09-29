@@ -24,7 +24,7 @@ Guarantees:
 from __future__ import annotations
 
 import hashlib
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Tuple
 
 __all__ = ["hash_features", "DEFAULT_DIMENSIONS", "DEFAULT_SEED",
            "text_features", "context_features"]

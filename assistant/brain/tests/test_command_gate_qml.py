@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 QML_PATH = Path(__file__).resolve().parents[3] / "shell" / "modules" / "sidebar" / "AiAssistant.qml"
 GATE_PATH = Path(__file__).resolve().parents[3] / "shell" / "services" / "CommandGate.qml"

@@ -36,7 +36,7 @@ this keeps the module pure and the I/O enumerated.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Sequence
 
 __all__ = ["MIN_POINTS", "steady_state_kalman", "trend_projection",
            "failure_horizon", "forecast_report"]

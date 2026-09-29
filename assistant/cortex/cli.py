@@ -92,14 +92,6 @@ def _fmt_candidates(result) -> List[str]:
     return lines
 
 
-def _render_genius(genius_result: Dict[str, object]) -> None:
-    """Compact renderer for an inline genius answer inside cortex turns."""
-    from .delegate import _format_genius
-
-    for line in _format_genius(dict(genius_result)):
-        print(line)
-
-
 def _render_turn(result, *, applied: bool = False,
                  inline_delegate: bool = False) -> List[str]:
     """Human rendering of one cortex result (the chat card).

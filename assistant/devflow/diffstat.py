@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 __all__ = ["parse_numstat", "classify_change", "dominant_type",
            "commit_message", "pr_skeleton", "subject_limit"]

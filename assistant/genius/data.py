@@ -26,7 +26,6 @@ import random
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from . import stats as gs
-from .probability import normal_cdf
 
 __all__ = [
     "parse_table", "profile_table", "frequency_table", "crosstab",

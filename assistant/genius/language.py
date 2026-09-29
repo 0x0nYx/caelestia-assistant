@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Sequence, Set, Tuple
 
 __all__ = [
     "sentiment", "readability", "text_stats", "rake_keywords", "yake_keywords",

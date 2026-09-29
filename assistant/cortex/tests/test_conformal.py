@@ -1,5 +1,4 @@
 """cortex.conformal tests — coverage guarantee, committee disagreement, drift."""
-import math
 import random
 import unittest
 

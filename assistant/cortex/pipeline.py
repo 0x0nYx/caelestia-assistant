@@ -42,7 +42,7 @@ from ..settings.cli import default_target
 from ..settings.consequences import EDGES
 from ..settings.explain import ExplainError as SettingsExplainError
 from ..settings.explain import explain as settings_explain
-from ..settings.registry import TOOL_SPECS, tool_by_name, tool_by_path
+from ..settings.registry import TOOL_SPECS, tool_by_name
 from . import compound as compound_mod
 from .compound import CompoundResult, route_compound
 from .learn import CortexLearner

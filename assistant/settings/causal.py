@@ -27,7 +27,7 @@ needed value is an abstention, never a default.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 
 from . import consequences as _cons
 from .registry import tool_by_name, tool_by_path

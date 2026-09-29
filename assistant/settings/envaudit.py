@@ -30,7 +30,7 @@ Read-only end to end. Exit code 0 unless CRITICAL findings exist
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -42,11 +42,6 @@ __all__ = ["audit", "render_lines"]
 CRITICAL = "CRITICAL"
 WARN = "WARN"
 INFO = "INFO"
-
-
-def _timestamp(entry: Dict[str, Any], text: str) -> Dict[str, Any]:
-    entry["detail"] = text
-    return entry
 
 
 def audit(target, now: Optional[datetime] = None) -> Dict[str, Any]:

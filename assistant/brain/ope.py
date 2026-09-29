@@ -29,7 +29,7 @@ Pure functions: the ledger is read, nothing is written anywhere.
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Sequence
 
 __all__ = ["evaluate_policy", "switch_candidate", "KNOWN_SWITCHES",
            "ope_report"]

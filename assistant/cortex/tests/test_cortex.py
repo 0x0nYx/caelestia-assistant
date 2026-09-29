@@ -21,12 +21,7 @@ from assistant.cortex.corpus import (
     tool_document,
     tool_documents,
 )
-from assistant.cortex.router import (
-    Candidate,
-    RouterState,
-    extract_cues,
-    route,
-)
+from assistant.cortex.router import ( RouterState, extract_cues, route, )
 from assistant.cortex.vectorize import PpmiEmbedder, TfidfIndex, tokenize
 from assistant.settings.parser import parse as frozen_parse
 from assistant.settings.registry import TOOL_SPECS, tool_by_name

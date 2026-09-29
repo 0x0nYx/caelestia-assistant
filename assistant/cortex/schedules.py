@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 __all__ = ["ScheduleError", "MAX_SCHEDULES", "SCHEDULES_KEY", "NAME_RE",
            "save", "list_schedules", "delete", "evaluate", "render_eval",

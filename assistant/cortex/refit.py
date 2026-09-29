@@ -29,7 +29,7 @@ adjacent split (sealed stays sealed); the ratchet's claim is exactly
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 __all__ = ["AUDIT_KEY", "MAX_AUDIT", "MIN_EXAMPLES", "refit_ratchet",

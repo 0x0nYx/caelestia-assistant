@@ -15,8 +15,11 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 
 from assistant.settings import cli as settings_cli
-from assistant.settings.registry import (_bitap_distance, _camel_atoms,
-                                         suggest_tools, tool_by_name)
+from assistant.settings.registry import (
+    _bitap_distance,
+    _camel_atoms,
+    suggest_tools,
+)
 
 
 def _reference(a: str, b: str) -> int:

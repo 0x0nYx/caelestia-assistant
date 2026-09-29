@@ -1,7 +1,5 @@
 """scan tests — structures pinned against ground truth and their bounds."""
-import math
 import random
-import re
 import unittest
 
 from assistant.scan import (Automaton, BloomFilter, CountMinSketch,

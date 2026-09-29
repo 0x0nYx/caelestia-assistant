@@ -33,7 +33,7 @@ user-facing messages; results are JSON-serialisable dicts.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 __all__ = ["UnitsError", "parse_quantity", "parse_unit", "convert",
            "evaluate", "handle", "looks_unitful", "DIMS"]

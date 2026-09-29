@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import presets as presets_mod
-from .registry import GROUPS, TOOL_COUNT, TOOL_SPECS
+from .registry import TOOL_COUNT, TOOL_SPECS
 
 __all__ = ["catalog_markdown", "completions_bash", "ARTIFACTS",
            "generate", "verify"]

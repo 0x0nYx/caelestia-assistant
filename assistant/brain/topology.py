@@ -48,10 +48,6 @@ FileTarget = Union[str, Path]
 STATE_KEY = "topology"
 
 
-class TopologyError(RuntimeError):
-    """Raised when the topology cannot be observed (bad target layout)."""
-
-
 def fingerprint(monitors_dir: Path) -> Dict[str, Any]:
     """Stable fingerprint of the connected-monitor set.
 

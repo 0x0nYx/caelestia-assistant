@@ -74,27 +74,6 @@ def frobenius_norm(a: Matrix) -> float:
     return sum(x * x for row in a for x in row) ** 0.5
 
 
-def _pivot_order(a: Matrix) -> Tuple[List[int], int]:
-    """Row permutation + sign from partial pivoting."""
-    n = len(a)
-    m = [row[:] for row in a]
-    perm, sign = list(range(n)), 1
-    for col in range(n):
-        piv = max(range(col, n), key=lambda r: abs(m[r][col]))
-        if abs(m[piv][col]) < 1e-12:
-            continue
-        if piv != col:
-            m[col], m[piv] = m[piv], m[col]
-            perm[col], perm[piv] = perm[piv], perm[col]
-            sign = -sign
-        for r in range(col + 1, n):
-            if m[r][col] != 0:
-                factor = m[r][col] / m[col][col]
-                for c in range(col, n):
-                    m[r][c] -= factor * m[col][c]
-    return perm, sign
-
-
 def determinant(a: Matrix) -> float:
     if not is_square(a):
         raise LinAlgError("determinant requires a square matrix")

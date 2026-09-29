@@ -16,7 +16,7 @@ envelope for nets of a few dozen nodes.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 
 __all__ = ["BayesNet", "HMM", "NaiveBayes", "hmm_forward", "hmm_viterbi",
            "hmm_predict_next"]

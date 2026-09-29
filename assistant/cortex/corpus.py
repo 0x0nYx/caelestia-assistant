@@ -25,16 +25,10 @@ Guarantees:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from ..settings.registry import TOOL_SPECS
-from .lexicon import (
-    BOOL_OFF_WORDS,
-    BOOL_ON_WORDS,
-    DIRECTION_WORDS,
-    SYNONYMS,
-    camel_split,
-)
+from .lexicon import ( BOOL_OFF_WORDS, BOOL_ON_WORDS, SYNONYMS, camel_split, )
 
 CORPUS_VERSION = 1
 

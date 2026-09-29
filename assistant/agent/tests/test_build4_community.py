@@ -19,8 +19,7 @@ import random
 import unittest
 
 from assistant.agent import archetype_pack as ap
-from assistant.cortex.coldstart import (bootstrap_learner, export_priors,
-                                        import_priors)
+from assistant.cortex.coldstart import (bootstrap_learner, export_priors)
 from assistant.cortex.learn import CortexLearner
 
 

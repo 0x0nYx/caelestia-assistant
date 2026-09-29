@@ -7,9 +7,7 @@ locally with a gated apply payload)."""
 from __future__ import annotations
 
 import json
-import tempfile
 import unittest
-from pathlib import Path
 from unittest import mock
 
 from assistant.cortex import concepts

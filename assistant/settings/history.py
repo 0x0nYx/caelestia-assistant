@@ -29,7 +29,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from .registry import tool_by_path
 
@@ -211,13 +211,6 @@ def _reverse_plan(entry: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
         })
     plan = {"entries": plan_entries, "apply_blocked": False}
     return plan, skipped
-
-
-def _consume(target: FileTarget, data: Dict[str, Any],
-             index: int) -> Dict[str, Any]:
-    entry = data["entries"].pop(index)
-    _save(target, data)
-    return entry
 
 
 def undo(target: FileTarget, steps: int = 1) -> Dict[str, Any]:

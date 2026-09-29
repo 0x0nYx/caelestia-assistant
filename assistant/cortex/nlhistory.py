@@ -37,7 +37,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from .router import route
 
 # ---------------------------------------------------------------------------
 # Grammar.

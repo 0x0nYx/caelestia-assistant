@@ -27,7 +27,6 @@ like any other settings request: this module PROPOSES, it never writes.
 """
 from __future__ import annotations
 
-import itertools
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .registry import ToolSpec, tool_by_name

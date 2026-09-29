@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .parser import _NOUN_RES, _noun_matched, _normalize
-from .registry import EXPLAIN_RULES, TOOL_SPECS, ToolSpec, tool_by_name, tool_by_path
+from .registry import EXPLAIN_RULES, ToolSpec, tool_by_name, tool_by_path
 
 FileTarget = Union[str, Path]
 

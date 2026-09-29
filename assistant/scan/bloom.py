@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 __all__ = ["BloomFilter"]
 
@@ -57,10 +57,6 @@ class BloomFilter:
         return True
 
     # ------------------------------------------------------------------
-    @property
-    def fill_ratio(self) -> float:
-        setbits = sum(bin(byte).count("1") for byte in self.bits)
-        return setbits / self.m
 
     def to_dict(self) -> Dict[str, Any]:
         return {"m": self.m, "k": self.k, "n": self.n,

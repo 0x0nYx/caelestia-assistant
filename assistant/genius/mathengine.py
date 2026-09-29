@@ -1504,14 +1504,6 @@ def _fmt_frac(f) -> str:
     return f"{f.numerator}/{f.denominator}"
 
 
-def _sqrt_frac_str(s, m) -> str:
-    if m == 1:
-        return _fmt_frac(s)
-    if s == 1:
-        return f"sqrt({_fmt_frac(m)})"
-    return f"{_fmt_frac(s)}*sqrt({_fmt_frac(m)})"
-
-
 def solve_polynomial_all(coeffs: List[Any]) -> Dict[str, Any]:
     """All roots of a polynomial given as ascending exact Fraction
     coefficients: rational roots with multiplicity (exact), quadratic

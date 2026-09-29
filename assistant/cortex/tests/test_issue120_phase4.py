@@ -15,7 +15,6 @@ from pathlib import Path
 from assistant.brain import state as brain_state
 from assistant.cortex import compound, learn as cortex_learn
 from assistant.cortex.cli import cmd_cortex
-from assistant.cortex.router import route
 from assistant.settings import wizard
 
 

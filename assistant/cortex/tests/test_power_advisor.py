@@ -32,7 +32,6 @@ Under test (every number hand-derived):
 import io
 import sys
 import unittest
-from unittest import mock
 
 from assistant.brain.forecast import holt
 from assistant.cortex import power_advisor

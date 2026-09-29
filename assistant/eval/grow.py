@@ -35,7 +35,7 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 __all__ = ["MAX_CANDIDATES", "QUARANTINE_KEY", "mine_candidates",
            "save_quarantine", "promote", "render_lines"]

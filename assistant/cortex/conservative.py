@@ -35,7 +35,7 @@ caller's learned-state JSON.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional
 
 __all__ = ["ConservativeBandit", "hoeffding_radius"]
 

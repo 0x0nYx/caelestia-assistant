@@ -13,13 +13,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Tuple
 
 from assistant.settings import cli
 from assistant.settings.presets import (
     PresetError,
     describe_lines,
-    preset_by_name,
     preset_ops,
     presets,
 )

@@ -35,7 +35,7 @@ import random
 from collections import Counter
 from typing import Dict, Iterable, List, Sequence, Tuple
 
-from .corpus import Row, all_rows, tool_documents
+from .corpus import all_rows, tool_documents
 from .lexicon import stem
 
 # ---------------------------------------------------------------------------

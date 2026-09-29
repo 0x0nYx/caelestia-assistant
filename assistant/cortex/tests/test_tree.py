@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import unittest
 
-from assistant.cortex.learn import OnlineLogistic
 from assistant.cortex.router import route
 from assistant.cortex.tree import (agreement_report, build_tree, gini,
                                    tree_classify, tree_from_examples,

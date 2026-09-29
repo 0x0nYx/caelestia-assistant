@@ -14,12 +14,15 @@ from unittest import mock
 from assistant.brain.features import (DEFAULT_DIMENSIONS, hash_features,
                                       text_features, context_features)
 from assistant.brain.preset_bandit import LinUCBBandit, NamedBandit
-from assistant.brain.ranking import (EloLadder, bradley_terry,
-                                     ladder_report, MIN_COMPARISONS)
+from assistant.brain.ranking import (EloLadder, bradley_terry, ladder_report)
 from assistant.cortex.learn import CortexLearner
-from assistant.cortex.memory import (HALFLIFE_DAYS, MEMORY_HALFLIFE_KEY,
-                                     MAX_EPISODES, new_episode, record,
-                                     recall, resolve_halflife)
+from assistant.cortex.memory import (
+    HALFLIFE_DAYS,
+    MEMORY_HALFLIFE_KEY,
+    new_episode,
+    recall,
+    resolve_halflife,
+)
 
 
 class TestFeatureHashing(unittest.TestCase):

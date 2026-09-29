@@ -19,7 +19,7 @@ import unittest
 from pathlib import Path
 
 from assistant.settings import history
-from assistant.settings.applier import ApplierError, apply
+from assistant.settings.applier import apply
 
 
 def _plan(path: str, new) -> dict:

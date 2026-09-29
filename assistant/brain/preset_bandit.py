@@ -24,7 +24,7 @@ shape as HourBandit.to_dict(), so it lives in the same state.json file.
 """
 import math
 import random
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from .features import DEFAULT_DIMENSIONS, context_features
 

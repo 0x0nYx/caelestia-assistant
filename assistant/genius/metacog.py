@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 __all__ = ["induce_rules", "suggest_question", "coverage_map",
            "cluster_requests"]

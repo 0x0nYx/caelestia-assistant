@@ -25,11 +25,10 @@ from __future__ import annotations
 import contextlib
 import io
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 from assistant.settings import cli, history, profiles
 

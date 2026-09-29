@@ -160,15 +160,6 @@ def _surface_words(surface: str) -> str:
     return " ".join(camel_split(surface.replace("preset:", "")))
 
 
-def _has_addressable_noun(text: str) -> bool:
-    """True when the text contains tokens the router can lock onto (a
-    non-stopword beyond pure cue words). Used to detect ellipsis."""
-    from .vectorize import tokenize
-
-    tokens = tokenize(text)
-    return len(tokens) >= 1
-
-
 def resolve_reference(text: str, state: SessionState) -> Tuple[str, str]:
     """Resolve anaphora/ellipsis against the session. Returns
     ``(resolved_text, note)`` — the note explains what was substituted

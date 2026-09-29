@@ -26,8 +26,8 @@ episodes retained (recall beyond that horizon is honestly refused).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Sequence, Tuple
 
 MAX_EPISODES = 500
 HALFLIFE_DAYS = 14.0
@@ -219,19 +219,6 @@ def surface_counts(episodes: Sequence[Dict[str, object]],
         for surface in set(str(s) for s in episode.get("surfaces", [])):
             counts[surface] = counts.get(surface, 0) + 1
     return counts
-
-
-def changed_between(episodes: Sequence[Dict[str, object]], lo: datetime, hi: datetime,
-                    outcome_filter: Sequence[str] = ("applied", "approved")) -> List[Dict[str, object]]:
-    """"What did I change last week?" — applied episodes inside a window."""
-    out = []
-    for episode in episodes:
-        if episode.get("outcome") not in outcome_filter:
-            continue
-        when = _episode_time(episode)
-        if lo <= when <= hi:
-            out.append(episode)
-    return out
 
 
 def summarize(episodes: Sequence[Dict[str, object]], now: Optional[datetime] = None) -> Dict[str, object]:

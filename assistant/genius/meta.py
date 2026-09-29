@@ -25,10 +25,21 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from . import (baysnet, creative, data, decision, language, linalg, logic,
-               markov, mathengine, metacog, probability, stats, sysintel, tasks)
+from . import (
+    creative,
+    data,
+    decision,
+    language,
+    linalg,
+    logic,
+    markov,
+    mathengine,
+    probability,
+    stats,
+    tasks,
+)
 
 __all__ = ["route_and_do", "classify", "learn_feedback", "MetaRouter"]
 

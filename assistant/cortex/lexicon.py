@@ -95,11 +95,6 @@ def stem(word: str) -> str:
     return w
 
 
-def stem_all(text: str) -> List[str]:
-    """Stem every word of ``text`` (lowercase input assumed normalized)."""
-    return [stem(w) for w in _WORD_RE.findall(text.lower())]
-
-
 # ---------------------------------------------------------------------------
 # Fuzzy string similarity (all pure, all deterministic).
 # ---------------------------------------------------------------------------
@@ -192,12 +187,6 @@ def ngram_similarity(a: str, b: str, n: int = 3) -> float:
     dot = sum(count * gb[gram] for gram, count in ga.items())
     norm = (sum(v * v for v in ga.values()) ** 0.5) * (sum(v * v for v in gb.values()) ** 0.5)
     return dot / norm if norm else 0.0
-
-
-def sequence_ratio(a: str, b: str) -> float:
-    """difflib's longest-matching-block ratio — a second, complementary
-    fuzzy signal (substring-sensitive where n-grams are not)."""
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 
 # ---------------------------------------------------------------------------

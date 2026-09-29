@@ -8,7 +8,6 @@ Every proposal path is asserted to end in a PENDING LEDGER ENTRY — nothing
 here may auto-apply a config change.
 """
 import io
-import contextlib
 import json
 import tempfile
 import unittest

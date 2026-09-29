@@ -28,7 +28,7 @@ from __future__ import annotations
 import math
 import random
 import re
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 __all__ = [
     "hex_to_rgb", "rgb_to_hex", "rgb_to_oklab", "oklab_to_rgb",

@@ -40,7 +40,7 @@ no execution, no network, no RNG; ``now`` is always a caller argument.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Sequence
 
 __all__ = ["MIN_RECUR", "MIN_OBS", "BIAS_FLOOR", "MAX_PENDING",

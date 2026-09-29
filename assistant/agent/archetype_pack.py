@@ -48,10 +48,10 @@ guessed at): see the OPEN_QUESTIONS constant below.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Sequence, Union
 
 from ..diagnostics import risk as risk_mod
-from ..diagnostics.rulepack import canonical_bytes, payload_sha256
+from ..diagnostics.rulepack import payload_sha256
 from ..diagnostics.schema_lint import validate_rule_safety  # noqa: F401
 from .engine import default_dispatchers
 

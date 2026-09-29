@@ -134,9 +134,6 @@ class ArgumentationFramework:
             raise ValueError(f"unknown argument {name!r} (known: {self.arguments})")
         return name
 
-    def attackers_of(self, argument: str) -> List[str]:
-        """The arguments that attack `argument`, in attack-declaration order."""
-        return list(self._attackers[self._known(argument)])
 
     def attackees_of(self, argument: str) -> List[str]:
         """The arguments that `argument` attacks, in declaration order."""

@@ -50,7 +50,7 @@ from __future__ import annotations
 import math
 import struct
 import zlib
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 from .creative import (_linear_to_srgb, _srgb_to_linear, contrast_ratio,
                        hex_to_rgb, oklab_to_rgb, rgb_to_oklab, rgb_to_hex)

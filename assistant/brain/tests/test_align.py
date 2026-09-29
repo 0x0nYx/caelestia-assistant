@@ -19,9 +19,12 @@ import unittest
 from pathlib import Path
 
 from assistant.brain import align as align_mod
-from assistant.brain.align import (GAP_PENALTY, MIN_SUPPORT, align_moves,
-                                   divergence_report, move_similarity,
-                                   propose_corrections)
+from assistant.brain.align import (
+    align_moves,
+    divergence_report,
+    move_similarity,
+    propose_corrections,
+)
 from assistant.brain.ledger import Ledger
 
 

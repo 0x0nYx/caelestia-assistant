@@ -35,7 +35,7 @@ from pathlib import Path
 
 from assistant.brain.personal import cli, service
 from assistant.brain.personal.graph import Graph, decay_weights
-from assistant.brain.personal.topics import extract, nmf, term_matrix
+from assistant.brain.personal.topics import extract, nmf
 
 PHI = (5 ** 0.5 + 1) / 2            # 1.6180339887...
 GOLDEN = PHI - 1                    # 0.6180339887... (hub n1 / auth n3)

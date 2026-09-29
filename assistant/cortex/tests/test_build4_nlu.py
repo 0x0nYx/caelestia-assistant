@@ -16,7 +16,6 @@ from assistant.cortex.conformal import ConformalCalibrator
 from assistant.cortex.coref import resolve_pronoun, resolve_turn
 from assistant.cortex.crf_tagger import CRFTagger, calibration_comparison, tag_gated_crf
 from assistant.cortex.plans import PlanCache
-from assistant.cortex.slot_tagger import TAGS
 
 ROWS = [
     ("make the bar a bit smaller",

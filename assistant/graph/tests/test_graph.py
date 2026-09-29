@@ -45,6 +45,12 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(g1["meta"]["hash"], g3["meta"]["hash"])
 
     def test_shape_and_provenance(self) -> None:
+        # Node counts are DERIVED from the committed tools.json (the single
+        # source of truth), never re-pinned by hand: a deliberate registry
+        # re-pin must not desync this test from the artifact it describes.
+        meta = json.loads(
+            (Path(__file__).resolve().parents[2] / "settings" / "tools.json")
+            .read_text(encoding="utf-8")).get("meta", {})
         g = gbuild.build_graph()
         types = {}
         for n in g["nodes"]:
@@ -53,8 +59,9 @@ class BuildTests(unittest.TestCase):
             self.assertIn("label", n)
             self.assertIn("attrs", n)
             types[n["type"]] = types.get(n["type"], 0) + 1
-        self.assertEqual(types["tool"], 272)        # the full registry
-        self.assertEqual(types["not_exposed"], 364)  # every hidden path
+        self.assertEqual(types["tool"], meta.get("tool_count"))  # full registry
+        self.assertEqual(types["not_exposed"],
+                         meta.get("not_exposed_count"))  # every hidden path
         self.assertEqual(types["preset"], 5)
         self.assertEqual(types["explain_rule"], 11)
         self.assertGreaterEqual(types["file"], 100)  # citation targets

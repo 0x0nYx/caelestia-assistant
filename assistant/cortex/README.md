@@ -17,7 +17,7 @@ session.py          anaphora / ellipsis / clarification answers
 compound.py         "disable blur and move the dock left" -> clauses
    │
    ▼
-router.py           rank ALL 277 tools + presets + coarse surfaces
+router.py           rank ALL registry tools + presets + coarse surfaces
    │                 (BM25+ lexical, PPMI semantic, char-ngram fuzzy,
    │                  frozen-noun grammar, pattern floors, cue-kind
    │                  agreement, name-atom coverage)
@@ -34,8 +34,9 @@ chat y/N ──► applier.apply ──► history/undo ──► learn.py obser
 ## Why this beats a frozen grammar (and where it deliberately doesn't)
 
 The frozen grammar of `settings/parser.py` covers 18 hand-verified tools and
-honestly refuses everything else. The cortex extends addressability to all
-277 registry tools plus presets, explain, undo, history, and the other layers
+honestly refuses everything else. The cortex extends addressability to every
+registry tool (272 at this writing — tools.json is the count's home) plus
+presets, explain, undo, history, and the other layers
 (diagnose / search / brain / issue) — mechanically:
 
 - every tool's **name atoms** (`setGreeterMorningStart` → "greeter morning

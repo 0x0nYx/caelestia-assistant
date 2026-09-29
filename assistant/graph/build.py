@@ -3,7 +3,8 @@
 A typed, provenance-carrying graph over the settings universe, REBUILDABLE
 from shipped artifacts only:
 
-  * ``assistant/settings/tools.json``  — 277 tools (citations, groups,
+  * ``assistant/settings/tools.json``  — the registry (272 tools at this
+   writing; tools.json meta is the count's home) (citations, groups,
     ranges), presets, explain_rules, not_exposed paths
   * ``assistant/settings/consequences.py`` — the curated, citation-backed
     interaction table (``affects`` edges)

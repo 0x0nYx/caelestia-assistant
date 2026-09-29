@@ -4,8 +4,8 @@ Pre  = PpmiEmbedder       (PPMI + Achlioptas random projection, the status quo)
 Post = PpmiSvdEmbedder    (PPMI + truncated SVD / LSA, A2)
 
 Eval set: every corpus row whose surface has a real tool document (the
-router's own semantic signal, isolated: embed the row text, rank all 277
-tool documents by cosine, check the surface's rank).
+router's own semantic signal, isolated: embed the row text, rank every
+registry tool document by cosine, check the surface's rank).
 
 Supervision ablation: with a deterministic every-4th-row supervised split
 (labeled pairs at LABEL_WEIGHT), evaluated on the OTHER rows — shows the

@@ -347,8 +347,8 @@ def _persisted_lexicon_pairs():
 # chance. Deterministic end to end: seeded range-finder draw, pure
 # arithmetic, no clock, no I/O beyond the corpus import.
 #
-# MEASURED VERDICT on the current corpus (5814 tool-surfaced rows, 277
-# documents; scripts/measure_svd_delta.py + measure_svd_variants.py, run
+# MEASURED VERDICT on the current corpus (5814 tool-surfaced rows, one
+# document per registry tool; scripts/measure_svd_delta.py + measure_svd_variants.py, run
 # this session): the random projection WINS on this corpus regime —
 #   RP (status quo)          top-1 0.9678  top-3 0.9905  top-5 0.9967
 #   SVD best weighting        top-1 0.8925  top-3 0.9723  top-5 0.9873

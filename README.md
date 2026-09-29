@@ -6,7 +6,7 @@ No language model in the critical path. No training. No network in the offline c
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-2501%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-2307%20passing-brightgreen)
 ![LLM required](https://img.shields.io/badge/LLM%20required-none-success) *(offline core)*
 
 ---

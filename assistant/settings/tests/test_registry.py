@@ -5,8 +5,8 @@ Three independent guards:
 - a GOLDEN table: the 18 core tools must keep their exact names,
   paths, kinds, defaults, ranges, enums, global_only flags, steps and nouns
   (the natural-language surface is frozen), and the generated registry is
-  pinned by count (277 tools, per-group tallies);
-- a STRUCTURAL guard: every tool — all 277 — has a unique name and path, a
+  pinned by counts DERIVED from tools.json meta (tool_count, per-group tallies);
+- a STRUCTURAL guard: every tool — the full registry — has a unique name and path, a
   known kind, a coherent validation payload, a feature-area group, and at
   least two citations whose cited files exist in this checkout;
 - a CITATION drift guard: every tool's cited C++ declaration line still
@@ -82,17 +82,19 @@ GOLDEN_CORE: tuple = (
      ("app badges|badges|badge",)),
 )
 
-# Generated-registry pins (regenerating tools.json is a deliberate act that
-# must update these numbers together with the artifact).
-EXPANSION_COUNT = 272
-GROUP_COUNTS = {
-    "bar": 58, "dock": 5, "appearance": 5, "effects": 9, "animations": 1,
-    "notifications": 13, "launcher": 18, "lockscreen": 14,
-    "wallpaper-scheme": 36, "overview": 16, "osd": 7, "dashboard": 21,
-    "sidebar": 3, "nexus": 1, "border": 3, "general": 8, "services": 17,
-    "utilities": 27, "audio": 10,
-}
-NOT_EXPOSED_COUNT = 364
+# Generated-registry pins: counts are DERIVED from the committed tools.json
+# (single source of truth — the loader must agree with the file, and neither
+# is re-pinned by a magic number here). Regenerating tools.json therefore
+# cannot desync this test; the loader-vs-file agreement it asserts is the
+# real invariant.
+import json as _json
+
+_TOOLS_JSON = Path(__file__).resolve().parent.parent / "tools.json"
+_META_COUNTS = _json.loads(_TOOLS_JSON.read_text(encoding="utf-8")).get(
+    "meta", {})
+EXPANSION_COUNT = _META_COUNTS.get("tool_count")
+GROUP_COUNTS = dict(_META_COUNTS.get("group_counts") or {})
+NOT_EXPOSED_COUNT = _META_COUNTS.get("not_exposed_count")
 
 # Five NEW tools whose C++ citation lines are needle-pinned (drift guard).
 NEW_TOOL_PINS = (

@@ -199,7 +199,7 @@ def build(repo_root: str) -> Dict[str, Any]:
             "string_max_len": None,
             # enumerate_leaves returns a bool; the TSV form spelled it
             # "yes"/"no" — accept both so neither shape can silently
-            # flatten the flag again (2-a-2 audit: it did, for all 277 then shipped).
+            # flatten the flag again (2-a-2 audit: it did, for every tool then shipped).
             "global_only": row["global_only"] is True or row["global_only"] == "yes",
             "nouns": [],
             "citations": [],

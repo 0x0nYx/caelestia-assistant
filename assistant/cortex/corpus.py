@@ -101,7 +101,7 @@ def tool_document(spec) -> str:
 
 
 def tool_documents() -> Dict[str, str]:
-    """{tool name: canonical document} for all 277 tools, registry order."""
+    """{tool name: canonical document} for every registry tool, registry order."""
     return {spec.name: tool_document(spec) for spec in TOOL_SPECS}
 
 

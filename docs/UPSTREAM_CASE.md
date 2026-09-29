@@ -52,8 +52,9 @@ Config editing is not open-ended English. It is: map a request onto the
 shell's registry of tools, validate ranges, preview, apply with undo.
 The thread's original proposal said exactly that ("convert it into
 structured configuration changes, and apply them through Caelestia's
-existing configuration system"). A frozen grammar plus a 277-tool
-registry with per-tool citations solves the whole shape of that problem
+existing configuration system"). A frozen grammar plus a
+registry of every exposed tool (272 at this writing — the count lives in
+tools.json, never re-pinned here) with per-tool citations solves the whole shape of that problem
 deterministically — same input, same plan, byte-identical — while a
 200-300M-parameter model buys fluency this task does not need and
 hallucination risk this task cannot afford.

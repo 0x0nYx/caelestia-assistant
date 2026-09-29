@@ -80,8 +80,8 @@ class RefactorFingerprintTests(unittest.TestCase):
         self.assertEqual(
             hashlib.sha256(blob.encode()).hexdigest()[:16], "588d52c5fc0ed311")
         # ^ pin spans the generated-registry corpus; it updates on
-        # registry resyncs (2026-09-28: 277 -> 272 upstream), never on
-        # refactors of the embedder itself
+        # registry resyncs (e.g. the 2026-09-28 upstream tool-prune), never
+        # on refactors of the embedder itself
 
 
 class SvdCapabilityTests(unittest.TestCase):

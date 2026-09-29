@@ -686,7 +686,7 @@ assistant/settings/
     enumerate.py        # walks the C++ config headers into a leaf-key table (§10)
     ui_ranges_data.py   # the 318-row Nexus-control transcription (§10)
     build_registry.py   # joins enumerate.py + ui_ranges_data.py + curations.py -> tools.json (§10)
-    tools.json           # the generated 277-tool registry, embedded into SettingsTools.qml (§10, §12)
+    tools.json           # the generated 272-tool registry, embedded into SettingsTools.qml (§10, §12)
     cli.py              # argparse, rendering, exit codes
     __main__.py         # shim: from .cli import main; SystemExit(main())
     DESIGN.md           # this file
@@ -1820,7 +1820,7 @@ and §16 stands unchanged against the current schema.
 ## 10. Registry generation pipeline
 
 The 18 rows in §1 are the leading, hand-frozen entries of a larger,
-generated `TOOL_SPECS` list: **277 tools in 19 feature-area groups**, plus
+generated `TOOL_SPECS` list: **272 tools in 19 feature-area groups**, plus
 explainability, a bounded undo history, named presets with a
 preview-then-confirm gate, direct addressing for the 259 tools beyond the
 frozen 18, and the same validated registry shipped into the shell itself as
@@ -1828,7 +1828,7 @@ a native QML service behind the sidebar AI assistant. This section and
 §11-§15 describe that registry and the features built on it; §16 has the
 decision record for what was left out.
 
-### 10.1 The registry: an 18-tool hand-frozen core inside a 277-tool
+### 10.1 The registry: an 18-tool hand-frozen core inside a 272-tool
 generated whole (the enumeration pipeline)
 
 The registry is not hand-maintained beyond its 18-tool core. It is
@@ -1869,9 +1869,9 @@ scalar Nexus control touches it (that control's row supplies the grounded
 range/enum), and (c) a stable name can be derived from its path — with
 two-pass disambiguation so colliding basenames get full-path camel names
 (e.g. `setSessionVimKeybinds`). No tool exists without its UI grounding:
-every one of the 277 carries at least two citations, C++ declaration line
+every one of the 272 carries at least two citations, C++ declaration line
 first, shipped control second (`ToolSpec.citations`, registry.py:99-101).
-The build-time citation checker (`test_registry.py`) confirmed all 277:
+The build-time citation checker (`test_registry.py`) confirmed all 272:
 the cited C++ line contains the property name, the cited UI file:line has
 the key access within ±14 lines, 0 failures; a structural default check
 re-parsed every `tools.json` default from its cited C++ declaration line —
@@ -1934,7 +1934,8 @@ int enums when not (easingType).
 **Count reconciliation (re-derived by running the walker).** The config
 tree yields 568 scalar leaves; the separately-persisted derived tokens tree
 (shell-tokens.json, bound by `ConfigRoot::bindTokens`) yields 136;
-568 + 136 = 704 = 277 tools + 427 not_exposed — every scalar leaf the
+the union of exposed tools and not_exposed leaves (272 + 339 at this
+writing; the exact counts live in tools.json meta) — every scalar leaf the
 walker finds is accounted for exactly once. The 16 `QVariantMap` leaves
 (`font.*.vaxes`) are `kind=map` rows outside the scalar table (the Nexus
 survey's "584 scalar leaves incl. map-typed" = 568 + 16); the walker's 833
@@ -1945,7 +1946,7 @@ this walk's 584: the earlier macro set did not count
 (services.weatherUnits serviceconfig.hpp:30, sensorUnits :32, dataUnits
 :34, clockFormat :46); 584 - 4 = 580.
 
-**Resulting registry** (regenerated and verified): 277 tools in
+**Resulting registry** (regenerated and verified): 272 tools in
 19 groups — bar 58, dock 5, appearance 6, effects 9, animations 1,
 notifications 13, launcher 18, lockscreen 14, wallpaper-scheme 36,
 overview 16, osd 7, dashboard 21, sidebar 3, nexus 1, border 3, general 12,
@@ -1973,7 +1974,7 @@ generated tools are reached by name, not by words:
 - `--tool NAME` (cli.py:402-405): a detail card — path, group, kind,
   validation, default, step, nouns, and every citation line
   `file:line — what it evidences`.
-- `--list-tools [--group SLUG]` (cli.py:394-401): the full 277-tool table
+- `--list-tools [--group SLUG]` (cli.py:394-401): the full 272-tool table
   or one feature area's slice, with per-group subtotals when unfiltered.
 
 Two guards in `parser.py` keep the frozen surface frozen against a registry
@@ -2023,7 +2024,7 @@ bridge. Grounds, all read in this checkout:
 **The service** (833 lines, generated from a persisted template;
 `pragma Singleton` at :1-2, header :4-23):
 
-- `toolTable` (277 rows incl. citations, :56), `presetTable` (5),
+- `toolTable` (272 rows incl. citations), `presetTable` (5),
   `explainTable` (11) — generated blocks marked DO NOT EDIT BY HAND.
 - lookups: `toolInfo` / `toolsInGroup` / `listTools` / `get`
   (:379-417).
@@ -2202,7 +2203,7 @@ for human review.
 
 Six test files in `assistant/settings/tests/` cover the features in this
 section (method counts as measured in this checkout): `test_registry.py`
-(15 — the 18-tool core's golden preservation, the 277/427 count pins,
+(15 — the 18-tool core's golden preservation, the derived count pins (from tools.json),
 noun-silence, lookups, rendering, structural guards, citation drift guards
 incl. regeneration byte-identity), `test_cli_calls.py` (27 — direct
 addressing), `test_explain.py` (15), `test_history.py` (12),
@@ -2215,6 +2216,6 @@ suite: **167 tests**; the five assistant suites together: 17 + 18 + 48 +
 from the repo root.
 
 Three drift guards keep the generated artifacts honest: the count pins
-(277/427/per-group), the all-cited-lines re-verification inside the suite,
+(per-file derived counts), the all-cited-lines re-verification inside the suite,
 and the regeneration byte-identity check. The QML tables carry a fourth:
 byte-identity vs tools.json via the independent mini-renderer.

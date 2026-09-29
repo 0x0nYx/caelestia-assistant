@@ -93,7 +93,7 @@ _REJECTED_CONFIDENCE = 0.3
 # Tool renames this module is allowed to substitute, old name -> current
 # registry name. The shipped table is INTENTIONALLY EMPTY, said plainly:
 # a full read of assistant/settings/tools.json (the generated, citation-
-# verified registry of the then-277 setXxx tools) found NO rename-shaped pair
+# verified registry of every then-exposed setXxx tool) found NO rename-shaped pair
 # — every row is a current name with its citations, and the registry
 # carries no history of old names (nothing in tools.json, DESIGN.md or
 # the settings sources records a tool that was renamed). Manufacturing

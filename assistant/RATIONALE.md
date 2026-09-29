@@ -166,7 +166,7 @@ reason in `assistant/settings/DESIGN.md`.
 Beneath that frozen surface, the full registry is a GENERATED artifact
 rather than a hand-curated list: a macro-level walker over the C++ config
 headers, joined with a transcription of every shipped Nexus control, merged
-by explicit curation rules into `tools.json` — 277 tools in 19 feature-area
+by explicit curation rules into `tools.json` — 272 tools in 19 feature-area
 groups, 427 deliberately-not-exposed leaves each recorded with its reason
 (credentials, endpoints, the master switch, kwinrc companion writes, no
 shipped control...), and every tool citation-verified individually (the
@@ -189,7 +189,7 @@ in-process, with no runtime Python dependency, no process spawn per tool
 call, and an in-chat confirm card that only native code can render; the
 registry stays single-sourced by embedding `tools.json`'s tables verbatim
 into the QML with a Python test asserting byte-identity. Honesty line that
-belongs to the record: every one of the 277 tools' citations was verified
+belongs to the record: every one of the registry tools' citations was verified
 per-tool, but the QML itself was not compiled or run — no Qt toolchain
 exists in the build environment — so its guarantees are the static guards
 (byte-identity, balance checks, API-surface pins) until a maintainer loads

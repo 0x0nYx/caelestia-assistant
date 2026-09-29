@@ -93,7 +93,13 @@ class ExplainTests(unittest.TestCase):
         self.assertIn("The bar.scale is currently set to 1.2", result["answer"])
         self.assertIn("range 0.6-1.6", result["answer"])
         self.assertIn("default 1", result["answer"])
-        self.assertIn("barconfig.hpp:214", result["answer"])
+        # the citation line is DERIVED from the committed tools.json (the
+        # upstream file shifts lines on every re-pin; the test must follow
+        # the artifact, not a hand-copied number)
+        spec = resolve_spec("bar.scale")
+        decl = next(c[0] for c in spec.citations
+                    if Path(c[0].rsplit(":", 1)[0]).suffix == ".hpp")
+        self.assertIn(decl.rsplit("/", 1)[-1], result["answer"])
 
     def test_unset_key_uses_registry_default(self) -> None:
         result = explain_fn("border.thickness", self.target)

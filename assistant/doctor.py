@@ -36,6 +36,25 @@ __all__ = ["run_doctor", "render_lines"]
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def locate_upstream() -> Optional[Path]:
+    """The pinned caelestia-kde checkout this repo verifies against: the
+    gen_adapter auto-locate, else the build convention (a SIBLING of this
+    repo exposing shell/plugin/src/Caelestia/Config). None when absent —
+    the honest installed-assistant case. Shared by the doctor check and
+    the hermetic test so both mean the same thing by 'present'."""
+    from .settings.gen_adapter import CANONICAL_ADAPTER, verify, \
+        build_registry
+    here = _REPO_ROOT / "assistant" / "settings"
+    root = build_registry.find_repo_root(here)
+    if root is None:
+        for sibling in sorted(_REPO_ROOT.parent.iterdir()):
+            if (sibling / "shell" / "plugin" / "src" / "Caelestia"
+                    / "Config").is_dir():
+                root = sibling
+                break
+    return root
+
+
 def _check_gen_adapter() -> Dict[str, Any]:
     """Registry freshness = gen_adapter --verify IN-PROCESS but with the
     same auto-locate semantics as its CLI (needs the pinned caelestia
@@ -46,16 +65,10 @@ def _check_gen_adapter() -> Dict[str, Any]:
             build_registry
         here = _REPO_ROOT / "assistant" / "settings"
         committed = here / "tools.json"
-        root = build_registry.find_repo_root(here)
-        if root is None:
+        root = locate_upstream()
+        if root is None or not committed.exists():
             # the build convention: the upstream checkout sits as a
             # SIBLING of this repo (never an ancestor)
-            for sibling in sorted(_REPO_ROOT.parent.iterdir()):
-                if (sibling / "shell" / "plugin" / "src" / "Caelestia"
-                        / "Config").is_dir():
-                    root = sibling
-                    break
-        if root is None or not committed.exists():
             return {"verdict": "UNAVAILABLE",
                     "detail": "no committed tools.json or no caelestia "
                               "checkout beside this repo — the "

@@ -61,7 +61,18 @@ class DoctorTests(unittest.TestCase):
         result = doctor.run_doctor()
         verdicts = {name: c["verdict"]
                     for name, c in result["checks"].items()}
-        self.assertEqual(verdicts["registry freshness"], "PASS")
+        # HERMETIC: the registry-freshness check needs the pinned upstream
+        # checkout beside this repo; when it is absent (the normal installed
+        # case, and always in CI/sandboxes) the honest verdict is
+        # UNAVAILABLE — PASS is only reachable (and only asserted) when a
+        # checkout the check can actually verify is present. Mirrors the
+        # doctor's own locate_upstream() so both mean the same by 'present'.
+        if doctor.locate_upstream() is not None:
+            self.assertEqual(verdicts["registry freshness"], "PASS")
+        else:
+            self.assertEqual(verdicts["registry freshness"], "UNAVAILABLE",
+                             "no upstream checkout: must be UNAVAILABLE, "
+                             "never a fake pass")
         self.assertEqual(verdicts["generated docs"], "PASS")
         self.assertEqual(verdicts["arena smoke"], "PASS")
         self.assertEqual(verdicts["calibration coverage"], "UNAVAILABLE",

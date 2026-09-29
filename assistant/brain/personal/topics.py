@@ -458,14 +458,3 @@ def drift_report(snapshots: List[Tuple[str, Dict[str, Dict[str, Any]]]],
     }
 
 
-def _cosine(a: List[float], b: List[float]) -> float:
-    if not a or len(a) != len(b):
-        return 0.0
-    num = sum(x * y for x, y in zip(a, b))
-    da = math.sqrt(sum(x * x for x in a))
-    db = math.sqrt(sum(y * y for y in b))
-    if da == 0.0 or db == 0.0:
-        return 0.0
-    return max(0.0, min(1.0, num / (da * db)))
-
-

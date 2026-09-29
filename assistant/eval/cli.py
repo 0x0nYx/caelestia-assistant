@@ -113,9 +113,17 @@ def _render(report: dict) -> None:
         print(f"== {name} (split {rep.get('split', '?')}, n={rep.get('n', '?')}) ==")
         for metric, val in rep.get("metrics", {}).items():
             if isinstance(val, tuple):
-                print(f"  {metric}: {val[0]:.4f}  [{val[1]:.4f}, {val[2]:.4f}]")
+                try:
+                    print(f"  {metric}: {val[0]:.4f}  "
+                          f"[{val[1]:.4f}, {val[2]:.4f}]")
+                except (ValueError, TypeError):
+                    # ("n/a", "n/a", "n/a") — a metric with no observations
+                    print(f"  {metric}: n/a")
             else:
                 print(f"  {metric}: {val}")
+        mb = rep.get("n_breaks")
+        if mb is not None:
+            print(f"  metamorphic breaks: {mb}")
         cw = rep.get("confident_wrong")
         if cw:
             print(f"  confident-wrong: {cw['count']}/{cw['of_routed']} routed"

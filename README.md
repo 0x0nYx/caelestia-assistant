@@ -157,6 +157,7 @@ caelestia-assist settings --monitor DP-1 "make the bar thinner"      # same gate
 caelestia-assist cortex context --probe                              # battery/clock-aware proposals
 caelestia-assist cortex personalize list                             # habits mined from your approvals
 caelestia-assist eval grow mine && caelestia-assist eval grow list   # candidates (sealed sets refuse)
+caelestia-assist eval metamorphic                                    # auto-generated variants (paraphrase/synonym/unit/typo/polarity) with ratcheted floors
 caelestia-assist cortex refit                                        # guarded weight re-fit (regression ratchet)
 caelestia-assist doctor                                              # composite health check
 

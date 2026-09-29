@@ -87,7 +87,8 @@ class EngineHelperTests(unittest.TestCase):
     def test_suites_declared(self):
         self.assertEqual(
             set(SUITES),
-            {"routing", "nlplan", "abstention", "diagnosis", "calibration", "footprint"},
+            {"routing", "nlplan", "abstention", "diagnosis", "calibration",
+             "footprint", "metamorphic"},
         )
         self.assertGreaterEqual(FOOTPRINT_BUDGETS["route_p50_ms"], 1.0)
 

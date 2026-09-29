@@ -47,7 +47,8 @@ from .stats import brier, ece, proportion_ci
 
 SET_DIR = Path(__file__).parent / "sets"
 
-SUITES = ("routing", "nlplan", "abstention", "diagnosis", "calibration", "footprint")
+SUITES = ("routing", "nlplan", "abstention", "diagnosis", "calibration",
+          "footprint", "metamorphic")
 SPLITS = ("dev", "sealed")
 
 BOOT_SEED = 120
@@ -80,7 +81,13 @@ def load_set(suite: str, split: str) -> Dict[str, Any]:
 def available(split: str) -> List[str]:
     out = []
     for s in SUITES:
-        if (SET_DIR / f"{s}_{split}.json").exists():
+        if s == "metamorphic":
+            # derived over the DEV routing set only — it has no sealed
+            # split by construction (variant generators are pinned by the
+            # ratchet test, not by a sealed file)
+            if split == "dev":
+                out.append(s)
+        elif (SET_DIR / f"{s}_{split}.json").exists():
             out.append(s)
         elif split == "sealed" and (SET_DIR / f"sealed_{s}.json").exists():
             out.append(s)
@@ -422,14 +429,22 @@ RUNNERS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "diagnosis": run_diagnosis,
     "calibration": run_calibration,
     "footprint": lambda **_kw: run_footprint(),
+    # derived suite: variants generated from registry metadata, no set file
+    "metamorphic": lambda split="dev": _run_metamorphic(split),
 }
+
+
+def _run_metamorphic(split: str) -> Dict[str, Any]:
+    from .metamorphic import run_metamorphic
+    return run_metamorphic(split)
 
 
 def run_suite(suite: str, split: str = "dev") -> Dict[str, Any]:
     if suite == "all":
         out: Dict[str, Any] = {"suites": {}}
         for name in SUITES:
-            if name == "footprint" or (SET_DIR / f"{name}_{split}.json").exists():
+            if (name in ("footprint", "metamorphic")
+                    or (SET_DIR / f"{name}_{split}.json").exists()):
                 out["suites"][name] = RUNNERS[name](split=split)
         return out
     if suite not in RUNNERS:

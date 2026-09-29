@@ -98,7 +98,24 @@ OPS = {
     "optimize_score": lambda q, s, l: _optimize_score(q),
     "prefs_report": lambda q, s, l: _prefs_report(l),
     "conformal_verdict": lambda q, s, l: _conformal_verdict(q, s),
+    # eval arena over the bridge (read-only, gated on the eval_arena
+    # capability): run one suite and return its report dict
+    "eval_suite": lambda q, s, l: _eval_suite(q),
 }
+
+
+def _eval_suite(q):
+    from assistant.capabilities import enabled
+    if not enabled("eval_arena"):
+        return {"error": "eval_arena capability is off on this install"}
+    from assistant.eval.engine import run_suite
+    suite = str(q.get("suite", "routing"))
+    split = str(q.get("split", "dev"))
+    if q.get("sealed"):
+        return {"error": "the sealed split is a stage-boundary act, not a "
+                         "bridge call"}
+    return run_suite(suite, split=split)
+
 
 
 def _telemetry_snapshot(q):

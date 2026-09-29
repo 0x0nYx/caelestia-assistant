@@ -47,11 +47,26 @@ _FUNCS = {
     "factorial": lambda x: float(math.factorial(int(x))),
 }
 
+def _as_index(x: float, name: str) -> int:
+    """Integral-float coercion for count-valued functions: 12.0 is fine,
+    12.5 is an honest error — never a silent truncation (and never the
+    unhandled TypeError the float-into-int path raised before Stage C)."""
+    if isinstance(x, float) and not x.is_integer():
+        raise CalcError(f"{name}() needs whole numbers, got {x}")
+    return int(x)
+
+
 _MULTI_FUNCS = {
     "min": min, "max": max, "hypot": math.hypot, "atan2": math.atan2,
-    "pow": pow, "gcd": math.gcd, "lcm": math.lcm,
-    "ncr": lambda n, r: float(math.comb(int(n), int(r))),
-    "npr": lambda n, r: float(math.perm(int(n), int(r))),
+    "pow": pow,
+    "gcd": lambda *vals: float(math.gcd(*map(
+        lambda v: _as_index(v, "gcd"), vals))),
+    "lcm": lambda *vals: float(math.lcm(*map(
+        lambda v: _as_index(v, "lcm"), vals))),
+    "ncr": lambda n, r: float(math.comb(_as_index(n, "ncr"),
+                                        _as_index(r, "ncr"))),
+    "npr": lambda n, r: float(math.perm(_as_index(n, "npr"),
+                                        _as_index(r, "npr"))),
 }
 
 

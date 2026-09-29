@@ -110,5 +110,25 @@ class EnabledPriorTests(unittest.TestCase):
                          "setSlideshowEnabled")
 
 
+class EvidenceDeterminismTests(unittest.TestCase):
+    """Stage C1 golden probe caught: the matched-terms evidence loop
+    iterated a bare set, so PYTHONHASHSEED order decided WHICH
+    matched-term line survived the pipeline's [:4] evidence cap — same
+    input, different evidence across runs. The fix emits matched terms
+    in sorted order; this pins the invariant."""
+
+    def test_matched_term_evidence_is_sorted_and_complete(self):
+        res = Router().route("hide the clock icon", state=DEFAULT_STATE, k=1)
+        matched = [e for e in res.candidates[0].evidence
+                   if e.startswith("matched '")]
+        self.assertEqual(matched, sorted(matched),
+                         "matched-term evidence must be emitted sorted")
+        # both query atoms that hit the tool's doc tokens are present —
+        # the cap may keep only the first lines, but the ROUTER's own
+        # evidence list must not lose either
+        self.assertIn("matched 'clock'", matched)
+        self.assertIn("matched 'icon'", matched)
+
+
 if __name__ == "__main__":
     unittest.main()

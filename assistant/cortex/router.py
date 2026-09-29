@@ -1090,7 +1090,12 @@ class Router:
                 cand.evidence.append(f"name-atom coverage {coverage:.0%}")
             _delta, cue_evidence = self._cue_kind_delta(cues, key, raw)
             cand.evidence.extend(cue_evidence)
-            for term in set(q_tokens):
+            # sorted(): evidence emission must be deterministic. Iterating
+            # a bare set leaked PYTHONHASHSEED order into the evidence
+            # strings, and combined with the pipeline's [:4] evidence cap
+            # it made WHICH matched-term line survived a coin flip across
+            # runs on the same input (Stage C1 golden probe caught it).
+            for term in sorted(set(q_tokens)):
                 if term in self.index.doc_tokens.get(key, ()):
                     cand.evidence.append(f"matched '{term}'")
             candidates.append(cand)

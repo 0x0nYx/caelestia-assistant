@@ -34,6 +34,10 @@ def _pretty(obj: Any, indent: int = 0) -> None:
     pad = "  " * indent
     if isinstance(obj, dict):
         for k, v in obj.items():
+            if v is None:
+                # a null field is JSON-honest but reads as noise in text
+                # mode ("simplified: None") — skip it silently
+                continue
             key = k.replace("_", " ")
             if isinstance(v, (dict, list)):
                 print(f"{pad}{key}:")

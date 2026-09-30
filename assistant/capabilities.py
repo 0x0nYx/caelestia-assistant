@@ -68,6 +68,11 @@ DEFAULTS: Dict[str, bool] = {
                                    # three-way merge PROPOSALS for config
                                    # JSON; pure math over caller-supplied
                                    # documents, never a write
+    "shell_conflicts": True,       # shellkb: PubGrub-style dependency
+                                   # explanations over a bounded DPLL-style
+                                   # search; any installed-version facts
+                                   # still come only from the read-only
+                                   # package_audit probe (or the caller)
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)

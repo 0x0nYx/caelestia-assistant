@@ -110,6 +110,7 @@ OPS = {
     "shell_howto": lambda q, s, l: _shell_howto(q),
     "shell_json_diff": lambda q, s, l: _shell_json(q, merge=False),
     "shell_json_merge": lambda q, s, l: _shell_json(q, merge=True),
+    "shell_conflicts": lambda q, s, l: _shell_conflicts(q),
 }
 
 
@@ -233,6 +234,35 @@ def _shell_json(q, merge: bool):
         if key not in q:
             return {"error": f"need {key!r}: the {key} document"}
     return jsonmerge.diff_docs(q["a"], q["b"])
+
+
+def _shell_conflicts(q):
+    """PubGrub-style dependency explanation (B10). The universe comes
+    from the request or the committed illustrative fixture; installed
+    facts may come from the READ-ONLY pkgprobe when package_audit is
+    on — never from executing anything here."""
+    from assistant.capabilities import enabled
+    if not enabled("shell_conflicts"):
+        return {"error": "shell_conflicts capability is off on this "
+                         "install"}
+    from assistant.shellkb import pubgrub
+    universe = q.get("universe")
+    if universe is None:
+        universe = json.loads(pubgrub.UNIVERSE_PATH.read_text())
+    root = str(q.get("root", "")).strip()
+    if not root:
+        return {"error": "need 'root': the package to explain from"}
+    installed = q.get("installed")
+    if q.get("use_probe"):
+        from assistant.agent.pkgprobe import query_installed
+        probe = query_installed()
+        if probe.get("packages"):
+            installed = {name: version
+                         for name, version in probe["packages"]}
+    if installed is not None:
+        return pubgrub.check_installed(universe, installed, root,
+                                       str(q.get("spec", "*")))
+    return pubgrub.solve(universe, root, str(q.get("spec", "*")))
 
 
 

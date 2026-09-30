@@ -15,6 +15,7 @@ from . import cligrammar
 from . import cmdparse
 from . import howto
 from . import jsonmerge
+from . import pubgrub
 
 
 def _grammar_cmd(args) -> int:
@@ -78,6 +79,23 @@ def _merge_cmd(args) -> int:
     return 0
 
 
+def _conflicts_cmd(args) -> int:
+    universe = (_load_doc(args.universe) if args.universe
+                else json.loads(pubgrub.UNIVERSE_PATH.read_text()))
+    if args.installed:
+        installed = _load_doc(args.installed)
+        data = pubgrub.check_installed(universe, installed, args.root,
+                                       args.spec)
+    else:
+        data = pubgrub.solve(universe, args.root, args.spec)
+    if args.json:
+        print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
+        return 0
+    for out in pubgrub.render_solution(data):
+        print(out)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(
@@ -96,10 +114,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         "explain", help="explain a command line token by token; mark "
                         "destructive patterns; preview globs read-only. "
                         "Never executes anything.")
-    e.add_argument("command", nargs="+",
-                   help="the command line to explain (quote it as one "
-                        "argument, or put -- before it)")
-    e.add_argument("--json", action="store_true")
+    # REMAINDER: 'explain caelestia shell -k' must keep '-k' as part of
+    # the command line to explain, not as a flag of this parser
+    e.add_argument("command", nargs=argparse.REMAINDER,
+                   help="the command line to explain")
+    e.add_argument("--json", action="store_true", default=False)
     e.set_defaults(func=_explain_cmd)
 
     h = sub.add_parser(
@@ -126,6 +145,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     m.add_argument("--theirs", required=True)
     m.add_argument("--json", action="store_true")
     m.set_defaults(func=_merge_cmd)
+
+    c = sub.add_parser(
+        "conflicts", help="PubGrub-style dependency explanations over a "
+                          "bounded search; never installs anything")
+    c.add_argument("--root", required=True)
+    c.add_argument("--spec", default="*")
+    c.add_argument("--universe", default=None,
+                   help="universe JSON (default: the committed "
+                        "illustrative fixture)")
+    c.add_argument("--installed", default=None,
+                   help="JSON {name: version} from a read-only probe")
+    c.add_argument("--json", action="store_true")
+    c.set_defaults(func=_conflicts_cmd)
 
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):

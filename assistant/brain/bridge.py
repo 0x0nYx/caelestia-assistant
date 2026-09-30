@@ -108,6 +108,8 @@ OPS = {
     "shell_grammar": lambda q, s, l: _shell_grammar(q),
     "shell_explain": lambda q, s, l: _shell_explain(q),
     "shell_howto": lambda q, s, l: _shell_howto(q),
+    "shell_json_diff": lambda q, s, l: _shell_json(q, merge=False),
+    "shell_json_merge": lambda q, s, l: _shell_json(q, merge=True),
 }
 
 
@@ -211,6 +213,26 @@ def _shell_howto(q):
     if not query:
         return {"error": "need 'query': the how-to question"}
     return howto.answer(query, k=int(q.get("k", 5)))
+
+
+def _shell_json(q, merge: bool):
+    """Structured diff / three-way merge over caller-supplied JSON
+    documents (B9). Pure math: the docs arrive in the request, the
+    proposal leaves in the response, no file is touched."""
+    from assistant.capabilities import enabled
+    if not enabled("shell_json_merge"):
+        return {"error": "shell_json_merge capability is off on this "
+                         "install"}
+    from assistant.shellkb import jsonmerge
+    if merge:
+        for key in ("base", "ours", "theirs"):
+            if key not in q:
+                return {"error": f"need {key!r}: the {key} document"}
+        return jsonmerge.merge_three_way(q["base"], q["ours"], q["theirs"])
+    for key in ("a", "b"):
+        if key not in q:
+            return {"error": f"need {key!r}: the {key} document"}
+    return jsonmerge.diff_docs(q["a"], q["b"])
 
 
 

@@ -63,6 +63,11 @@ DEFAULTS: Dict[str, bool] = {
                                    # self-authored CC0 corpus (BM25 + the
                                    # existing time-expression parser); every
                                    # step SUGGESTED_NOT_EXECUTED
+    "shell_json_merge": True,      # shellkb: structured diff (Myers paths +
+                                   # ordered tree-edit distance) and
+                                   # three-way merge PROPOSALS for config
+                                   # JSON; pure math over caller-supplied
+                                   # documents, never a write
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)

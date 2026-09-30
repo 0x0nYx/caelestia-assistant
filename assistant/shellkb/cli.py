@@ -14,6 +14,7 @@ from typing import List, Optional
 from . import cligrammar
 from . import cmdparse
 from . import howto
+from . import jsonmerge
 
 
 def _grammar_cmd(args) -> int:
@@ -50,6 +51,33 @@ def _howto_cmd(args) -> int:
     return 0
 
 
+def _load_doc(path):
+    from pathlib import Path
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _diff_cmd(args) -> int:
+    data = jsonmerge.diff_docs(_load_doc(args.a), _load_doc(args.b))
+    if args.json:
+        print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
+        return 0
+    for out in jsonmerge.render_diff(data):
+        print(out)
+    return 0
+
+
+def _merge_cmd(args) -> int:
+    data = jsonmerge.merge_three_way(_load_doc(args.base),
+                                     _load_doc(args.ours),
+                                     _load_doc(args.theirs))
+    if args.json:
+        print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
+        return 0
+    for out in jsonmerge.render_merge(data):
+        print(out)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(
@@ -81,6 +109,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     h.add_argument("question", nargs="+")
     h.add_argument("--json", action="store_true")
     h.set_defaults(func=_howto_cmd)
+
+    d = sub.add_parser(
+        "diff", help="structured diff of two JSON configs (Myers paths "
+                      "+ tree-edit distance); read-only")
+    d.add_argument("a")
+    d.add_argument("b")
+    d.add_argument("--json", action="store_true")
+    d.set_defaults(func=_diff_cmd)
+
+    m = sub.add_parser(
+        "merge", help="three-way merge PROPOSAL for config JSON (base/"
+                       "ours/theirs); prints, never writes")
+    m.add_argument("--base", required=True)
+    m.add_argument("--ours", required=True)
+    m.add_argument("--theirs", required=True)
+    m.add_argument("--json", action="store_true")
+    m.set_defaults(func=_merge_cmd)
 
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):

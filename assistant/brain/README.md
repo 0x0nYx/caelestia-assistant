@@ -50,6 +50,13 @@ This package is split in two, deliberately:
 | `brief.py` | pure assembler over the other modules' outputs | What matters today, on one honest page? |
 | `state.py` | one atomic JSON state file | Where the learned weights live |
 | `dreamtime.py` | Idle/power/load gate; reuses the `personal/planner.py` knapsack engine for job selection | Is now a good time for heavier batch jobs, and which ones fit? |
+| `seasonal.py` | Matrix profile + SAX motif/discord discovery, PELT changepoints, Holt-Winters seasonality strength | Does this happen every night? Where did the series change? (C11; correlation reported, never causation) |
+| `bursts.py` | Hawkes self-exciting process fit (EM-free branching structure), burst windows with the expected-count baseline named | Is the shell crash-looping / are notifications storming — or is this the usual rate? (C12) |
+| `gp_prefs.py` | Gaussian-process preference learning over pairwise 'A or B?' answers (Cholesky solve, bounded at 50 items) | Given my pairwise answers, which value would I pick? (one registry-validated setter proposal, SUGGESTED_NOT_EXECUTED — C13) |
+| `rete.py` | Rete network over USER-AUTHORED event-condition-action rules; the rules file is the opt-in | My own rules, evaluated on real events — every fired action a ledger proposal, never an applied change (C14) |
+| `sketch.py` | Space-Saving heavy hitters (counts labeled as overestimates with max error) + t-digest quantiles; EXACT under 1000 samples | Which paths/apps dominate this disk? What are the p50/p95 sizes? (C15) |
+| `nlg.py` | Template NLG: coarse-to-fine discourse plan, same-field aggregation, real plural/singular morphology | How do I SAY this plan? '2 spacing changes and 1 color change in the bar' — deterministic, no model (D16) |
+| `qa.py` | Extractive QA: BM25 passage retrieval + answer-type detection + verbatim sentence selection with provenance; hard shape gates (a when needs a date, a count a number, a yes/no a polarity) | What does the corpus (or my notes) literally SAY about this? Quotes with citations; thin evidence says THIN (D17) |
 
 All follow the same rule: stdlib-only, deterministic, JSON-serialisable, and
 never a write — `service.py` wraps every one of them as a plain-data

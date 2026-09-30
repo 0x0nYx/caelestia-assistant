@@ -83,6 +83,58 @@ by one test suite.
   validated by the ordinary planner and labeled MODEL_SUGGESTED,
   never executed.
 
+### The generalization groups (A-E)
+
+- **Group A — the dev-vs-sealed gap, attacked honestly.** A
+  metamorphic arena auto-generates paraphrase/synonym/unit/typo/
+  polarity variants of the dev items with ratcheted floors
+  (`eval metamorphic`); the arena grew from 90 to 121 items mined
+  from the SEALED baseline look's failure classes (no sealed text
+  copied; phrasings new), including items whose honest answer is a
+  clarifying question (`expect_verdict: AMBIGUOUS`); a
+  confusable-pair clarifier asks the one question that separates
+  ranked sibling tools; Dawid-Skene label fusion demotes contested
+  routes (demote-ONLY — a correct route was never demoted);
+  Venn-Abers intervals cut out-of-sample ECE 0.1038 -> 0.0462.
+- **Group B — the shell employee** (`shellkb`, everything it prints
+  is SUGGESTED_NOT_EXECUTED): CLI syntax induced from upstream
+  completion/man-page FILE TEXT (nothing executed), a PEG-style
+  token-by-token command explainer with read-only glob preview and
+  destructive-pattern marking, offline how-to retrieval over a
+  self-authored CC0 cheat sheet (40 entries; the existing
+  time-expression parser handles the temporal half of a question),
+  Myers-diff + tree-edit-distance three-way merge for shell.json with
+  conflict explanations, and PubGrub-style dependency-conflict
+  derivations over a bounded DPLL search.
+- **Group C — environment intelligence** (`brain`, proposals only):
+  matrix-profile + SAX recurring patterns, PELT changepoints and
+  Holt-Winters seasonality ('does this happen every night?'); Hawkes
+  burst detection for crash loops and notification storms
+  (correlation, never causation); Gaussian-process preference
+  learning from pairwise answers (Cholesky, bounded at 50) emitting
+  ONE registry-validated setter proposal; user-authored
+  event-condition-action rules on a Rete network (the rules FILE is
+  the opt-in); Space-Saving heavy hitters + t-digest quantiles for
+  disk/log sizing with counts labeled as estimates.
+- **Group D — language without an LLM**: template NLG that renders a
+  plan as a human writer would ('2 spacing changes and 1 color
+  change in the bar' — discourse plan, aggregation, real
+  morphology), and extractive QA over the repo docs and user notes
+  (BM25 passages + answer-type detection + verbatim spans with
+  doc/section/line provenance; a when-answer must carry a date, a
+  count a number, a yes/no a polarity; thin evidence says THIN).
+- **Group E — the optional model tier, OFF, and honest about its
+  size**: the 8B-scale recommendation is WITHDRAWN (it contradicted
+  the README's own hardware statement, and the recommended family had
+  no Ollama library listing — 404 when checked); the only model role
+  this project recommends is a sub-1B reranker over the router's OWN
+  candidates (output constrained to candidate names, MODEL_SUGGESTED,
+  plan/apply gates untouched; candidates verified live in the Ollama
+  library: smollm2:135m/360m, qwen2.5:0.5b, all Apache 2.0); the
+  static mean-pooling embedding experiment was measured and CUT —
+  best variant 0.5785 vs shipped 0.8843 on the same arena
+  (scripts/measure_meanpool.py, rerunnable).
+
 ### Safety contract (enforced by AST lint, pinned by tests)
 
 - No executor imports (`subprocess`/`socket`/`ctypes`/… rejected by
@@ -96,19 +148,19 @@ by one test suite.
 
 ### Verification (docs/VERIFICATION.md carries the full method)
 
-- 2,501 tests green (12 skipped, opt-in surfaces), `selfcheck` and
-  the import-policy lint clean, the bash gate 13/13 including a
-  316-output byte-level behavior lock.
-- Dev arena: routing top-1 0.9556, confident-wrong 1.5% (target
-  ≤ 2%).
-- Sealed arena, reported as measured: routing top-1 0.7778,
-  confident-wrong 13.7%; nlplan exact 0.5366; abstention 0.9688;
-  calibration ECE 0.2222. The dev-vs-sealed generalization gap is
+- The bash gate is 14/14 (module suites, property tests, issue-#120
+  conformance, lazy-import check, and the byte-level behavior lock —
+  354 golden CLI outputs, byte-identical).
+- Dev arena (grown, 121 items): routing top-1 0.8843 with
+  confident-wrong 8/83 after demote-only fusion; the metamorphic
+  arena ratchets paraphrase/synonym/typo/polarity floors.
+- Sealed arena, reported as measured at the stage-boundary look:
+  routing top-1 0.7778. The dev-vs-sealed generalization gap is
   real and stated rather than tuned away — sealed discipline forbids
   iterating against it.
 - Determinism: 3 hash seeds × 2 interpreters × 7 surfaces,
-  byte-identical; 900-case importer fuzz, zero leaks outside
-  documented refusal shapes.
+  byte-identical; the importer fuzz battery runs at every stage
+  boundary, zero leaks outside documented refusal shapes.
 - Budgets (this sandbox measures ~2.2–2.5× slower than the reference
   1-vCPU machine; reference-machine figures are the gate): warm
   route p50 ≈ 13 ms (≤ 15 ms), cold call within the 250 ms gate on

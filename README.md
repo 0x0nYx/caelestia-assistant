@@ -21,7 +21,7 @@ A shell-side assistant organized as **ten cooperating layers (eleven counting `d
 | Retrieval | `assistant/retrieval/` | "What is the closest *real* past resolution?" | BM25 over the repo's own docs and resolved issues |
 | Generative *(optional)* | `assistant/generative/` | Novel problems, only if you ask | Loopback-only local Ollama, sanitized output, off by default |
 | Issue drafting | `assistant/issues/` | "Draft this bug report" | Structured templates → local file, never submitted |
-| Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief, Merkle config-tree diffing — with the personal-PKM tools split out into an opt-in subpackage (now incl. bridge notes, topic drift, cloze drafts, Murphy decomposition) |
+| Brain | `assistant/brain/` | Proposals, preferences, time, habits, files | Shell-native intelligence: ledger + settings bridge (#120), rhythm/forecast/anomaly engines, prefs, tidy, brief, Merkle config-tree diffing — with the personal-PKM tools split out into an opt-in subpackage (now incl. bridge notes, topic drift, cloze drafts, Murphy decomposition). Groups C/D add: matrix-profile+SAX recurring patterns, PELT changepoints, Holt-Winters seasonality, Hawkes burst detection, Gaussian-process preference learning, user-authored Rete rules, Space-Saving/t-digest sizing sketches, template NLG, and extractive QA over docs + notes |
 | Cortex | `assistant/cortex/` | Routing that *learns* your preferences | BM25+PPMI+char-ngram over the registry's tools, AdaGrad online logistic, Thompson-sampling strategies, Beta calibration, episodic memory; an SVD/LSA embedder and a distributional-neighbors lexicon view sit alongside the projection embedder (the measured winner stays the default); a CART readability tree (Breiman et al. 1984) reports its agreement with the fitted logistic model before any promotion decision; a LinUCB contextual bandit (Li et al. 2010) ranks presets by context, and a shared Elo + Bradley-Terry primitive ranks anything compared pairwise |
 | Settings *(issue #120)* | `assistant/settings/` | "Make my bar thinner" → validated plan | 272-tool cited registry, planner validation, gated applier, bounded undo + PII-stripped undo log, presets, macro capture/replay of approved sequences (re-consented every replay), compositional slot-grammar recovery for paraphrases; a session-scoped pending-plan cache that composes follow-up requests, and a what-if consequence view over a cited cross-key interaction table |
 | Genius | `assistant/genius/` | Math, stats, logic, decisions, data, text, system, files | 17-domain meta-router over stdlib engines: A*/Dijkstra, Edmonds-Karp max-flow/min-cut, label-propagation communities, branch-and-bound + tabu search, resource-contention scheduling over AC-3, NCD compression similarity, BOCPD changepoints, plus a filesystem second-brain (staleness scoring, SimHash near-dups, PageRank knowledge graph, byte-signature file typing) |
@@ -195,6 +195,18 @@ caelestia-assist capabilities
 caelestia-assist brief                       # today on one deterministic page
 caelestia-assist brain tidy survey ~/Downloads
 caelestia-assist brain prefs                 # what it believes about you
+
+# Shell-environment intelligence (Groups B/C/D — proposals, never applies)
+caelestia-assist brain patterns ~/notes/events.json   # matrix profile + SAX motifs, PELT changepoints, Holt-Winters seasonality
+caelestia-assist brain bursts ~/notes/events.json     # Hawkes burst detection (crash loops, notification storms) — correlation, never causation
+caelestia-assist brain gp data.json                   # GP preference learning from your 'A or B?' answers -> one registry-validated setter proposal
+caelestia-assist brain rules --events events.json     # YOUR event-condition-action rules on a Rete network (the rules file is the opt-in)
+caelestia-assist brain sizes 12,400,9800 --keys a,b,c # Space-Saving heavy hitters + t-digest quantiles for disk/log sizing
+caelestia-assist brain say plan.json                  # template NLG: '2 spacing changes and 1 color change in the bar'
+caelestia-assist brain qa "how do I fix a missing qml module metadata"   # extractive QA — verbatim quotes with citations, never written answers
+caelestia-assist brain qa "what is the widget budget" --note ~/notes/sync.md   # your notes answer too
+caelestia-assist shellkb explain "rm -rf $X"          # token-by-token, destructive patterns flagged, SUGGESTED_NOT_EXECUTED
+caelestia-assist shellkb howto "screenshot a region"  # offline how-to over a self-authored CC0 cheat sheet
 
 # Opt-in personal tools (NOT part of the #120 shell surface)
 python3 -m assistant.brain.personal --help

@@ -71,3 +71,7 @@ fractions
 # the CLI verbs resolve their module CLIs on first use so the cold path
 # stays cold. Pure stdlib loader, no I/O beyond imports.
 importlib
+# fnmatch (Group B7, shellkb/cmdparse.py): pure string-pattern matching
+# (translate-to-regex, no I/O, no execution) for the read-only glob
+# preview — the same class as re, which the whole codebase already uses.
+fnmatch

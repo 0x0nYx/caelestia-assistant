@@ -12,6 +12,7 @@ import sys
 from typing import List, Optional
 
 from . import cligrammar
+from . import cmdparse
 
 
 def _grammar_cmd(args) -> int:
@@ -24,6 +25,17 @@ def _grammar_cmd(args) -> int:
     print()
     for line in cligrammar.example_lines():
         print(line)
+    return 0
+
+
+def _explain_cmd(args) -> int:
+    line = " ".join(args.command)
+    data = cmdparse.explain_line(line)
+    if args.json:
+        print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
+        return 0
+    for out in cmdparse.render_explanation(data):
+        print(out)
     return 0
 
 
@@ -40,6 +52,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     g.add_argument("--json", action="store_true",
                    help="the committed artifact verbatim")
     g.set_defaults(func=_grammar_cmd)
+
+    e = sub.add_parser(
+        "explain", help="explain a command line token by token; mark "
+                        "destructive patterns; preview globs read-only. "
+                        "Never executes anything.")
+    e.add_argument("command", nargs="+",
+                   help="the command line to explain (quote it as one "
+                        "argument, or put -- before it)")
+    e.add_argument("--json", action="store_true")
+    e.set_defaults(func=_explain_cmd)
 
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):

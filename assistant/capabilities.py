@@ -54,6 +54,11 @@ DEFAULTS: Dict[str, bool] = {
     "shell_cli_grammar": True,     # shellkb: the shell CLIs' typed option
                                    # grammar, induced from upstream file text
                                    # (read-only; nothing executed)
+    "shell_explain": True,         # shellkb: token-by-token command-line
+                                   # explanation, read-only glob previews
+                                   # (os.scandir), destructive-pattern flags;
+                                   # the verdict is always
+                                   # SUGGESTED_NOT_EXECUTED
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)

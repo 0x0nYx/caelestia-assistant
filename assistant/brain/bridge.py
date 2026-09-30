@@ -106,6 +106,7 @@ OPS = {
     "abers_interval": lambda q, s, l: _abers_interval(q),
     # ---- shellkb ops (the shell employee; read-only, nothing executes) ----
     "shell_grammar": lambda q, s, l: _shell_grammar(q),
+    "shell_explain": lambda q, s, l: _shell_explain(q),
 }
 
 
@@ -181,6 +182,20 @@ def _shell_grammar(q):
     return {"upstream": data.get("upstream"),
             "bins": sorted(bins),
             "examples": cligrammar.example_lines(bins)}
+
+
+def _shell_explain(q):
+    """Token-by-token explanation of one command line (B7). Read-only:
+    the only filesystem touch is a capped os.scandir glob preview; the
+    verdict is always SUGGESTED_NOT_EXECUTED."""
+    from assistant.capabilities import enabled
+    if not enabled("shell_explain"):
+        return {"error": "shell_explain capability is off on this install"}
+    from assistant.shellkb import cmdparse
+    line = str(q.get("line", "")).strip()
+    if not line:
+        return {"error": "need 'line': the command line to explain"}
+    return cmdparse.explain_line(line)
 
 
 

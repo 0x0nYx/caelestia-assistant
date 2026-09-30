@@ -3841,8 +3841,8 @@
     "capabilities"
    ],
    "rc": 0,
-   "sha": "1270962c0f3e8ccb2a4c4d53a36e3cfc507871f5164cc16fc3b5ff30a5e5f12c",
-   "bytes": 532
+   "sha": "d77ce511c2771d07b241738c74b0ffc119a696370afb68891d35ccc9a9fa901c",
+   "bytes": 559
   },
   {
    "id": "misc-graph-rank",
@@ -3947,8 +3947,8 @@
     "--help"
    ],
    "rc": 0,
-   "sha": "784cd9a7b04b012f756d146b6cfa591747bf94e72596269c1dc2bbab01be5216",
-   "bytes": 2103
+   "sha": "b101d5473fdc9578362b78a51c4e1ddc4ccc43b80c9f664d3bf91d429edc93da",
+   "bytes": 2199
   }
  ]
 }

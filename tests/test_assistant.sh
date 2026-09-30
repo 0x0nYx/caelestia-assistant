@@ -60,10 +60,12 @@ test_assistant_brain
 test_agent_suite() { run_assistant_suite "assistant/agent/tests"; }
 test_scan_suite()   { run_assistant_suite "assistant/scan/tests"; }
 test_cortex_suite() { run_assistant_suite "assistant/cortex/tests"; }
+test_shellkb_suite() { run_assistant_suite "assistant/shellkb/tests"; }
 test_genius_suite() { run_assistant_suite "assistant/genius/tests"; }
 test_agent_suite
 test_scan_suite
 test_cortex_suite
+test_shellkb_suite
 test_genius_suite
 
 test_properties_suite() {

@@ -104,6 +104,8 @@ OPS = {
     "confusables_report": lambda q, s, l: _confusables_report(),
     "label_fusion_report": lambda q, s, l: _label_fusion_report(),
     "abers_interval": lambda q, s, l: _abers_interval(q),
+    # ---- shellkb ops (the shell employee; read-only, nothing executes) ----
+    "shell_grammar": lambda q, s, l: _shell_grammar(q),
 }
 
 
@@ -157,6 +159,28 @@ def _eval_suite(q):
         return {"error": "the sealed split is a stage-boundary act, not a "
                          "bridge call"}
     return run_suite(suite, split=split)
+
+
+def _shell_grammar(q):
+    """The committed shell CLI grammar (B6). The sidebar can answer
+    'what options does caelestia screenshot take?' without spawning a
+    process — the knowledge is a committed artifact, read-only."""
+    from assistant.capabilities import enabled
+    if not enabled("shell_cli_grammar"):
+        return {"error": "shell_cli_grammar capability is off on this "
+                         "install"}
+    from assistant.shellkb import cligrammar
+    data = cligrammar.load_grammar()
+    bins = data.get("bins", {})
+    wanted = q.get("bin")
+    if wanted:
+        if wanted not in bins:
+            return {"error": f"unknown bin {wanted!r}",
+                    "known": sorted(bins)}
+        return {"bin": wanted, "grammar": bins[wanted]}
+    return {"upstream": data.get("upstream"),
+            "bins": sorted(bins),
+            "examples": cligrammar.example_lines(bins)}
 
 
 

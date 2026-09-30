@@ -15,6 +15,7 @@
   caelestia-assist do "anything"                    genius: universal intelligence layer
   caelestia-assist genius <command> ...             direct domain access (math/stats/...)
   caelestia-assist agent "goal" [--simulate]        agentic orchestrator (consent-gated)
+  caelestia-assist shellkb <verb> ...              shell employee: CLI grammar, explain, how-to
   caelestia-assist api < request.json               JSON bridge for the brain (QML/IPC)
   caelestia-assist eval [suite] [--json] [--sealed] the measurement arena (dev/sealed sets)
 
@@ -77,6 +78,9 @@ ROUTES = {
     "genius": ("assistant.genius.cli:main", False),
     # agent: the consent-gated orchestrator over every layer
     "agent": ("assistant.agent.cli:main", False),
+    # shellkb: the shell employee (read-only knowledge of the shell's
+    # own CLI/configs/deps; everything it prints is SUGGESTED_NOT_EXECUTED)
+    "shellkb": ("assistant.shellkb.cli:main", False),
     # capabilities: the per-install manifest card (read-only listing)
     "capabilities": (lambda _argv=None: (_print_card(), 0)[1], False),
     # eval: the measurement arena (exponential-build-5 F1). Lazily:

@@ -42,17 +42,18 @@ DEFAULTS: Dict[str, bool] = {
     "lexicon_sharing": True,      # cortex lexicon export/import/forget (CLI,
                                   # offline, no network; import is an explicit
                                   # user command with rollback — phase 2.6)
-    "eval_arena": True,
+    "eval_arena": True,           # the measurement arena incl. the
+                                  # metamorphic suite (read-only, in-process,
+                                  # dev sets only unless --sealed is asked for)
     "confusable_clarifier": True,  # upgrades the generic ambiguity ask to
                                    # the mined pair's own question (read-only
                                    # text swap over the committed artifact)
     "label_fusion": True,          # Dawid-Skene vote fusion may demote a
                                    # contested confident route to an ask
-                                   # (never promotes; read-only)  # upgrades the generic ambiguity ask to
-                                   # the mined pair's own question (read-only
-                                   # text swap over the committed artifact)           # the measurement arena incl. the
-                                  # metamorphic suite (read-only, in-process,
-                                  # dev sets only unless --sealed is asked for)
+                                   # (never promotes; read-only)
+    "shell_cli_grammar": True,     # shellkb: the shell CLIs' typed option
+                                   # grammar, induced from upstream file text
+                                   # (read-only; nothing executed)
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)

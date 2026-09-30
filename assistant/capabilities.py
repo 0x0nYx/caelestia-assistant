@@ -84,6 +84,11 @@ DEFAULTS: Dict[str, bool] = {
                                   # burst detection over caller-passed event
                                   # times; reports correlation, never
                                   # causation (pure math, read-only)
+    "gp_preferences": True,       # brain: Gaussian-process preference
+                                  # learning over pairwise answers (Cholesky,
+                                  # bounded at 50 items); emits ONE
+                                  # registry-validated setter proposal,
+                                  # SUGGESTED_NOT_EXECUTED
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

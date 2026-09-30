@@ -113,6 +113,7 @@ OPS = {
     "shell_conflicts": lambda q, s, l: _shell_conflicts(q),
     "patterns_report": lambda q, s, l: _patterns_report(q),
     "bursts_report": lambda q, s, l: _bursts_report(q),
+    "gp_preferences": lambda q, s, l: _gp_preferences(q),
 }
 
 
@@ -299,6 +300,45 @@ def _bursts_report(q):
         return {"error": "need 'events': at least 8 event times"}
     return bursts.burst_report([float(x) for x in events],
                                factor=float(q.get("factor", 2.0)))
+
+
+def _gp_preferences(q):
+    """GP preference learning over pairwise answers (C13). Returns the
+    ranking, the next most-informative question, and ONE validated
+    setter proposal (registry-spec-checked; a proposal, never an
+    apply)."""
+    from assistant.capabilities import enabled
+    if not enabled("gp_preferences"):
+        return {"error": "gp_preferences capability is off on this "
+                         "install"}
+    from assistant.brain import gp_prefs
+    items = q.get("items") or []
+    pairs = q.get("pairs") or []
+    if not isinstance(items, list) or not items:
+        return {"error": "need 'items': candidate settings with "
+                         "features"}
+    try:
+        model = gp_prefs.GPPreferenceModel(items)
+        for pair in pairs:
+            model.record(str(pair.get("winner")),
+                         str(pair.get("loser")))
+        fit = model.fit()
+    except ValueError as exc:
+        return {"error": str(exc)}
+    by_id = {str(it["id"]): it for it in items}
+    proposal = None
+    for item_id in fit["ranking"]:
+        item = by_id.get(item_id, {})
+        if not item.get("tool"):
+            continue
+        check = gp_prefs.validate_item(item)
+        if check["validated"]:
+            proposal = {"tool": item["tool"], "value": item.get("value"),
+                        "item": item_id,
+                        "verdict": "SUGGESTED_NOT_EXECUTED"}
+            break
+    return {**fit, "next_question": model.next_question(),
+            "proposal": proposal}
 
 
 

@@ -511,6 +511,51 @@ def cmd_bursts(args, out):
     return 0
 
 
+
+def cmd_gpprefs(args, out):
+    """GP preference learning over pairwise "A or B?" answers (C13)."""
+    from . import gp_prefs
+    data = json.loads(pathlib.Path(args.data).read_text())
+    items = data.get("items", [])
+    pairs = data.get("pairs", [])
+    try:
+        m = gp_prefs.GPPreferenceModel(items)
+        for pair in pairs:
+            m.record(str(pair.get("winner")), str(pair.get("loser")))
+        fit = m.fit()
+    except ValueError as exc:
+        out.write(f"gp-prefs: {exc}\n")
+        return 1
+    if getattr(args, "json", False):
+        out.write(json.dumps(fit, sort_keys=True) + "\n")
+        return 0
+    out.write(f"ranking ({fit['n_pairs']} comparisons, "
+              f"{fit['n_newton_steps']} Newton steps):\n")
+    for rank, item_id in enumerate(fit["ranking"], 1):
+        u = fit["utilities"][item_id]
+        v = fit["variances"][item_id]
+        out.write(f"  {rank}. {item_id}  utility {u} (var {v})\n")
+    nxt = m.next_question()
+    if nxt:
+        out.write(f"next question: {nxt[0]} or {nxt[1]}?\n")
+    # validated setter proposals: top items that name a real tool
+    by_id = {str(it["id"]): it for it in items}
+    # ONE proposal: the single highest-utility item that names a real
+    # tool and passes the registry spec check. The ledger decides.
+    for item_id in fit["ranking"]:
+        item = by_id.get(item_id, {})
+        if not item.get("tool"):
+            continue
+        check = gp_prefs.validate_item(item)
+        if not check["validated"]:
+            continue
+        out.write(f"SUGGESTED_NOT_EXECUTED: {item['tool']} "
+                  f"{item.get('value')}  (validated against the "
+                  f"registry spec)\n")
+        break
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -646,6 +691,16 @@ def build_parser():
                          "base rate (default 2.0)")
     bz.add_argument("--json", action="store_true")
     bz.set_defaults(fn=cmd_bursts)
+
+    gp = sub.add_parser("gp-prefs", help="preference learning over "
+                        "pairwise 'A or B?' answers with a Gaussian "
+                        "process (Cholesky, bounded at 50 items); "
+                        "proposals validated against the registry, "
+                        "never applied (C13)")
+    gp.add_argument("data", help="JSON file: {items: [{id, tool, value, "
+                                 "features}], pairs: [{winner, loser}]}")
+    gp.add_argument("--json", action="store_true")
+    gp.set_defaults(fn=cmd_gpprefs)
     return p
 
 

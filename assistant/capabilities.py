@@ -98,6 +98,9 @@ DEFAULTS: Dict[str, bool] = {
                                   # t-digest quantiles over caller-passed
                                   # sizes; counts are labeled estimates
                                   # with reported max error (pure math)
+    "nlg_templates": True,        # brain: template NLG with discourse
+                                  # planning and aggregation over plan
+                                  # changes (deterministic; no model)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

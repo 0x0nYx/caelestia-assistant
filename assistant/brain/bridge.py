@@ -116,6 +116,7 @@ OPS = {
     "gp_preferences": lambda q, s, l: _gp_preferences(q),
     "rules_eval": lambda q, s, l: _rules_eval(q),
     "sizing_report": lambda q, s, l: _sizing_report(q),
+    "nlg_summary": lambda q, s, l: _nlg_summary(q),
 }
 
 
@@ -374,6 +375,21 @@ def _sizing_report(q):
         keys=q.get("keys"),
         k=int(q.get("k", 8)),
         quantiles=q.get("quantiles"))
+
+
+def _nlg_summary(q):
+    """Template NLG over a plan's changes (D16): discourse plan,
+    aggregation, deterministic sentences."""
+    from assistant.capabilities import enabled
+    if not enabled("nlg_templates"):
+        return {"error": "nlg_templates capability is off on this "
+                         "install"}
+    from assistant.brain import nlg
+    changes = q.get("changes")
+    if not isinstance(changes, list):
+        return {"error": "need 'changes': the plan's change dicts"}
+    return {"lines": nlg.render_changes_summary(changes),
+            "paragraph": nlg.render_plan_paragraph(changes)}
 
 
 

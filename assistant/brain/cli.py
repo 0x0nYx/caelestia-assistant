@@ -608,6 +608,29 @@ def cmd_sizes(args, out):
     return 0
 
 
+
+def cmd_say(args, out):
+    """Template NLG over a plan's changes: discourse plan + aggregation
+    (D16). Reads a JSON file of changes; writes sentences."""
+    from . import nlg
+    data = json.loads(pathlib.Path(args.file).read_text())
+    if isinstance(data, list):
+        changes = data
+    elif isinstance(data, dict):
+        changes = data.get("changes", [])
+    else:
+        changes = []
+    if getattr(args, "json", False):
+        out.write(json.dumps({"lines": nlg.render_changes_summary(changes),
+                              "paragraph": nlg.render_plan_paragraph(
+                                  changes)}, sort_keys=True) + "\n")
+        return 0
+    for line in nlg.render_changes_summary(changes):
+        out.write(line + "\n")
+    out.write("\n" + nlg.render_plan_paragraph(changes) + "\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -778,6 +801,15 @@ def build_parser():
     sz.add_argument("--quantiles", default="0.5,0.9,0.95,0.99")
     sz.add_argument("--json", action="store_true")
     sz.set_defaults(fn=cmd_sizes)
+
+    sy = sub.add_parser("say", help="template NLG over a plan: discourse "
+                        "plan + aggregation ('2 spacing changes and 1 "
+                        "color change in the bar'), deterministic "
+                        "(D16)")
+    sy.add_argument("file", help="JSON file: a list of changes or "
+                                 "{changes: [...]}")
+    sy.add_argument("--json", action="store_true")
+    sy.set_defaults(fn=cmd_say)
     return p
 
 

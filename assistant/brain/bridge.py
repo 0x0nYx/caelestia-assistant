@@ -111,6 +111,7 @@ OPS = {
     "shell_json_diff": lambda q, s, l: _shell_json(q, merge=False),
     "shell_json_merge": lambda q, s, l: _shell_json(q, merge=True),
     "shell_conflicts": lambda q, s, l: _shell_conflicts(q),
+    "patterns_report": lambda q, s, l: _patterns_report(q),
 }
 
 
@@ -263,6 +264,25 @@ def _shell_conflicts(q):
         return pubgrub.check_installed(universe, installed, root,
                                        str(q.get("spec", "*")))
     return pubgrub.solve(universe, root, str(q.get("spec", "*")))
+
+
+def _patterns_report(q):
+    """Seasonality / changepoints / motifs / discords over a series
+    (C11). Pure math on the numbers in the request — no files, no
+    state."""
+    from assistant.capabilities import enabled
+    if not enabled("seasonal_patterns"):
+        return {"error": "seasonal_patterns capability is off on this "
+                         "install"}
+    from assistant.brain import seasonal
+    series = q.get("series")
+    if not isinstance(series, list) or len(series) < 4:
+        return {"error": "need 'series': at least 4 numbers"}
+    return seasonal.seasonality_report(
+        [float(x) for x in series],
+        period=int(q.get("period", 24)),
+        window=int(q.get("window", 6)),
+        penalty=float(q.get("penalty", 8.0)))
 
 
 

@@ -75,3 +75,7 @@ importlib
 # (translate-to-regex, no I/O, no execution) for the read-only glob
 # preview — the same class as re, which the whole codebase already uses.
 fnmatch
+# statistics (Group C11, brain/seasonal.py): NormalDist().inv_cdf for the
+# SAX breakpoints and pvariance for the seasonality-strength measure —
+# pure math, same class as math (which the retrieval layer already uses).
+statistics

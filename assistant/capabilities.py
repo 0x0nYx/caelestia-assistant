@@ -76,6 +76,10 @@ DEFAULTS: Dict[str, bool] = {
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)
+    "seasonal_patterns": True,    # brain: matrix profile + SAX motifs/
+                                  # discords, PELT changepoints, Holt-
+                                  # Winters seasonality over caller-passed
+                                  # series (pure math, read-only)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

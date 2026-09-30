@@ -452,6 +452,41 @@ def cmd_bisect(args, out):
     return 2
 
 
+
+def cmd_patterns(args, out):
+    """One pattern card over a comma-separated series: seasonality,
+    changepoints, motifs, discords (C11)."""
+    from . import seasonal
+    series = [float(x) for x in str(args.series).split(",") if x.strip()]
+    r = seasonal.seasonality_report(series, period=args.period,
+                                    window=args.window,
+                                    penalty=args.penalty)
+    if getattr(args, "json", False):
+        out.write(json.dumps(r, sort_keys=True) + "\n")
+        return 0
+    out.write(f"series: {r['n']} points, period {r['period']}\n")
+    se = r["seasonality"]
+    if se.get("verdict") == "ABSTAIN":
+        out.write(f"  seasonality: ABSTAIN ({se['note']})\n")
+    else:
+        verdict = "HAS RHYTHM" if se["has_rhythm"] else "no rhythm"
+        out.write(f"  seasonality: {verdict} "
+                  f"(strength {se['strength']})\n")
+    cp = r["changepoints"]
+    out.write(f"  changepoints: {cp['indices'] or 'none'}\n")
+    pr = r["profile"]
+    if pr.get("verdict") == "ABSTAIN":
+        out.write(f"  profile: ABSTAIN ({pr['note']})\n")
+    else:
+        for mrec in pr["motifs"]:
+            out.write(f"  motif at {mrec['index']} "
+                      f"(d={mrec['distance']})\n")
+        for drec in pr["discords"]:
+            out.write(f"  discord at {drec['index']} "
+                      f"(d={drec['distance']})\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -567,6 +602,16 @@ def build_parser():
     pf = sub.add_parser("prefs", help="what the preference model believes "
                                       "about your approve/reject patterns")
     pf.set_defaults(fn=cmd_prefs)
+
+    pt = sub.add_parser("patterns", help="recurring patterns in a series: "
+                        "seasonality ('every night?'), PELT changepoints, "
+                        "SAX motifs and discords (C11)")
+    pt.add_argument("series", help="comma-separated numbers")
+    pt.add_argument("--period", type=int, default=24)
+    pt.add_argument("--window", type=int, default=6)
+    pt.add_argument("--penalty", type=float, default=8.0)
+    pt.add_argument("--json", action="store_true")
+    pt.set_defaults(fn=cmd_patterns)
     return p
 
 

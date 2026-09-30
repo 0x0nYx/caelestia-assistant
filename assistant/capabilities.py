@@ -59,6 +59,10 @@ DEFAULTS: Dict[str, bool] = {
                                    # (os.scandir), destructive-pattern flags;
                                    # the verdict is always
                                    # SUGGESTED_NOT_EXECUTED
+    "shell_howto": True,           # shellkb: offline how-to answers over a
+                                   # self-authored CC0 corpus (BM25 + the
+                                   # existing time-expression parser); every
+                                   # step SUGGESTED_NOT_EXECUTED
     "engine_telemetry": True,     # cortex engine coverage/accuracy report +
                                   # opt-in Laplace-DP export (read-only,
                                   # stdout only — exponential-build-3 F3)

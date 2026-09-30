@@ -107,6 +107,7 @@ OPS = {
     # ---- shellkb ops (the shell employee; read-only, nothing executes) ----
     "shell_grammar": lambda q, s, l: _shell_grammar(q),
     "shell_explain": lambda q, s, l: _shell_explain(q),
+    "shell_howto": lambda q, s, l: _shell_howto(q),
 }
 
 
@@ -196,6 +197,20 @@ def _shell_explain(q):
     if not line:
         return {"error": "need 'line': the command line to explain"}
     return cmdparse.explain_line(line)
+
+
+def _shell_howto(q):
+    """Offline how-to over the self-authored CC0 corpus (B8). The only
+    temporal knowledge is the existing nlhistory window grammar; every
+    returned step is labeled SUGGESTED_NOT_EXECUTED."""
+    from assistant.capabilities import enabled
+    if not enabled("shell_howto"):
+        return {"error": "shell_howto capability is off on this install"}
+    from assistant.shellkb import howto
+    query = str(q.get("query", "")).strip()
+    if not query:
+        return {"error": "need 'query': the how-to question"}
+    return howto.answer(query, k=int(q.get("k", 5)))
 
 
 

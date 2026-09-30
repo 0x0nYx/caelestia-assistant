@@ -13,6 +13,7 @@ from typing import List, Optional
 
 from . import cligrammar
 from . import cmdparse
+from . import howto
 
 
 def _grammar_cmd(args) -> int:
@@ -35,6 +36,16 @@ def _explain_cmd(args) -> int:
         print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
         return 0
     for out in cmdparse.render_explanation(data):
+        print(out)
+    return 0
+
+
+def _howto_cmd(args) -> int:
+    data = howto.answer(" ".join(args.question))
+    if args.json:
+        print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
+        return 0
+    for out in howto.render_lines(data):
         print(out)
     return 0
 
@@ -62,6 +73,14 @@ def main(argv: Optional[List[str]] = None) -> int:
                         "argument, or put -- before it)")
     e.add_argument("--json", action="store_true")
     e.set_defaults(func=_explain_cmd)
+
+    h = sub.add_parser(
+        "howto", help="offline how-to answers from a self-authored CC0 "
+                       "cheat sheet (BM25 + time expressions); commands "
+                       "are SUGGESTED_NOT_EXECUTED")
+    h.add_argument("question", nargs="+")
+    h.add_argument("--json", action="store_true")
+    h.set_defaults(func=_howto_cmd)
 
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):

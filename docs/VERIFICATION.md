@@ -110,3 +110,27 @@ removed upstream, adopted here with the affected eval expectations
 re-scoped honestly). The sealed set's four affected items are
 dual-reported rather than silently re-authored; the sealed manifest's
 sha256 entries pin its content.
+
+## The mean-pooling experiment (Group E3, 2026-09-30)
+
+The last Group E hypothesis — that a static-embedding channel (mean
+pooling of per-token vectors) could back or beat the router's lexical
+ranker — was measured on the same 121-item dev arena the shipped
+baseline is recorded on, under a decision rule written BEFORE
+measuring (adopt only if top1 exceeds the shipped 0.8843 AND p50 fits
+the 15 ms budget). Three honest instantiations of "static embedding"
+for a stdlib-only repo with no pretrained vectors:
+
+| Variant | top1 (all 121) | top1 (107 routable) | p50 | build |
+| --- | --- | --- | --- | --- |
+| one-hot mean (= normalized TF / VSM) | 0.5702 | 0.6449 | 0.33 ms | 36 ms |
+| tf-idf mean | 0.5785 | 0.6542 | 0.33 ms | 37 ms |
+| PPMI-profile mean | 0.3306 | 0.3738 | 0.96 ms | 132 ms |
+
+Shipped router (fused, abstention included): **0.8843**. The best
+embedding variant loses by more than 30 points on the arena's own
+scoring, and structurally cannot abstain on the 14 honest-refusal rows
+(it always names a tool). DECISION: **CUT** — numbers recorded in
+`scripts/measure_meanpool.py` (rerunnable). This is the measured
+confirmation of RATIONALE.md's BM25-first claim on the current corpus,
+not an assumption carried over from it.

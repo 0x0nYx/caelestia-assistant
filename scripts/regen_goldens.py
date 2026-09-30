@@ -163,6 +163,19 @@ def build_cases():
         ("breaks", "setPosition"),
     ], 1):
         add(f"graph2-{i:02d}", "graph", sub, arg)
+    # 8c. extractive QA over the committed corpus (D17): read-only,
+    # deterministic spans + pinned verdicts — the answers are quotes
+    # with citations, so the lock pins the QUOTING behavior itself
+    for i, q in enumerate([
+        "how do I fix a missing qml module metadata",
+        "what causes the vesktop freeze on screenshare",
+        "when was the quickshell crash dialog issue reported",
+        "why does the installer build fail",
+        "how do I fix gamescope launching in half the screen",
+        "why is my bluetooth turning on and off",
+        "zzqq blorptastic frumious",
+    ], 1):
+        add(f"qa-{i:02d}", "brain", "qa", q, "--json")
 
     # 9. read-only dashboards and cards on the cold-start state
     add("misc-selfcheck", "selfcheck")

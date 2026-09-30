@@ -3827,6 +3827,90 @@
    "bytes": 0
   },
   {
+   "id": "qa-01",
+   "argv": [
+    "brain",
+    "qa",
+    "how do I fix a missing qml module metadata",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4b9b57cd761a16705ef28cbe65b44c8604234e32313b963fb0a1ba2d5ba2682d",
+   "bytes": 509
+  },
+  {
+   "id": "qa-02",
+   "argv": [
+    "brain",
+    "qa",
+    "what causes the vesktop freeze on screenshare",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "48673a20af8ac445134a52e83aec6a3ff5559a70f8c83c0ecb8ac346f3b8cbae",
+   "bytes": 376
+  },
+  {
+   "id": "qa-03",
+   "argv": [
+    "brain",
+    "qa",
+    "when was the quickshell crash dialog issue reported",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "584a950e2291d2cc1992e1e2da7d8924c441ffbc54d1fbfdd499c6889a77b9a4",
+   "bytes": 614
+  },
+  {
+   "id": "qa-04",
+   "argv": [
+    "brain",
+    "qa",
+    "why does the installer build fail",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fcd57630e410ec66a374f04f67e3671c44618ec44fdd5b9322478cb9218782af",
+   "bytes": 363
+  },
+  {
+   "id": "qa-05",
+   "argv": [
+    "brain",
+    "qa",
+    "how do I fix gamescope launching in half the screen",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "370d6f1e1166bfb46b5576482cc3b54509428768de462f9e3b1d7098c3e1ce99",
+   "bytes": 928
+  },
+  {
+   "id": "qa-06",
+   "argv": [
+    "brain",
+    "qa",
+    "why is my bluetooth turning on and off",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1ba0a3e74acf251240d8286ab2b5efa826efcd37417804412709f247eb560e05",
+   "bytes": 517
+  },
+  {
+   "id": "qa-07",
+   "argv": [
+    "brain",
+    "qa",
+    "zzqq blorptastic frumious",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "595b3a6fa0f2095eb99cde4b5fc6fa9ce364188397446181bfdb7e83a1742177",
+   "bytes": 216
+  },
+  {
    "id": "misc-selfcheck",
    "argv": [
     "selfcheck"
@@ -3841,8 +3925,8 @@
     "capabilities"
    ],
    "rc": 0,
-   "sha": "171834a60abacc89fb7ca218062eed0ed9d5f16e908ea03a310730716f7e9a01",
-   "bytes": 796
+   "sha": "564a8737a438996149a465d55a897bc49d5b8fc300d24b9426f95cd6f627f78e",
+   "bytes": 819
   },
   {
    "id": "misc-graph-rank",

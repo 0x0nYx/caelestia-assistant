@@ -117,6 +117,7 @@ OPS = {
     "rules_eval": lambda q, s, l: _rules_eval(q),
     "sizing_report": lambda q, s, l: _sizing_report(q),
     "nlg_summary": lambda q, s, l: _nlg_summary(q),
+    "qa_answer": lambda q, s, l: _qa_answer(q),
 }
 
 
@@ -390,6 +391,25 @@ def _nlg_summary(q):
         return {"error": "need 'changes': the plan's change dicts"}
     return {"lines": nlg.render_changes_summary(changes),
             "paragraph": nlg.render_plan_paragraph(changes)}
+
+
+def _qa_answer(q):
+    """Extractive QA over repo docs + caller-supplied notes (D17).
+    The answer is quoted, never written: spans + provenance + verdict."""
+    from assistant.capabilities import enabled
+    if not enabled("extractive_qa"):
+        return {"error": "extractive_qa capability is off on this "
+                         "install"}
+    from assistant.brain import qa
+    question = str(q.get("question") or q.get("text") or "")
+    if not question.strip():
+        return {"error": "need 'question': the question to answer "
+                         "extractively"}
+    notes = q.get("notes") or []
+    if not isinstance(notes, list):
+        return {"error": "'notes' must be a list of {name, text} records"}
+    return qa.answer(question, notes=notes,
+                     sources=str(q.get("sources", "both")))
 
 
 

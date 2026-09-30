@@ -101,6 +101,12 @@ DEFAULTS: Dict[str, bool] = {
     "nlg_templates": True,        # brain: template NLG with discourse
                                   # planning and aggregation over plan
                                   # changes (deterministic; no model)
+    "extractive_qa": True,        # brain: extractive QA over the repo docs
+                                  # and caller-supplied notes — BM25 passage
+                                  # retrieval, answer-type detection, VERBATIM
+                                  # spans with doc/section/line provenance;
+                                  # thin evidence says THIN, none says
+                                  # NOT_FOUND (no generation, ever)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

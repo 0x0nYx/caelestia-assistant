@@ -631,6 +631,29 @@ def cmd_say(args, out):
     return 0
 
 
+def cmd_qa(args, out):
+    """Extractive QA over repo docs + user notes (D17): BM25 passage
+    retrieval, answer-type detection, verbatim spans with provenance.
+    The answer is QUOTED, never written; thin evidence says so."""
+    from . import qa
+    notes = []
+    for note_path in (getattr(args, "note", None) or []):
+        p = pathlib.Path(note_path)
+        try:
+            text = p.read_text(encoding="utf-8")
+        except OSError as exc:
+            out.write(f"note unreadable, skipped: {note_path} ({exc})\n")
+            continue
+        notes.append({"name": p.name, "text": text})
+    r = qa.answer(args.question, notes=notes, sources=args.sources)
+    if getattr(args, "json", False):
+        out.write(json.dumps(r, sort_keys=True) + "\n")
+        return 0
+    for line in qa.render_lines(r):
+        out.write(line + "\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -810,6 +833,20 @@ def build_parser():
                                  "{changes: [...]}")
     sy.add_argument("--json", action="store_true")
     sy.set_defaults(fn=cmd_say)
+
+    qam = sub.add_parser("qa", help="extractive QA over the repo docs and "
+                         "your notes: verbatim quotes with citations, "
+                         "never written answers (D17)")
+    qam.add_argument("question", help="the question to answer")
+    qam.add_argument("--note", action="append", default=None,
+                     help="path to a note file to search too "
+                          "(repeatable)")
+    qam.add_argument("--sources", default="both",
+                     choices=["both", "corpus", "notes"],
+                     help="which sources to search (default both when "
+                          "notes are given)")
+    qam.add_argument("--json", action="store_true")
+    qam.set_defaults(fn=cmd_qa)
     return p
 
 

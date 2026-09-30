@@ -80,6 +80,10 @@ DEFAULTS: Dict[str, bool] = {
                                   # discords, PELT changepoints, Holt-
                                   # Winters seasonality over caller-passed
                                   # series (pure math, read-only)
+    "burst_detection": True,      # brain: Hawkes self-excitation fit and
+                                  # burst detection over caller-passed event
+                                  # times; reports correlation, never
+                                  # causation (pure math, read-only)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

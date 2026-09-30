@@ -487,6 +487,30 @@ def cmd_patterns(args, out):
     return 0
 
 
+
+def cmd_bursts(args, out):
+    """Hawkes burst detection over comma-separated event times (C12)."""
+    from . import bursts
+    events = [float(x) for x in str(args.events).split(",") if x.strip()]
+    r = bursts.burst_report(events, factor=args.factor)
+    if getattr(args, "json", False):
+        out.write(json.dumps(r, sort_keys=True) + "\n")
+        return 0
+    if r.get("verdict") == "ABSTAIN":
+        out.write(f"bursts: ABSTAIN ({r['note']})\n")
+        return 0
+    fit = r["fit"]
+    out.write(f"hawkes fit: mu={fit['mu']} alpha={fit['alpha']} "
+              f"beta={fit['beta']} R={fit['branching_ratio']} "
+              f"({'stable' if fit['stable'] else 'UNRELIABLE'})\n")
+    out.write(f"bursts (>{args.factor}x base rate): {r['n_bursts']}\n")
+    for b in r["bursts"]:
+        out.write(f"  {b['start']} .. {b['end']}  peak {b['peak_intensity']}"
+                  f" ({b['over_base']}x base, {b['n_events']} events)\n")
+    out.write(f"  ({r['caveat']})\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -612,6 +636,16 @@ def build_parser():
     pt.add_argument("--penalty", type=float, default=8.0)
     pt.add_argument("--json", action="store_true")
     pt.set_defaults(fn=cmd_patterns)
+
+    bz = sub.add_parser("bursts", help="Hawkes burst detection over event "
+                        "times: crash loops, notification storms; "
+                        "correlation, never causation (C12)")
+    bz.add_argument("events", help="comma-separated event times")
+    bz.add_argument("--factor", type=float, default=2.0,
+                    help="burst threshold as a multiple of the fitted "
+                         "base rate (default 2.0)")
+    bz.add_argument("--json", action="store_true")
+    bz.set_defaults(fn=cmd_bursts)
     return p
 
 

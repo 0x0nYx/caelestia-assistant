@@ -112,6 +112,7 @@ OPS = {
     "shell_json_merge": lambda q, s, l: _shell_json(q, merge=True),
     "shell_conflicts": lambda q, s, l: _shell_conflicts(q),
     "patterns_report": lambda q, s, l: _patterns_report(q),
+    "bursts_report": lambda q, s, l: _bursts_report(q),
 }
 
 
@@ -283,6 +284,21 @@ def _patterns_report(q):
         period=int(q.get("period", 24)),
         window=int(q.get("window", 6)),
         penalty=float(q.get("penalty", 8.0)))
+
+
+def _bursts_report(q):
+    """Hawkes burst detection over event times (C12) — the fit, the
+    bursts, and the correlation-not-causation caveat."""
+    from assistant.capabilities import enabled
+    if not enabled("burst_detection"):
+        return {"error": "burst_detection capability is off on this "
+                         "install"}
+    from assistant.brain import bursts
+    events = q.get("events")
+    if not isinstance(events, list) or len(events) < 8:
+        return {"error": "need 'events': at least 8 event times"}
+    return bursts.burst_report([float(x) for x in events],
+                               factor=float(q.get("factor", 2.0)))
 
 
 

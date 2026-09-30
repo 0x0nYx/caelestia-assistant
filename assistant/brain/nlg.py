@@ -54,8 +54,12 @@ def plan_document(changes: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
 
     Each change is a dict with at least 'tool' (a registry tool name or
     dotted path); 'group' overrides; 'field' names the human aspect
-    (spacing, color, ...) when the caller has one.
+    (spacing, color, ...) when the caller has one. A bare string is
+    tolerated and treated as a tool name — hostile input becomes an
+    honest group, never an AttributeError.
     """
+    changes = [c if isinstance(c, dict) else {"tool": str(c)}
+               for c in changes]
     groups: Dict[str, List[Dict[str, Any]]] = {}
     group_order: List[str] = []
     for change in changes:

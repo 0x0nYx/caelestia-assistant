@@ -52,13 +52,27 @@ def _howto_cmd(args) -> int:
     return 0
 
 
+class _DocError(ValueError):
+    """A doc argument could not be read as JSON — the CLI's own honest
+    refusal, never a traceback."""
+
+
 def _load_doc(path):
     from pathlib import Path
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise _DocError(f"cannot read {path!r}: {exc}") from exc
+    except ValueError as exc:
+        raise _DocError(f"{path!r} is not valid JSON: {exc}") from exc
 
 
 def _diff_cmd(args) -> int:
-    data = jsonmerge.diff_docs(_load_doc(args.a), _load_doc(args.b))
+    try:
+        data = jsonmerge.diff_docs(_load_doc(args.a), _load_doc(args.b))
+    except _DocError as exc:
+        print(f"diff: {exc}")
+        return 1
     if args.json:
         print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
         return 0
@@ -68,9 +82,13 @@ def _diff_cmd(args) -> int:
 
 
 def _merge_cmd(args) -> int:
-    data = jsonmerge.merge_three_way(_load_doc(args.base),
-                                     _load_doc(args.ours),
-                                     _load_doc(args.theirs))
+    try:
+        data = jsonmerge.merge_three_way(_load_doc(args.base),
+                                         _load_doc(args.ours),
+                                         _load_doc(args.theirs))
+    except _DocError as exc:
+        print(f"merge: {exc}")
+        return 1
     if args.json:
         print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
         return 0
@@ -80,14 +98,18 @@ def _merge_cmd(args) -> int:
 
 
 def _conflicts_cmd(args) -> int:
-    universe = (_load_doc(args.universe) if args.universe
-                else json.loads(pubgrub.UNIVERSE_PATH.read_text()))
-    if args.installed:
-        installed = _load_doc(args.installed)
-        data = pubgrub.check_installed(universe, installed, args.root,
-                                       args.spec)
-    else:
-        data = pubgrub.solve(universe, args.root, args.spec)
+    try:
+        universe = (_load_doc(args.universe) if args.universe
+                    else json.loads(pubgrub.UNIVERSE_PATH.read_text()))
+        if args.installed:
+            installed = _load_doc(args.installed)
+            data = pubgrub.check_installed(universe, installed, args.root,
+                                           args.spec)
+        else:
+            data = pubgrub.solve(universe, args.root, args.spec)
+    except _DocError as exc:
+        print(f"conflicts: {exc}")
+        return 1
     if args.json:
         print(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))
         return 0

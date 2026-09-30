@@ -97,9 +97,14 @@ class TestProposals(unittest.TestCase):
 
 
 class TestRulesFile(unittest.TestCase):
-    def test_missing_file_loads_empty(self):
-        self.assertEqual(rete.load_rules(Path("/nonexistent/rules.json")),
-                         [])
+    def test_missing_file_is_an_honest_error(self):
+        # Phase Z hostile-input finding: a silent empty list on an
+        # unreadable file hid the user's own opt-in from them. The
+        # contract is now a ValueError the CLI reports; the CLI's
+        # own "no rules file yet" notice handles the common case
+        # BEFORE calling this (cmd_rules checks path.exists()).
+        with self.assertRaises(ValueError):
+            rete.load_rules(Path("/nonexistent/rules.json"))
 
     def test_load_rules_reads_file(self):
         import json

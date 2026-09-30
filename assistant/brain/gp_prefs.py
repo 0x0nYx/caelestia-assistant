@@ -84,10 +84,6 @@ def _phi(z: float) -> float:
     return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
 
-def _phi_prime(z: float) -> float:
-    return math.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
-
-
 def _softplus(x: float) -> float:
     """log(1 + e^x), stable both sides."""
     if x > 0:

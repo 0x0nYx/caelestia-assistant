@@ -87,11 +87,18 @@ class Rete:
     def __init__(self, rules: List[Dict[str, Any]]) -> None:
         if len(rules) > _MAX_RULES:
             raise ValueError(f"bounded at {_MAX_RULES} rules")
+        for i, r in enumerate(rules):
+            if not isinstance(r, dict):
+                raise ValueError(
+                    f"every rule must be a JSON object; rule at index "
+                    f"{i} is {type(r).__name__}")
         self.rules = [_Rule(r) for r in rules]
 
     def run(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Feed events (each a dict with at least a numeric 'time'),
-        return fired proposals per rule."""
+        return fired proposals per rule. Non-dict records cannot carry
+        a time or a field, so they are skipped, not crashed on."""
+        events = [e for e in events if isinstance(e, dict)]
         if len(events) > _MAX_EVENTS:
             return {"verdict": "ABSTAIN",
                     "note": f"more than {_MAX_EVENTS} events: the "
@@ -199,11 +206,20 @@ class Rete:
 
 
 def load_rules(path: Path) -> List[Dict[str, Any]]:
+    """The rules file -> the rule list. A non-object file is an error
+    the caller reports honestly, not a crash."""
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    return list(data.get("rules") or [])
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"rules file unreadable or not JSON: {exc}") \
+            from exc
+    if not isinstance(data, dict):
+        raise ValueError("rules file must be a JSON object with a "
+                         "'rules' list")
+    rules = data.get("rules")
+    if not isinstance(rules, list):
+        raise ValueError("'rules' must be a list")
+    return rules
 
 
 def run_events(rules: List[Dict[str, Any]],

@@ -185,8 +185,13 @@ def detect_bursts(events: List[float], intensity: List[float],
 
 def burst_report(events: List[float], factor: float = 2.0) \
         -> Dict[str, Any]:
-    """One card: the fit, the bursts, the caveat."""
-    ev = _validate_events(events)
+    """One card: the fit, the bursts, the caveat. Too few events is an
+    honest ABSTAIN (the CLI's contract), not a raise — the fitter's own
+    ValueError contract stays on fit_hawkes."""
+    try:
+        ev = _validate_events(events)
+    except ValueError as exc:
+        return {"verdict": "ABSTAIN", "note": str(exc)}
     if len(ev) > _MAX_EVENTS:
         return {"verdict": "ABSTAIN",
                 "note": f"more than {_MAX_EVENTS} events: the fitter "

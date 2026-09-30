@@ -457,7 +457,13 @@ def cmd_patterns(args, out):
     """One pattern card over a comma-separated series: seasonality,
     changepoints, motifs, discords (C11)."""
     from . import seasonal
-    series = [float(x) for x in str(args.series).split(",") if x.strip()]
+    try:
+        series = [float(x) for x in str(args.series).split(",")
+                  if x.strip()]
+    except ValueError as exc:
+        out.write(f"patterns: unparseable number ({exc}); the series "
+                  "argument is a comma-separated list of numbers\n")
+        return 1
     r = seasonal.seasonality_report(series, period=args.period,
                                     window=args.window,
                                     penalty=args.penalty)
@@ -491,7 +497,13 @@ def cmd_patterns(args, out):
 def cmd_bursts(args, out):
     """Hawkes burst detection over comma-separated event times (C12)."""
     from . import bursts
-    events = [float(x) for x in str(args.events).split(",") if x.strip()]
+    try:
+        events = [float(x) for x in str(args.events).split(",")
+                  if x.strip()]
+    except ValueError as exc:
+        out.write(f"bursts: unparseable event time ({exc}); the events "
+                  "argument is a comma-separated list of times\n")
+        return 1
     r = bursts.burst_report(events, factor=args.factor)
     if getattr(args, "json", False):
         out.write(json.dumps(r, sort_keys=True) + "\n")
@@ -515,7 +527,18 @@ def cmd_bursts(args, out):
 def cmd_gpprefs(args, out):
     """GP preference learning over pairwise "A or B?" answers (C13)."""
     from . import gp_prefs
-    data = json.loads(pathlib.Path(args.data).read_text())
+    try:
+        data = json.loads(pathlib.Path(args.data).read_text())
+    except OSError as exc:
+        out.write(f"gp-prefs: data file unreadable ({exc})\n")
+        return 1
+    except ValueError as exc:
+        out.write(f"gp-prefs: data file is not valid JSON ({exc})\n")
+        return 1
+    if not isinstance(data, dict):
+        out.write("gp-prefs: data must be an object with 'items' and "
+                  "'pairs'\n")
+        return 1
     items = data.get("items", [])
     pairs = data.get("pairs", [])
     try:
@@ -566,12 +589,25 @@ def cmd_rules(args, out):
         out.write(f"rules: no rules file at {path} — create it to opt "
                   f"in (JSON: {json.dumps({'rules': [{'id': 'example', 'when': [{'field': 'kind', 'op': 'eq', 'value': 'crash'}], 'within_seconds': 600, 'min_events': 3, 'then': {'tool': 'setNotifsMaxPopups', 'value': 3}, 'reason': 'why not'}]})})\n")
         return 1
-    rules = rete.load_rules(path)
+    try:
+        rules = rete.load_rules(path)
+    except ValueError as exc:
+        out.write(f"rules: {exc}\n")
+        return 1
     if args.events:
-        events = json.loads(pathlib.Path(args.events).read_text())
+        try:
+            events = json.loads(pathlib.Path(args.events).read_text())
+        except (OSError, ValueError) as exc:
+            out.write(f"rules: events file unreadable or not JSON "
+                      f"({exc})\n")
+            return 1
         if isinstance(events, dict):
             events = events.get("events", [])
-        r = rete.run_events(rules, events)
+        try:
+            r = rete.run_events(rules, events)
+        except ValueError as exc:
+            out.write(f"rules: {exc}\n")
+            return 1
         if getattr(args, "json", False):
             out.write(json.dumps(r, sort_keys=True) + "\n")
             return 0
@@ -594,7 +630,15 @@ def rete_default_path():
 def cmd_sizes(args, out):
     """Space-Saving heavy hitters + t-digest quantiles for sizing (C15)."""
     from . import sketch
-    sizes = [float(x) for x in str(args.sizes).split(",") if x.strip()]
+    try:
+        sizes = [float(x) for x in str(args.sizes).split(",") if x.strip()]
+    except ValueError as exc:
+        out.write(f"sizes: unparseable number ({exc}); the sizes "
+                  "argument is a comma-separated list of numbers\n")
+        return 1
+    if not sizes:
+        out.write("sizes: need at least one size\n")
+        return 1
     keys = [k for k in str(args.keys).split(",")] if args.keys else None
     quantiles = [float(q) for q in str(args.quantiles).split(",")
                  if q.strip()] if args.quantiles else None
@@ -613,7 +657,14 @@ def cmd_say(args, out):
     """Template NLG over a plan's changes: discourse plan + aggregation
     (D16). Reads a JSON file of changes; writes sentences."""
     from . import nlg
-    data = json.loads(pathlib.Path(args.file).read_text())
+    try:
+        data = json.loads(pathlib.Path(args.file).read_text())
+    except OSError as exc:
+        out.write(f"say: changes file unreadable ({exc})\n")
+        return 1
+    except ValueError as exc:
+        out.write(f"say: changes file is not valid JSON ({exc})\n")
+        return 1
     if isinstance(data, list):
         changes = data
     elif isinstance(data, dict):

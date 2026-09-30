@@ -1,0 +1,4038 @@
+{
+ "protocol": "Behavior-lock goldens (Stage C1).\n\nGenerates assistant/tests/goldens/manifest.json: >= 300 read-only CLI\ncases, each run TWICE in-process from an isolated environment; a case\nis kept only when both runs return rc 0 and byte-identical stdout\n(self-filtering \u2014 timing-dependent surfaces drop out on their own).\nEvery kept case records sha256(stdout); a reviewable sample of full\noutputs is stored alongside as samples/*.txt.\n\nUpdate protocol: goldens change ONLY via\n    python3 scripts/regen_goldens.py\nfollowed by a reviewed commit whose message states the behavior change\nthat justified the update. The lock test fails loudly on any silent\ndrift, including case-count loss (minimum 300).",
+ "min_cases": 300,
+ "cases": [
+  {
+   "id": "route-p01",
+   "argv": [
+    "route",
+    "make the bar taller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "15a57fe17b13b8fb3312689e361d1fc3bc91b3672d76c1c3ca473e067c83d99b",
+   "bytes": 652
+  },
+  {
+   "id": "route-p02",
+   "argv": [
+    "route",
+    "shrink the taskbar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1454bd63c2548d81252e647a6da2b4eaf99b80e3ead0053a8589fa84155c9bff",
+   "bytes": 1272
+  },
+  {
+   "id": "route-p03",
+   "argv": [
+    "route",
+    "put the bar at the top",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dd1207ecb9731cce6ef13f039b043b9a3da28857ff141b3182b3acb9a5764adb",
+   "bytes": 1309
+  },
+  {
+   "id": "route-p04",
+   "argv": [
+    "route",
+    "turn off blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5d813834c26c453434d976c5a411c1b192fb01210358775eb345cce9517ee4c6",
+   "bytes": 1234
+  },
+  {
+   "id": "route-p05",
+   "argv": [
+    "route",
+    "disable the blur effect",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "25547e0fb843ba08225d567f7d96719f2cb5971b30e37a71546a74d5d62507f6",
+   "bytes": 1334
+  },
+  {
+   "id": "route-p06",
+   "argv": [
+    "route",
+    "I want windows to be more see-through",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1fc150d2b0be2f8150c43612e3b42cb6ed87d0c23d31e65dc46069a57230fa51",
+   "bytes": 1631
+  },
+  {
+   "id": "route-p07",
+   "argv": [
+    "route",
+    "slow down the animations",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "932166a7425c468872e17419b15960a8097fca718ea4ddd1482f73147cbc5e4e",
+   "bytes": 662
+  },
+  {
+   "id": "route-p08",
+   "argv": [
+    "route",
+    "make animations snappier",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "400c898c59affc1022b644e43c28bff0ec61a960df4a1b920a87f0c0e8047344",
+   "bytes": 1441
+  },
+  {
+   "id": "route-p09",
+   "argv": [
+    "route",
+    "rounder corners",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dcd9d4f0b65d6198444771e0d751ec4be06612fef2f04277454ff6a47e177c59",
+   "bytes": 1283
+  },
+  {
+   "id": "route-p10",
+   "argv": [
+    "route",
+    "increase the font size",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "db4f9f0dbf3e1981e895219d89fd8d37bf9fb1a2279e311de423098a41e32b2b",
+   "bytes": 1334
+  },
+  {
+   "id": "route-p11",
+   "argv": [
+    "route",
+    "make the dock icons bigger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bc8365d44f633ef5c89f6dcc505e8290aeb02a0098156565366e03a6b8780c0e",
+   "bytes": 1369
+  },
+  {
+   "id": "route-p12",
+   "argv": [
+    "route",
+    "mute all shell sounds",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "51d43b07dd931c0698fbd1d13e95e76da883c933f648e74cab596945ebd54e2f",
+   "bytes": 1325
+  },
+  {
+   "id": "route-p13",
+   "argv": [
+    "route",
+    "lower the sound effects volume",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8d95b2f8fc928b8539df7864dfb11c3a25f54c9d65b1321a5dc728b160c0ecc8",
+   "bytes": 1559
+  },
+  {
+   "id": "route-p14",
+   "argv": [
+    "route",
+    "show seconds on the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c33d9e0fe711859ae9c82773a11c59b6f65d70ff063ad726b7c6689c72cad75d",
+   "bytes": 1438
+  },
+  {
+   "id": "route-p15",
+   "argv": [
+    "route",
+    "use 24 hour time",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "801973777ffc605ed75801687c8916a76f10234327b00d35c1acd836483ceb9b",
+   "bytes": 1133
+  },
+  {
+   "id": "route-p16",
+   "argv": [
+    "route",
+    "disable the launcher",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c8165d7a936973585989e990841d604a0aa92f386d4cfbda181c12da1e1090fa",
+   "bytes": 1275
+  },
+  {
+   "id": "route-p17",
+   "argv": [
+    "route",
+    "hide the dashboard",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6e2b48932f152a46df6790fc107120db8442dd68434f2244569ad630451459f8",
+   "bytes": 1265
+  },
+  {
+   "id": "route-p18",
+   "argv": [
+    "route",
+    "turn off the volume popup",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "43e5969d7b1ae907f23608543c44759eebe01ddfa793705df0c57e1141efc814",
+   "bytes": 1363
+  },
+  {
+   "id": "route-p19",
+   "argv": [
+    "route",
+    "enable game mode automatically",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "86b61fc13ab2d1e43113ff47d7cd461b91953b11ecb64dcaec2648ba1e66dc93",
+   "bytes": 1241
+  },
+  {
+   "id": "route-p20",
+   "argv": [
+    "route",
+    "turn off the music visualizer",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "913d43afb10b4ece9489e70b1651ce0545d0f1ed964946de69e7452beeefcf1d",
+   "bytes": 1441
+  },
+  {
+   "id": "route-p21",
+   "argv": [
+    "route",
+    "show a clock on my desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6bcc568d5f1270b88d040de4cf1bda83be95ca80041224404e24a83776846737",
+   "bytes": 1344
+  },
+  {
+   "id": "route-p22",
+   "argv": [
+    "route",
+    "lock the screen when the shell starts",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3b4f8299228339da55a22b7b9398feffa0291617b294f550f0fe4015817fa8ad",
+   "bytes": 617
+  },
+  {
+   "id": "route-p23",
+   "argv": [
+    "route",
+    "hide the shutdown button on the lock screen",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bd286ba67cd1a443010ebf98a2ecb8ca40ce766a8e4e279cf3f77499b31f62de",
+   "bytes": 820
+  },
+  {
+   "id": "route-p24",
+   "argv": [
+    "route",
+    "make everything pitch black",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "978891ec828a21c9deaa3f39ca73aa03894753e6cef08a27e42bebd588bc5c9d",
+   "bytes": 1292
+  },
+  {
+   "id": "route-p25",
+   "argv": [
+    "route",
+    "show temperature in fahrenheit",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "df32327835815b6400b296dec76fb300e210d477d2f62ba51199bf9eeaab23e5",
+   "bytes": 1352
+  },
+  {
+   "id": "route-p26",
+   "argv": [
+    "route",
+    "fewer notification popups at once",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bbce374de35c8dcf8070eec7549753a51d0e666847ec4b37f7f18e73b5f59ee2",
+   "bytes": 1454
+  },
+  {
+   "id": "route-p27",
+   "argv": [
+    "route",
+    "stop checking for updates",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ed950e1ff05d3a325339109ded18a29d9e0d751e6ad8ffbca27b1604163fad89",
+   "bytes": 1358
+  },
+  {
+   "id": "route-p28",
+   "argv": [
+    "route",
+    "make the borders thicker",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2f3e079b28b0c17968e1e78936983832ee69a4a50b393bb7a344d68b18b86c12",
+   "bytes": 1381
+  },
+  {
+   "id": "route-p29",
+   "argv": [
+    "route",
+    "more spacing between things",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ba8be267d5ffcef5c7e2c31b97726a88fae1f5190ae556924a0f6861253e6418",
+   "bytes": 1397
+  },
+  {
+   "id": "route-p30",
+   "argv": [
+    "route",
+    "less padding",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "92530df73f69edf4b26a37659141729a0678ee2cfc904bf715044265797f926a",
+   "bytes": 1250
+  },
+  {
+   "id": "route-p31",
+   "argv": [
+    "route",
+    "hide the sidebar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "14b7e3e46314cb507dd53ef6c282bdd8e9023bba04f597148d8066f6d3059dd8",
+   "bytes": 1234
+  },
+  {
+   "id": "route-p32",
+   "argv": [
+    "route",
+    "show the weather in the dashboard",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4afb3fa2b483ea40368aae7d851b4fc8b8755950453cffb3b9c4e6a49e4ea1eb",
+   "bytes": 2661
+  },
+  {
+   "id": "route-p33",
+   "argv": [
+    "route",
+    "display CPU usage in the performance panel",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8d7d6335750d90c3673fa8bc76a80325d3ddb6514214be29f40bb10c7891481a",
+   "bytes": 1330
+  },
+  {
+   "id": "route-p34",
+   "argv": [
+    "route",
+    "let the bar hide until I hover",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3fae4a7ac16573f1a7bd7ff4295c6871aff6f16a14912a2704782d9bfb06820d",
+   "bytes": 1419
+  },
+  {
+   "id": "route-p35",
+   "argv": [
+    "route",
+    "raise the max volume to 120",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8c110b9a144153a73d0c147d58e16991fc408105a8855cd5df0e1b3447b972a8",
+   "bytes": 1625
+  },
+  {
+   "id": "route-p36",
+   "argv": [
+    "route",
+    "turn off the charging sound",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f59d2b43c632a0452a67ebc1e6feada9bb9ba65d8cafdbd78d732d3dbf56cf14",
+   "bytes": 1417
+  },
+  {
+   "id": "route-p37",
+   "argv": [
+    "route",
+    "hide the lock screen notifications",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "74ed90c341406fdc0901c5f51c24129e2e8af42ed243d74ce80012d0ac225719",
+   "bytes": 1417
+  },
+  {
+   "id": "route-p38",
+   "argv": [
+    "route",
+    "always show minimized windows",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "31210e09a29f443490b3afaca4df22d2f92ff61e8039dfca4ce197a4294ac0af",
+   "bytes": 954
+  },
+  {
+   "id": "route-p39",
+   "argv": [
+    "route",
+    "show windows in the workspace indicators",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6343e280d30806bc9ceaa55827a166fe39efed2a46e7756fbfe6de88c4ea9970",
+   "bytes": 1945
+  },
+  {
+   "id": "route-p40",
+   "argv": [
+    "route",
+    "no wallpaper slideshow",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "9bb771f82a758d3dc4da001b59dc0856444200cb2a0b49196906c800ca42b07d",
+   "bytes": 650
+  },
+  {
+   "id": "route-p41",
+   "argv": [
+    "route",
+    "optimize for gaming",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "326559d17a97d6a8ac7fcd67fdcf0434e14d08e65043f82712de362f9da5b26b",
+   "bytes": 2406
+  },
+  {
+   "id": "route-p42",
+   "argv": [
+    "route",
+    "battery saving mode",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "aa1b4ee4df0ecde2c65cb9771995438e96511d2fab1f8bb3f404e81460d9b311",
+   "bytes": 2396
+  },
+  {
+   "id": "route-p43",
+   "argv": [
+    "route",
+    "give me a macOS look",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a2629ec22e738c59d874f47d90b0e6fdd3902817a90121a983029be25473552f",
+   "bytes": 3679
+  },
+  {
+   "id": "route-p44",
+   "argv": [
+    "route",
+    "make it minimal",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3e4a66d0ba167e13c6cff7d7ce0a867d7af4d293f85c05be86d95b524beaa651",
+   "bytes": 3232
+  },
+  {
+   "id": "route-r45",
+   "argv": [
+    "route",
+    "make the clock show the date",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "df28762b03a6ee2e08cf2b1ebb7b5c2b4fdf9e5503803ea8ae1ab5fd6a23b116",
+   "bytes": 1442
+  },
+  {
+   "id": "route-r46",
+   "argv": [
+    "route",
+    "hide the clock icon",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0cfa21d9703141d6a551f3f24eec7448fcc4a1cf8d1fad56c2f2b6eb0d6e8f7f",
+   "bytes": 1303
+  },
+  {
+   "id": "route-r47",
+   "argv": [
+    "route",
+    "give the clock a background",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5641dd251123d11244c8cb50f90ed728148feffd9e9587b6430f8a1fc2fe5f21",
+   "bytes": 697
+  },
+  {
+   "id": "route-r48",
+   "argv": [
+    "route",
+    "make the bar easier to drag",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b3c9d9071ff4c47a454076d36c17d8b46e5ab6d61f7d81e6b23d8bd7cef58d8c",
+   "bytes": 805
+  },
+  {
+   "id": "route-r49",
+   "argv": [
+    "route",
+    "keep the bar always visible",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "94f665d1073ee2b6a464160206e47531c257a936e84070b4f05130ecf5a8c57e",
+   "bytes": 659
+  },
+  {
+   "id": "route-r50",
+   "argv": [
+    "route",
+    "only dodge the focused window",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "37c5b896fcbe32020b205306b881478e3709a111bd8d23396f034831570df00a",
+   "bytes": 691
+  },
+  {
+   "id": "route-r51",
+   "argv": [
+    "route",
+    "hide the dock badges",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a309f36af7b2149aa32412a6dc69cefe12177ad8e1f4852dd928badd1224f89f",
+   "bytes": 1311
+  },
+  {
+   "id": "route-r52",
+   "argv": [
+    "route",
+    "only show the dock on the current desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "33d0874aaf8d2353aa52bf85cd4d6ba42785ee09d524c17b5e94a063b5466b70",
+   "bytes": 1619
+  },
+  {
+   "id": "route-r53",
+   "argv": [
+    "route",
+    "show dock previews on the desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "edfa42ae8af1ee8b83b01b52c8024975e26cd3032849bf0a5e536ff09625e39d",
+   "bytes": 1527
+  },
+  {
+   "id": "route-r54",
+   "argv": [
+    "route",
+    "recolour the dock icons",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1830a7df1033c0417ed79360398959e94f88694173bee047fb2246d2962cb172",
+   "bytes": 688
+  },
+  {
+   "id": "route-r55",
+   "argv": [
+    "route",
+    "use a bigger font in the shell",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fad6421f5762fc801ffae424d25d7b756953bb6c4f61deac5a322b0d768e3f36",
+   "bytes": 1414
+  },
+  {
+   "id": "route-r56",
+   "argv": [
+    "route",
+    "change the monospace font",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "faa0e74fda829808173a9c7f323d0dd8f7a226cb167e8c8c9c422840a4b7b1fa",
+   "bytes": 660
+  },
+  {
+   "id": "route-r57",
+   "argv": [
+    "route",
+    "more padding everywhere",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c5fe30f309de38d3390406cb7a06302da82bf505c6cc011649d4899ac5804de1",
+   "bytes": 1359
+  },
+  {
+   "id": "route-r58",
+   "argv": [
+    "route",
+    "make the corners less round",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7485338f261c252697e835e188662829f7018f44ed61ca44a1ea59e7a65df99c",
+   "bytes": 1401
+  },
+  {
+   "id": "route-r59",
+   "argv": [
+    "route",
+    "increase the deformation",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b4910c2141053f709f50e01fd4b773330939af4ad17c9a45201c328f33e1e7f9",
+   "bytes": 1155
+  },
+  {
+   "id": "route-r60",
+   "argv": [
+    "route",
+    "enable ambient color",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d106bb2bd4b92598c63995649441c486eeca800c9980b92f3efd32c0886ce353",
+   "bytes": 1624
+  },
+  {
+   "id": "route-r61",
+   "argv": [
+    "route",
+    "lower the ambient opacity",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "511190144a070336f22ad2f3384ce4fcf7db2d1c224b50ae82b866965ddc63ff",
+   "bytes": 1468
+  },
+  {
+   "id": "route-r62",
+   "argv": [
+    "route",
+    "turn on the blur mask",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c2dbedd9c39b9679af952236a95412a655dd02ace279c5285575d562c33a7f2b",
+   "bytes": 1704
+  },
+  {
+   "id": "route-r63",
+   "argv": [
+    "route",
+    "turn on islands",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "04c1334a5f40bd5523018e2f46f9e70119e51555fd4e46ba2d6b266518162c58",
+   "bytes": 1105
+  },
+  {
+   "id": "route-r64",
+   "argv": [
+    "route",
+    "more transparency layers",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8d57ec03a2bf25cd26838e9fbae48326429c6b3707c5fd2b680ce85935169e4c",
+   "bytes": 1576
+  },
+  {
+   "id": "route-r65",
+   "argv": [
+    "route",
+    "enable transparency",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "03d051eef158542ab967cfc2773e632a19e60b04b25967ae80f7600c2d2977f2",
+   "bytes": 2312
+  },
+  {
+   "id": "route-r66",
+   "argv": [
+    "route",
+    "notifications should open expanded",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d0179dea18baa49c8209dc9f74da3ae9f39168913d53104b098daffb3fbb7ac3",
+   "bytes": 1476
+  },
+  {
+   "id": "route-r67",
+   "argv": [
+    "route",
+    "make notifications expire",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "83435e399e55a34000285f00bedb86ec79b118377880e8988eb435734bd20a0a",
+   "bytes": 665
+  },
+  {
+   "id": "route-r68",
+   "argv": [
+    "route",
+    "show more notifications in a group preview",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "afac3d5ac4ea82e80e9b384f178242c0bcbe6f373e72c80394b3c68378b1dd35",
+   "bytes": 1570
+  },
+  {
+   "id": "route-r69",
+   "argv": [
+    "route",
+    "show notifications on the second monitor",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d99dce11d06fd27c43cfd1f773d5b41b1a28dba8b72f752b01388d17a4951dca",
+   "bytes": 760
+  },
+  {
+   "id": "route-r70",
+   "argv": [
+    "route",
+    "put the notifications at the top",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b93c1809d84c83275697ec943836d0300fd448dcc675f7c17b5189b30d8ae0c4",
+   "bytes": 848
+  },
+  {
+   "id": "route-r71",
+   "argv": [
+    "route",
+    "keep more notifications in history",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1d26a710e2ca1bf3d635563548763b248ca34acf91cddb4520a75e56c61468ea",
+   "bytes": 875
+  },
+  {
+   "id": "route-r72",
+   "argv": [
+    "route",
+    "clicking a notification should trigger its action",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2e89773fe54ec06f55ea394051fc145b4d83bb6792351b682fac8860b67c038e",
+   "bytes": 786
+  },
+  {
+   "id": "route-r73",
+   "argv": [
+    "route",
+    "hide notifications during fullscreen",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "54523aa1acaebc939378daf686a0522319de1af47a6c22acdc2f1d34038f460e",
+   "bytes": 783
+  },
+  {
+   "id": "route-r74",
+   "argv": [
+    "route",
+    "hide the brightness osd",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e2eb60591f9d673189a57ff387aa99d813ec1f01cefee461428498f977d24dec",
+   "bytes": 1500
+  },
+  {
+   "id": "route-r75",
+   "argv": [
+    "route",
+    "show the volume osd",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "833c4d26c6b84e004d692c1b774253252ff2a90c18a454efa93cb4f924012b00",
+   "bytes": 1945
+  },
+  {
+   "id": "route-r76",
+   "argv": [
+    "route",
+    "the osd disappears too fast",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4c9eb596dbfac29251e65ddd8cb805e8d8e54e71bd9934ea8d1b05b484772738",
+   "bytes": 629
+  },
+  {
+   "id": "route-r77",
+   "argv": [
+    "route",
+    "thicker osd hover bar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "58f3e9e5400e7d6a854c2ee72a24ac33093c1bc4cc421e0d3279b477a6394fc1",
+   "bytes": 1452
+  },
+  {
+   "id": "route-r78",
+   "argv": [
+    "route",
+    "wider osd hover area",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c02d5a9b89cfa9e9e1bb76d59f4838d26f4c1db75064b281254a16421255f6ae",
+   "bytes": 1484
+  },
+  {
+   "id": "route-r79",
+   "argv": [
+    "route",
+    "colorize the media gif",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "31fe7291c45090a0034613876ad10bcc82f27b07ee89fae7b2338132b6d96f1e",
+   "bytes": 644
+  },
+  {
+   "id": "route-r80",
+   "argv": [
+    "route",
+    "show the gpu in the dashboard performance panel",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "45a0f4cae69024d218e024fcedc241d553d24f671cda3a5c3c8fdeba57c8f8e7",
+   "bytes": 1343
+  },
+  {
+   "id": "route-r81",
+   "argv": [
+    "route",
+    "show memory usage in the dashboard",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6c40b6272289ce8a4b0720cdd209c77d65916068a3022ade7de1abf0f23489a8",
+   "bytes": 1262
+  },
+  {
+   "id": "route-r82",
+   "argv": [
+    "route",
+    "show network usage in the performance widget",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "51059d7d21e4a87d9c0e60eadf4dab1c5819825c3ca368ed06621d5d33fb175b",
+   "bytes": 1205
+  },
+  {
+   "id": "route-r83",
+   "argv": [
+    "route",
+    "show storage in the dashboard performance section",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2f716823f8894b1b748280b4aacdc19cf8298e567d3f65adf1e2f05f4e044d9d",
+   "bytes": 1367
+  },
+  {
+   "id": "route-r84",
+   "argv": [
+    "route",
+    "show the battery in the performance panel",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fd7b5b5bacc9d54b26fbbb36e33ff88794734df5c60bff3e622803c507959c44",
+   "bytes": 1351
+  },
+  {
+   "id": "route-r85",
+   "argv": [
+    "route",
+    "the dashboard appears when I hover",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6037781b05a6a84121cafe66615a5fb0211b3ac5ae265f4d18c8be029eeccb90",
+   "bytes": 708
+  },
+  {
+   "id": "route-r86",
+   "argv": [
+    "route",
+    "enable the sidebar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "da9fbb9c8bb619b6c545cc734d97798f0cb6d6b6d5dda25d935aef8322a473fb",
+   "bytes": 1471
+  },
+  {
+   "id": "route-r87",
+   "argv": [
+    "route",
+    "wider sidebar grab area",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "763777e8125b0e9c9a0a3a600d1c9d2480d4d77409f4a4dcdb25ac6306a88b91",
+   "bytes": 1383
+  },
+  {
+   "id": "route-r88",
+   "argv": [
+    "route",
+    "slow down the overview animation",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "327980d77be165a9508be4490469223f1e0b7253c7233509e2464e4015f55b3c",
+   "bytes": 908
+  },
+  {
+   "id": "route-r89",
+   "argv": [
+    "route",
+    "turn off overview blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "72ab7f94d3a8536c3107a4d51652519196554244970be3a13bcc73516a145342",
+   "bytes": 1493
+  },
+  {
+   "id": "route-r90",
+   "argv": [
+    "route",
+    "make the overview hover corners active",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7d0714978ad801228c530def5ed9b5ce0cc61b5fc111a888db2b4f122268da60",
+   "bytes": 909
+  },
+  {
+   "id": "route-m01",
+   "argv": [
+    "route",
+    "make the system tray more compact",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b63bfaf6c3f4430661468554f2600280f8ed6202fca538127b353e687bbd7c2b",
+   "bytes": 760
+  },
+  {
+   "id": "route-m02",
+   "argv": [
+    "route",
+    "recolour the tray icons to match my theme",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1ac50b22667edca7edceefa6aa0c9d27d70c25016c0d15924d94ff8a8e19930e",
+   "bytes": 832
+  },
+  {
+   "id": "route-m04",
+   "argv": [
+    "route",
+    "bump the text size up a notch",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fab7d6312798da4703e3a36b06949a05ba7b2ed246cd9269abb0a1f91d1fb30b",
+   "bytes": 723
+  },
+  {
+   "id": "route-m05",
+   "argv": [
+    "route",
+    "make the ambient background more opaque",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1855967c16e4ffed8d9586a88348a8b7bdddbf3948f44912d232850c2aa8f36b",
+   "bytes": 1636
+  },
+  {
+   "id": "route-m06",
+   "argv": [
+    "route",
+    "give notifications more time before they fade",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "017dbfb6c14fca43f25a05914fc1fd0a7b314e5f47ae98fb2de6a8d105682864",
+   "bytes": 1712
+  },
+  {
+   "id": "route-m07",
+   "argv": [
+    "route",
+    "open the app when I click one of its notifications",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d5662943b2b06bd8837f9dbf83950e97b3fea75f84d4f501308e7028587ade6d",
+   "bytes": 892
+  },
+  {
+   "id": "route-m08",
+   "argv": [
+    "route",
+    "show toasts in the bottom-right corner",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dc16d3b0e55f7d68c0f9978fbc32ab7dee9a371f8baada0f5f32d36bd8cac41f",
+   "bytes": 1468
+  },
+  {
+   "id": "route-m09",
+   "argv": [
+    "route",
+    "the volume popup lingers too long",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bfde73975d2c0b818be563b999fc8b71bd4f7b0d68bf1cb39a5fab933af44375",
+   "bytes": 774
+  },
+  {
+   "id": "route-m10",
+   "argv": [
+    "route",
+    "turn off the overview entirely",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f1f2b2c563a1701b9608a257ab545dc8a3ee381b33d70ba7a70e4b95e3889abe",
+   "bytes": 1498
+  },
+  {
+   "id": "route-m11",
+   "argv": [
+    "route",
+    "blur the wallpaper behind the overview",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ef176673626f6196337be2c58f961aeeee1e48b9d7c0c5492828e9b35a68c80e",
+   "bytes": 882
+  },
+  {
+   "id": "route-m12",
+   "argv": [
+    "route",
+    "stop blurring the wallpaper in the overview",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dee84285e51ae1146964074ef0a3472acc019d72d6b018fbd16b3a38bdaec4ca",
+   "bytes": 1662
+  },
+  {
+   "id": "route-m13",
+   "argv": [
+    "route",
+    "turn off the fingerprint reader",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ae8ba609b5ad9a953a06e260b463aa2144c7eb40515b3ad943d1c4cda6ef236b",
+   "bytes": 1428
+  },
+  {
+   "id": "route-m14",
+   "argv": [
+    "route",
+    "give me three fingerprint attempts before the password",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c9aaecd2650d00ca1116f0c23af99046bb447e909f2ee87f9771ff937375dc76",
+   "bytes": 841
+  },
+  {
+   "id": "route-m15",
+   "argv": [
+    "route",
+    "move the on-screen lyrics to the centre",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "916fd43cd669dc7c5ac06bb78de14c333b2dbb0c8a5300afaaedee32f1561908",
+   "bytes": 2301
+  },
+  {
+   "id": "route-m16",
+   "argv": [
+    "route",
+    "centre the desktop lyrics text",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3df273a6b3e0dbfa31e1f2e011bfb007b591a527e6fc84ab2d773f66d25af9e5",
+   "bytes": 783
+  },
+  {
+   "id": "route-m17",
+   "argv": [
+    "route",
+    "hide the decorative shapes on the desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "07b219d50191e0a99257232f2e57c746d35f8c6c49a4f122915136261c9bdede",
+   "bytes": 768
+  },
+  {
+   "id": "route-m18",
+   "argv": [
+    "route",
+    "shuffle the wallpaper slideshow order",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0928b9832baea5abeeca99593a3d3c213760677416d42a0aa20eb2653dbec702",
+   "bytes": 875
+  },
+  {
+   "id": "route-m19",
+   "argv": [
+    "route",
+    "tint the wallpaper to match my colour scheme",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "69e2c0e02c916d3877e988747f09a282cb1d357348763bd0567bc85686d0288f",
+   "bytes": 875
+  },
+  {
+   "id": "route-m20",
+   "argv": [
+    "route",
+    "make the wallpaper tinting stronger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ab7fff64974b34380b1243de86cdf285e481b41548ee0726be00bac4d46e9c3f",
+   "bytes": 763
+  },
+  {
+   "id": "route-m21",
+   "argv": [
+    "route",
+    "hide the audio visualiser on the desktop",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e97fdd4503d16db1541b6365d614c43dc44e3f35fa56b1f7be0ec6175fdc2e59",
+   "bytes": 886
+  },
+  {
+   "id": "route-m22",
+   "argv": [
+    "route",
+    "auto-hide the visualiser when idle",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "eefc474d605e98f9d18fcb256226c843c9f8011c230a84e72a7312ca23e768a8",
+   "bytes": 1619
+  },
+  {
+   "id": "route-m23",
+   "argv": [
+    "route",
+    "colourize the app icons from the wallpaper",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "14b32e25ff81c4901cd09d87c1e806e895a61e4c468903507e8841e160c3ace2",
+   "bytes": 839
+  },
+  {
+   "id": "route-m25",
+   "argv": [
+    "route",
+    "make the volume step smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3fde3e08d8e8275c7f986e1830148f7948c1b8ad507c96159d65102d2fcdbcbe",
+   "bytes": 1415
+  },
+  {
+   "id": "route-m26",
+   "argv": [
+    "route",
+    "make the brightness step smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c536c1da622c85c221246a34a481ee494cca87a1b0f414775c1716b22eb778b8",
+   "bytes": 1516
+  },
+  {
+   "id": "route-m27",
+   "argv": [
+    "route",
+    "set the corner rounding to 15 px",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "226f33e7a1032368dade740042244494a67b2692421d6f4d2468f571fcb1bb0f",
+   "bytes": 1637
+  },
+  {
+   "id": "route-m28",
+   "argv": [
+    "route",
+    "show no more than 6 toasts at once",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f66a7fcae5493f2f93fe8c88997173e04aff71adb40ee0fad004fb04fc04c932",
+   "bytes": 1436
+  },
+  {
+   "id": "route-m29",
+   "argv": [
+    "route",
+    "let the bar hide while I'm working",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "62b26698b0d960486368980d6b2e6ba22207d176d73ef1574b388785915879f1",
+   "bytes": 1560
+  },
+  {
+   "id": "route-m30",
+   "argv": [
+    "route",
+    "set the dock icon size to 56 px",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1bb77b46a1073190c2b200840115be231b45afca7b5cdba5e79b077014646cd1",
+   "bytes": 1356
+  },
+  {
+   "id": "route-m31",
+   "argv": [
+    "route",
+    "raise the max volume to 120 percent",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4aed1a76ba4dd47f0aad69efca8e7ae25b9421e8de8b2a110aa26ce9a4bfc5e8",
+   "bytes": 1438
+  },
+  {
+   "id": "route-m33",
+   "argv": [
+    "route",
+    "keep the screen awake while charging",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "95ad6bde61ed87627b97d8171bad969c7128134fd2141d59f29a5dca04aca3ee",
+   "bytes": 576
+  },
+  {
+   "id": "route-m34",
+   "argv": [
+    "route",
+    "keep the screen awake while music is playing",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1c8e0acb8a2000f723394dc3c717c93e4dbfa5c0d59d9d59b0a5983df9530763",
+   "bytes": 600
+  },
+  {
+   "id": "route-n01",
+   "argv": [
+    "route",
+    "write a poem about autumn",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "535a3b091bb401059cc3842a8de62fd0ce8f00e77e8ea7fe8d45627de3d53cfc",
+   "bytes": 1178
+  },
+  {
+   "id": "route-n02",
+   "argv": [
+    "route",
+    "what is the capital of France",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b63a1f2b55e2cd6a8a5162693fb0658667ebe9ae8930247c490f7e178e6d4d74",
+   "bytes": 515
+  },
+  {
+   "id": "route-n03",
+   "argv": [
+    "route",
+    "how do I install docker",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bc1e12e0963966051c55e6b770b4458cd6c9a4b7ad084b49cc9e8f1ecacf5060",
+   "bytes": 1375
+  },
+  {
+   "id": "route-n04",
+   "argv": [
+    "route",
+    "translate hello to french",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5f28fae0b5180c0bef1edeb1de8ac9be6b286ea599fe0aba71169391ea1e7f7d",
+   "bytes": 1205
+  },
+  {
+   "id": "route-n05",
+   "argv": [
+    "route",
+    "play some music",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "33bd25f04d17fdfc1622f36e8760083ee571cc21f6ec049950dec052027bcf78",
+   "bytes": 1122
+  },
+  {
+   "id": "route-n06",
+   "argv": [
+    "route",
+    "what's the weather like tomorrow",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2baf2ab8349ba03e76bef59c970f080d8e427d1cf089d81552df809f16564805",
+   "bytes": 1169
+  },
+  {
+   "id": "route-a07",
+   "argv": [
+    "route",
+    "tell me a joke",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d5685a8f05d7b4c1c5ab8b9c41341b80dfd7f1907c6b12d3ee4d8f89611d8a22",
+   "bytes": 1149
+  },
+  {
+   "id": "route-a08",
+   "argv": [
+    "route",
+    "who wrote romeo and juliet",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6b6ef3ad8e3ddc40ad0f8e849e98ff89d815d9f0f4af11fa3f73a97e2649039d",
+   "bytes": 1136
+  },
+  {
+   "id": "route-a09",
+   "argv": [
+    "route",
+    "what is the meaning of life",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "63176733bad3d84c730425b87f02c5be9be41884bb1373aeb013727b8c661c92",
+   "bytes": 511
+  },
+  {
+   "id": "route-a10",
+   "argv": [
+    "route",
+    "book me a flight to tokyo",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "9f3f735f725935b40479ef0eaa77d3d438dbf9a4daa04b14e49febf2d1495e68",
+   "bytes": 1185
+  },
+  {
+   "id": "route-a11",
+   "argv": [
+    "route",
+    "order a pizza",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "09aff100aa40102ce9c4a941e2dd8088d89b9d3c064451a3289953ab8a777bcc",
+   "bytes": 1086
+  },
+  {
+   "id": "route-a12",
+   "argv": [
+    "route",
+    "what time is it right now",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "97eff24142863e12054cbf02ae36047700e7b5335996806b308e6bdf523c380b",
+   "bytes": 710
+  },
+  {
+   "id": "route-a13",
+   "argv": [
+    "route",
+    "sing me a song",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f4ecd6e5daecddad627ea54da47e7eca63881e20bec0bbde88dcdcbf4c46e9b9",
+   "bytes": 2372
+  },
+  {
+   "id": "route-a14",
+   "argv": [
+    "route",
+    "define serendipity",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "90201611d89ebd24391c27589d62a17b60154bc34c6614d5bc29fe63a4f00c79",
+   "bytes": 1102
+  },
+  {
+   "id": "route-a15",
+   "argv": [
+    "route",
+    "recommend a good movie",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "000b5638fe89d30b606515b4366ba4dda8513823a469ab1e45582bd4b3df9c02",
+   "bytes": 1172
+  },
+  {
+   "id": "route-a16",
+   "argv": [
+    "route",
+    "how tall is mount everest",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fe5690800a90a77d66baa4870f18b85094e554a5f561e4f92d7a09ae79f9dbb6",
+   "bytes": 111
+  },
+  {
+   "id": "route-a17",
+   "argv": [
+    "route",
+    "spell the word necessary",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6dac7e8c8abdc75ef1b889bb4cf3fd15208659c5b3b6dfc40058c732fa9c13fd",
+   "bytes": 1195
+  },
+  {
+   "id": "route-a18",
+   "argv": [
+    "route",
+    "convert 100 dollars to euros",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "905a1bbd6d5e7bc3b1cd6f4bdb4d65c2da195f49b7558f7c15316d4446f2e135",
+   "bytes": 1194
+  },
+  {
+   "id": "route-a19",
+   "argv": [
+    "route",
+    "write a haiku about the sea",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a86f5ea7f67fee39fb532c38dbe5d0b80ccb2d234a105c75206e863b30b01d3b",
+   "bytes": 1163
+  },
+  {
+   "id": "route-a20",
+   "argv": [
+    "route",
+    "who won the last world cup",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b063ae46b876dadd7fe5f8b575b445b38f96a6bdf48d50e7882b494929a0428e",
+   "bytes": 559
+  },
+  {
+   "id": "route-np01",
+   "argv": [
+    "route",
+    "make the bar 20 percent smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ae17ef6722a85c429cd9d0d6a05283339bf6d2810af60e9a27f612259ea23047",
+   "bytes": 1419
+  },
+  {
+   "id": "route-np02",
+   "argv": [
+    "route",
+    "make the bar 20% smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8fe86eff1683a3b5d842d5cb6fd44354ca33913eeb643a2e2fe874a021663a4a",
+   "bytes": 1349
+  },
+  {
+   "id": "route-np03",
+   "argv": [
+    "route",
+    "set the bar scale to 1.2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c2900c8c6b1a947771d374ebcf2d7128a887aafa5a346d50f77ca8b7a2b029c8",
+   "bytes": 1276
+  },
+  {
+   "id": "route-np04",
+   "argv": [
+    "route",
+    "make the dock icons 40 pixels",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b63435270e2b6e305227e4195de67695130244edb23ee15ba03498736ad0fbf1",
+   "bytes": 1346
+  },
+  {
+   "id": "route-np05",
+   "argv": [
+    "route",
+    "set the dock icon size to 48",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "132b2945e7a0a2ff66f54f857b13b20478b46566b3bdfad751e11e1389b5f1ee",
+   "bytes": 1330
+  },
+  {
+   "id": "route-np06",
+   "argv": [
+    "route",
+    "put the bar at the top",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dd1207ecb9731cce6ef13f039b043b9a3da28857ff141b3182b3acb9a5764adb",
+   "bytes": 1309
+  },
+  {
+   "id": "route-np07",
+   "argv": [
+    "route",
+    "set the border thickness to 5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "78ff873e57821a7eda4053e2d329da1b69a4eace493365fe6643b4099a07ee22",
+   "bytes": 1370
+  },
+  {
+   "id": "route-np08",
+   "argv": [
+    "route",
+    "enable blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7e9bbfcf347a2fd9ee21b60923cc50756852c3c6d75c56564e5a103a2e52714d",
+   "bytes": 2223
+  },
+  {
+   "id": "route-np09",
+   "argv": [
+    "route",
+    "turn off blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5d813834c26c453434d976c5a411c1b192fb01210358775eb345cce9517ee4c6",
+   "bytes": 1234
+  },
+  {
+   "id": "route-np10",
+   "argv": [
+    "route",
+    "show the date next to the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7c088c6164ae5b67890e1c9d85c586cafc9aed1e1b14761db76f56b8e89c41b0",
+   "bytes": 1357
+  },
+  {
+   "id": "route-np11",
+   "argv": [
+    "route",
+    "hide the clock icon",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0cfa21d9703141d6a551f3f24eec7448fcc4a1cf8d1fad56c2f2b6eb0d6e8f7f",
+   "bytes": 1303
+  },
+  {
+   "id": "route-np12",
+   "argv": [
+    "route",
+    "use the 24 hour clock format",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2834b6cfd9fd2c0723839b849771f662102f690e1a258ce64b8eaaae70914215",
+   "bytes": 1338
+  },
+  {
+   "id": "route-np13",
+   "argv": [
+    "route",
+    "make everything pitch black",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "978891ec828a21c9deaa3f39ca73aa03894753e6cef08a27e42bebd588bc5c9d",
+   "bytes": 1292
+  },
+  {
+   "id": "route-np14",
+   "argv": [
+    "route",
+    "enable the launcher",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "959b424df2f15afd35fcb84d6c07f7abd8db57d022b9020b372cd5a8e5510e03",
+   "bytes": 2414
+  },
+  {
+   "id": "route-np15",
+   "argv": [
+    "route",
+    "limit notification popups to 3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c05c205883780a3a16d394d7f1c983a7a63f96bae584ed46b0de7dac2ac3eb71",
+   "bytes": 1368
+  },
+  {
+   "id": "route-np16",
+   "argv": [
+    "route",
+    "set the transparency base to 0.5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "93de56823e3694f3f95d28bd182308a9f9ae6c152de2d17cefcef877b5289eb9",
+   "bytes": 1427
+  },
+  {
+   "id": "route-np17",
+   "argv": [
+    "route",
+    "raise the max volume to 120 percent",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4aed1a76ba4dd47f0aad69efca8e7ae25b9421e8de8b2a110aa26ce9a4bfc5e8",
+   "bytes": 1438
+  },
+  {
+   "id": "route-np18",
+   "argv": [
+    "route",
+    "make the font 10 percent bigger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5997f7d66d9f8cc50afa134c7f57fd35ec1f64dfd86dd9b7cdbc34d673b1899f",
+   "bytes": 1468
+  },
+  {
+   "id": "route-np19",
+   "argv": [
+    "route",
+    "set the spacing scale to 1.25",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b5447dd0d83c3da0858afa387ea9f3b9867a07f075c5e9fa145f08cf7ea077e0",
+   "bytes": 1352
+  },
+  {
+   "id": "route-np20",
+   "argv": [
+    "route",
+    "make animations half speed",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0f562acbe0b087359fbe39b83f04d56f3ff3336bdee7a6705cad6f501a126667",
+   "bytes": 1409
+  },
+  {
+   "id": "route-np21",
+   "argv": [
+    "route",
+    "set the overview base duration to 400",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d67e2001b33a4b6a2b4184608aab4f0248d19fb890c04460cc3a6826a8ff97b5",
+   "bytes": 1436
+  },
+  {
+   "id": "route-np22",
+   "argv": [
+    "route",
+    "notification group preview count 6",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "93466b2fba13131486a7d6f4c8a15690f9398b73212277983aec0806a1b2d564",
+   "bytes": 1398
+  },
+  {
+   "id": "route-np23",
+   "argv": [
+    "route",
+    "set the osd hide delay to 2 seconds",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "971b7f9d715740991bd28965f34def2a07c6b705c633f59aae35a3ef5454322b",
+   "bytes": 1734
+  },
+  {
+   "id": "route-np24",
+   "argv": [
+    "route",
+    "notifications should time out after 5 seconds",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1ee53e22094b717fd133bc90cec03c2ebe7fee50832f8af58b7db0b059ef1417",
+   "bytes": 2808
+  },
+  {
+   "id": "route-np25",
+   "argv": [
+    "route",
+    "set the ambient opacity to 0.8",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3a05f5a5987533ac0b04893155e22ac7511edfae143c3207e96a2b177b66105d",
+   "bytes": 1450
+  },
+  {
+   "id": "route-np26",
+   "argv": [
+    "route",
+    "enable the dashboard",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "99269ce2f45d1fedeee9c2d2302c7da8251cf7fc97d66d13e06fae8ec7800e26",
+   "bytes": 2413
+  },
+  {
+   "id": "route-np27",
+   "argv": [
+    "route",
+    "hide the sidebar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "14b7e3e46314cb507dd53ef6c282bdd8e9023bba04f597148d8066f6d3059dd8",
+   "bytes": 1234
+  },
+  {
+   "id": "route-np28",
+   "argv": [
+    "route",
+    "stop the wallpaper slideshow",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3dc137007e88d6b3ead0effae5db07ec455dfa1f17a1c7f05c948f1c24eb530c",
+   "bytes": 1915
+  },
+  {
+   "id": "route-np29",
+   "argv": [
+    "route",
+    "set the notification expire timeout to 3000",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "338cc016983ef80380db9905b89334f0d6aa285f2599a6af6b01ecb67f626bf1",
+   "bytes": 1635
+  },
+  {
+   "id": "route-np30",
+   "argv": [
+    "route",
+    "show seconds on the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c33d9e0fe711859ae9c82773a11c59b6f65d70ff063ad726b7c6689c72cad75d",
+   "bytes": 1438
+  },
+  {
+   "id": "settings-np01",
+   "argv": [
+    "settings",
+    "make the bar 20 percent smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "0d8fd3b485a5571ff373676033dd6777162c17065996d7495ab23c848f4160ab",
+   "bytes": 706
+  },
+  {
+   "id": "settings-np02",
+   "argv": [
+    "settings",
+    "make the bar 20% smaller",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7e9079bacecaf7853f4c04e9becc3b54e1840bc1f893b2268c2be65f42cf1d1f",
+   "bytes": 522
+  },
+  {
+   "id": "settings-np03",
+   "argv": [
+    "settings",
+    "set the bar scale to 1.2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1cd2b57445025502157bcd34b6a823604ba253a32eb8cab3d575c7822d29cab2",
+   "bytes": 478
+  },
+  {
+   "id": "settings-np04",
+   "argv": [
+    "settings",
+    "make the dock icons 40 pixels",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a1cb4c7871dbb488cee4cd33851b6fe5f32d7974d14f0a928f28deedaa0cf15a",
+   "bytes": 487
+  },
+  {
+   "id": "settings-np05",
+   "argv": [
+    "settings",
+    "set the dock icon size to 48",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "cb81cc913c2e413ed8a468a9df46490e7ebb1268b45cd8247c6a6cff538b8287",
+   "bytes": 487
+  },
+  {
+   "id": "settings-np06",
+   "argv": [
+    "settings",
+    "put the bar at the top",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6a217e7e70b006c9a1b847e75973d583f670b98ad2d3fb3b4ff1efc025abb6a7",
+   "bytes": 491
+  },
+  {
+   "id": "settings-np07",
+   "argv": [
+    "settings",
+    "set the border thickness to 5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "13be356e0594280046b8ea6b7a0de595403a7472bd7278e6e55489d257b11c2c",
+   "bytes": 487
+  },
+  {
+   "id": "settings-np08",
+   "argv": [
+    "settings",
+    "enable blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1a913f39ae474e56a54df4ef50cf5f733699b5e87d451e448ee90ee68d6f8a15",
+   "bytes": 491
+  },
+  {
+   "id": "settings-np09",
+   "argv": [
+    "settings",
+    "turn off blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7a1b1d290e903b48c499bf7ae5b6fc20e1d5b1a47fb54da3753b41508d8001be",
+   "bytes": 495
+  },
+  {
+   "id": "settings-np10",
+   "argv": [
+    "settings",
+    "show the date next to the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np11",
+   "argv": [
+    "settings",
+    "hide the clock icon",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np12",
+   "argv": [
+    "settings",
+    "use the 24 hour clock format",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np13",
+   "argv": [
+    "settings",
+    "make everything pitch black",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "703303a7c08b03cf12e2a8a6a9c03f364bbfa861431bc23c1dd34fdefc6ab741",
+   "bytes": 503
+  },
+  {
+   "id": "settings-np14",
+   "argv": [
+    "settings",
+    "enable the launcher",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fba4fbadaacdaa7b257129403df6b0da682e4a574f9b4d476cbe40695a776bc7",
+   "bytes": 396
+  },
+  {
+   "id": "settings-np15",
+   "argv": [
+    "settings",
+    "limit notification popups to 3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1a20d66a85be0fdbc605c3721e507a9fc82fa25b278321fbac74a005069a1b03",
+   "bytes": 486
+  },
+  {
+   "id": "settings-np16",
+   "argv": [
+    "settings",
+    "set the transparency base to 0.5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d669e8199af1d216bd57899b393bc9490f87ae50b5f013e5d5e7e727ef6551be",
+   "bytes": 506
+  },
+  {
+   "id": "settings-np17",
+   "argv": [
+    "settings",
+    "raise the max volume to 120 percent",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d99f78c3cfa1d92f26537f5169e5af614f17c6f1e34d8fb8e2415886b6f71038",
+   "bytes": 1552
+  },
+  {
+   "id": "settings-np18",
+   "argv": [
+    "settings",
+    "make the font 10 percent bigger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f22072fbe56f8912b0cdb2f5b9bd349a844ab413806d173edd822afad7df14c5",
+   "bytes": 732
+  },
+  {
+   "id": "settings-np19",
+   "argv": [
+    "settings",
+    "set the spacing scale to 1.25",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1eaab8f59c79e87d01987d0cd55c6bf0c197370f602f25a8bc1ed69ecd0b7e74",
+   "bytes": 499
+  },
+  {
+   "id": "settings-np20",
+   "argv": [
+    "settings",
+    "make animations half speed",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "97e50331c3768c31537fcd6bb48415ab3943a0c610dbbc8008e8dbbcc903566a",
+   "bytes": 412
+  },
+  {
+   "id": "settings-np21",
+   "argv": [
+    "settings",
+    "set the overview base duration to 400",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np22",
+   "argv": [
+    "settings",
+    "notification group preview count 6",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np23",
+   "argv": [
+    "settings",
+    "set the osd hide delay to 2 seconds",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "eda28af904d6c69babc46564261fa4c6d7b18378674b28d4318aed2e6b0eabc0",
+   "bytes": 219
+  },
+  {
+   "id": "settings-np24",
+   "argv": [
+    "settings",
+    "notifications should time out after 5 seconds",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np25",
+   "argv": [
+    "settings",
+    "set the ambient opacity to 0.8",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1693823e58014b224b3b97561fef225935a483f2428844a7b8ad6b259f9b0a32",
+   "bytes": 506
+  },
+  {
+   "id": "settings-np26",
+   "argv": [
+    "settings",
+    "enable the dashboard",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np27",
+   "argv": [
+    "settings",
+    "hide the sidebar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np28",
+   "argv": [
+    "settings",
+    "stop the wallpaper slideshow",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "44a5dd0bb0c14c334ad86530afff13573ef9de365b61ffd4870b2f24efc8d9c8",
+   "bytes": 495
+  },
+  {
+   "id": "settings-np29",
+   "argv": [
+    "settings",
+    "set the notification expire timeout to 3000",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-np30",
+   "argv": [
+    "settings",
+    "show seconds on the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-manual-01",
+   "argv": [
+    "settings",
+    "make the bar slightly thicker",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "57db030cad8c38bb6493d1ac278c726fe8d92f9570b8a2987cf68bd1a6385da1",
+   "bytes": 504
+  },
+  {
+   "id": "settings-manual-02",
+   "argv": [
+    "settings",
+    "hide the dock icons",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a7526fc8802a178309b90557f6978076ecc8065f3377adad86ba08aca2365720",
+   "bytes": 386
+  },
+  {
+   "id": "settings-manual-03",
+   "argv": [
+    "settings",
+    "move the dock to the left edge",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c10e6332c0580ebc4ab8207a96f2568641d727803ff05ddb03ba6a6cefa6cf1b",
+   "bytes": 601
+  },
+  {
+   "id": "settings-manual-04",
+   "argv": [
+    "settings",
+    "set the accent colour to red",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "62dc73fc54ede48591d56b12eec77cc1494677dd94b0d52c8135f6d68f5561a1",
+   "bytes": 503
+  },
+  {
+   "id": "settings-manual-05",
+   "argv": [
+    "settings",
+    "turn off blur",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7a1b1d290e903b48c499bf7ae5b6fc20e1d5b1a47fb54da3753b41508d8001be",
+   "bytes": 495
+  },
+  {
+   "id": "settings-manual-06",
+   "argv": [
+    "settings",
+    "make notifications quieter",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-manual-07",
+   "argv": [
+    "settings",
+    "change the wallpaper to a dark one",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "44a5dd0bb0c14c334ad86530afff13573ef9de365b61ffd4870b2f24efc8d9c8",
+   "bytes": 495
+  },
+  {
+   "id": "settings-manual-08",
+   "argv": [
+    "settings",
+    "enable night light",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-manual-09",
+   "argv": [
+    "settings",
+    "make the terminal font bigger",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "12d760ce75fa80726366575d2d4c2b7d7e41f2d6201e5c5d799c54df075c05a9",
+   "bytes": 515
+  },
+  {
+   "id": "settings-manual-10",
+   "argv": [
+    "settings",
+    "disable the system tray",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-manual-11",
+   "argv": [
+    "settings",
+    "add a widget to the bar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "338065468b0abfa5f9e813ed79275157e38d6edc9e8d2631927a6bcac25f9e92",
+   "bytes": 530
+  },
+  {
+   "id": "settings-manual-12",
+   "argv": [
+    "settings",
+    "set the bar to auto-hide",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3f552319568a1e82735da82dcec77d5eae96b796f20ba226de06a465cf0dde52",
+   "bytes": 492
+  },
+  {
+   "id": "settings-manual-13",
+   "argv": [
+    "settings",
+    "increase the corner rounding",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "73cd33fb66a801f204d350ed702d19ffb331b4d727ef8412b807cb2845454d51",
+   "bytes": 527
+  },
+  {
+   "id": "settings-manual-14",
+   "argv": [
+    "settings",
+    "disable desktop icons",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings-manual-15",
+   "argv": [
+    "settings",
+    "make the launcher open faster",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fba4fbadaacdaa7b257129403df6b0da682e4a574f9b4d476cbe40695a776bc7",
+   "bytes": 396
+  },
+  {
+   "id": "genius-math-01",
+   "argv": [
+    "genius",
+    "math",
+    "2 + 3 * 7",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "80599429b3d9dc05dfee83312c19fa24a099dc22e57807ca8acd1321e72e5564",
+   "bytes": 155
+  },
+  {
+   "id": "genius-math-02",
+   "argv": [
+    "genius",
+    "math",
+    "(2+3)*7",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1997d29109e740d3b5e66f08bdaf36904bb4508a98dc3a29fc05603dcfca1560",
+   "bytes": 153
+  },
+  {
+   "id": "genius-math-03",
+   "argv": [
+    "genius",
+    "math",
+    "2**10",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "584f6420b50917727baad8b92a4bb91c404fbbb85ba17aade954bcea47896098",
+   "bytes": 159
+  },
+  {
+   "id": "genius-math-04",
+   "argv": [
+    "genius",
+    "math",
+    "17 % 5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4ec10dd576ce0de797eaa9790f85685c5c0aca3f3ba1625e712436027bb30a8d",
+   "bytes": 148
+  },
+  {
+   "id": "genius-math-05",
+   "argv": [
+    "genius",
+    "math",
+    "7!/3!",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "259863d0bfee290581561fda66d2477bc9bacf9455ffd791476ed4e0120c1aeb",
+   "bytes": 155
+  },
+  {
+   "id": "genius-math-06",
+   "argv": [
+    "genius",
+    "math",
+    "sqrt(2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7f0932296c71833f38091ea3b08039ae7ca224d14517407031a9433c7fe1e12b",
+   "bytes": 208
+  },
+  {
+   "id": "genius-math-07",
+   "argv": [
+    "genius",
+    "math",
+    "sqrt(2)^2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ac4d05ea49fa8dcf4fc68fc871be4bd3f035f135697c5a314adce92052640644",
+   "bytes": 180
+  },
+  {
+   "id": "genius-math-08",
+   "argv": [
+    "genius",
+    "math",
+    "sin(pi/6)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ff188e2d2563f9808408ad9054e750416bc254894f10ccbb5a3b5471707d64a7",
+   "bytes": 186
+  },
+  {
+   "id": "genius-math-09",
+   "argv": [
+    "genius",
+    "math",
+    "cos(0)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e43bcb0b40cfbf913e47ece6b358c261f02225a64cf3a507c0e730aeef148b2d",
+   "bytes": 161
+  },
+  {
+   "id": "genius-math-10",
+   "argv": [
+    "genius",
+    "math",
+    "ln(e)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5b0b1035afb51ea12207dd066227d4f3d29f2314ac8549ee73dff2ce0293161c",
+   "bytes": 159
+  },
+  {
+   "id": "genius-math-11",
+   "argv": [
+    "genius",
+    "math",
+    "log(1000)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7daba8500e70e706a1a9ff354bf3114ff66ffbc78e346532b26232daa2ee4d29",
+   "bytes": 208
+  },
+  {
+   "id": "genius-math-12",
+   "argv": [
+    "genius",
+    "math",
+    "1/3 + 1/6",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bad1cb337c751eed468eb0f64c844a7d9e8988deff712c13cf1ffc98a406121d",
+   "bytes": 157
+  },
+  {
+   "id": "genius-math-13",
+   "argv": [
+    "genius",
+    "math",
+    "0.1 + 0.2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b9efad4b2932b8c6a507a22758e930177ecb0cd7bd8fa482f215f8e055622e64",
+   "bytes": 173
+  },
+  {
+   "id": "genius-math-14",
+   "argv": [
+    "genius",
+    "math",
+    "abs(-4.2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b8b88867d367c67794d81f52ba37829cdce93f7ee068a56d27f6ca4d56861650",
+   "bytes": 170
+  },
+  {
+   "id": "genius-math-15",
+   "argv": [
+    "genius",
+    "math",
+    "floor(3.7)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "80f4003a6db4e2fab532ff8015c8ab8a17a62765c2fa95aa05dd53b13c77f2c0",
+   "bytes": 167
+  },
+  {
+   "id": "genius-math-16",
+   "argv": [
+    "genius",
+    "math",
+    "ceil(3.2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "abf30f3e569f4a9010558f4584148d03810f6411270d461b050763d6cb517edb",
+   "bytes": 165
+  },
+  {
+   "id": "genius-math-17",
+   "argv": [
+    "genius",
+    "math",
+    "round(3.5)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7eade5fc55125629ada9759b29b0695b01dec23f4863278199f540161b489289",
+   "bytes": 167
+  },
+  {
+   "id": "genius-math-18",
+   "argv": [
+    "genius",
+    "math",
+    "max(3, 7, 5)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "36fc17958c1ea08ea6a86c0656a08115269f5571f7879fa30dc40abb800fbae0",
+   "bytes": 179
+  },
+  {
+   "id": "genius-math-19",
+   "argv": [
+    "genius",
+    "math",
+    "min(3, 7, 5)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "84b1d23a36ed552c75a1b8d919d33a2af3c48343f0dcd1ad5a71a49ea62fe7e5",
+   "bytes": 179
+  },
+  {
+   "id": "genius-math-20",
+   "argv": [
+    "genius",
+    "math",
+    "gcd(12, 18)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2222d3a2937bb0887b1a4f71b53278f614c581625730f0a304ae8f3f35a89b74",
+   "bytes": 177
+  },
+  {
+   "id": "genius-math-21",
+   "argv": [
+    "genius",
+    "math",
+    "lcm(4, 6)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b99107eafbd506bf1f9a33436664481f8c5775be00927de366dbf77e7799e9a5",
+   "bytes": 175
+  },
+  {
+   "id": "genius-math-22",
+   "argv": [
+    "genius",
+    "math",
+    "2^0.5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "18c6e2b9d7ad664b39a70efd413312b57df2855ef1428c11064ff637c83fe732",
+   "bytes": 192
+  },
+  {
+   "id": "genius-math-23",
+   "argv": [
+    "genius",
+    "math",
+    "e^2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "76b181b14db0d72383b7b325375c80efcba4c708c19c079108c1dc0db3227796",
+   "bytes": 190
+  },
+  {
+   "id": "genius-math-24",
+   "argv": [
+    "genius",
+    "math",
+    "10 - 4 - 3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "16364c088627ba11e997f3529405608c785e6165ec35a3758bad921a19fed892",
+   "bytes": 152
+  },
+  {
+   "id": "genius-math-25",
+   "argv": [
+    "genius",
+    "math",
+    "100 / 8",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4b0729f9f116dffcb05916d4415880faf8e3c28598f656948bb119b6db36c4b0",
+   "bytes": 159
+  },
+  {
+   "id": "genius-math-26",
+   "argv": [
+    "genius",
+    "math",
+    "2 * pi",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e60f694f80d10c4034c136323288f729ebd0c86b591f084a7608570367690219",
+   "bytes": 192
+  },
+  {
+   "id": "genius-math-27",
+   "argv": [
+    "genius",
+    "math",
+    "ncr(5, 2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "706f21bee84cb8491b1633e56d377e9756f6db41213830923a59cf4014d7e38f",
+   "bytes": 175
+  },
+  {
+   "id": "genius-math-28",
+   "argv": [
+    "genius",
+    "math",
+    "hypot(3, 4)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "866b62e06bcde1dcb6570bc8cdabab7d41f030fbee2b4484231415e0e97e045c",
+   "bytes": 179
+  },
+  {
+   "id": "genius-math-29",
+   "argv": [
+    "genius",
+    "math",
+    "sqrt(16) + 2^3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7d44091bea1e6e67ca5568790d61e555545222cc804168c2be53b0ad98c849c8",
+   "bytes": 174
+  },
+  {
+   "id": "genius-math-30",
+   "argv": [
+    "genius",
+    "math",
+    "-5 + 12",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fb240f4718eaecdc4ccf4a9c75867532bf7256990ca9e9b175c7979bfb9adedf",
+   "bytes": 149
+  },
+  {
+   "id": "genius-math-31",
+   "argv": [
+    "genius",
+    "math",
+    "3 * (4 + 5) - 2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2c58fc723ff59db3b6ccdb3369c8c58a629779f1972b80bcba07776607045162",
+   "bytes": 161
+  },
+  {
+   "id": "genius-math-32",
+   "argv": [
+    "genius",
+    "math",
+    "pi * 2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "15f3c2b5971bafb1bdd62e5c97c2912caafea26f76efe11af49f043b5efb931b",
+   "bytes": 192
+  },
+  {
+   "id": "genius-math-33",
+   "argv": [
+    "genius",
+    "math",
+    "pi^2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8246472a9746c92cb07f4fbb81bf80f530c84d1031334deeac14a4d9145da7f7",
+   "bytes": 190
+  },
+  {
+   "id": "genius-math-34",
+   "argv": [
+    "genius",
+    "math",
+    "1/7",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "c61d0ca2181947aa9226deb2fb35cfe2852d825751eb1c8f35df382dde58c2d8",
+   "bytes": 194
+  },
+  {
+   "id": "genius-math-35",
+   "argv": [
+    "genius",
+    "math",
+    "9.75 * 4",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5499db38ece53f726090bb01ab00a43d926c52139455038086baebf62349feeb",
+   "bytes": 154
+  },
+  {
+   "id": "genius-math-36",
+   "argv": [
+    "genius",
+    "math",
+    "12.5 % 3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d9692f6989f13c314213e5f616da6fb94b933e744a87759f64d116ff1b0292b9",
+   "bytes": 156
+  },
+  {
+   "id": "genius-math-37",
+   "argv": [
+    "genius",
+    "math",
+    "2^(-2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e69e16bda8c8ea87517bab98919aad898fc3e63a5c0aae9e9814a4f9420c0719",
+   "bytes": 158
+  },
+  {
+   "id": "genius-math-38",
+   "argv": [
+    "genius",
+    "math",
+    "0.5!",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "42bf7d7e18deac3f1c9910583bde3c22db31bb77997cc49d52fd620813b50fcc",
+   "bytes": 150
+  },
+  {
+   "id": "genius-math-39",
+   "argv": [
+    "genius",
+    "math",
+    "tanh(0)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e2a75492c29d9a8ef5025e661f8b937598af05f9164da4fb186b7f73ad79e0db",
+   "bytes": 163
+  },
+  {
+   "id": "genius-math-40",
+   "argv": [
+    "genius",
+    "math",
+    "atan(1)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2fd3a52218b9dfcb7bba13b85e68fd1cee4aa1be34fb7a89ffc7083c7acdf1dd",
+   "bytes": 211
+  },
+  {
+   "id": "genius-math-41",
+   "argv": [
+    "genius",
+    "math",
+    "exp(ln(7))",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "204c4ce8229ce7577828adac4bbe97669f55a03042757eeeeebcc96756674955",
+   "bytes": 189
+  },
+  {
+   "id": "genius-math-42",
+   "argv": [
+    "genius",
+    "math",
+    "floor(5 / 2)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4929102d4fe527e7b123fe23d4b1d8c4f2c2b66f9a806f0adf1ddf2ebce3baa5",
+   "bytes": 169
+  },
+  {
+   "id": "genius-math-43",
+   "argv": [
+    "genius",
+    "math",
+    "0 - (-3)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "3542d35ee0aa57ab057e36a7e6fbb349dc16cb042d20d7e27ce80959d2edada0",
+   "bytes": 150
+  },
+  {
+   "id": "genius-math-44",
+   "argv": [
+    "genius",
+    "math",
+    "1e3 + 25",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6d81e4dd032b36e967f535fd2911d2b05baa996c6934cabcbe0e58a3181d3ad7",
+   "bytes": 162
+  },
+  {
+   "id": "genius-math-45",
+   "argv": [
+    "genius",
+    "math",
+    "10 + 15",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8835f047f4caad53e245f86e723e1fc23f63c3ae7f594e9a26e5fcd279767523",
+   "bytes": 153
+  },
+  {
+   "id": "genius-stats-01",
+   "argv": [
+    "genius",
+    "stats",
+    "3 5 7 9 11",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "16b66b658e694e137170fcf703fd5bb4a3becc3071e39931fcca58f8b49c6056",
+   "bytes": 484
+  },
+  {
+   "id": "genius-stats-02",
+   "argv": [
+    "genius",
+    "stats",
+    "1 1 2 3 5 8 13",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fa201bc2660fad8a960284cf7e8b2e5ca35c8e49e9d1c9e053750343ec83eb83",
+   "bytes": 541
+  },
+  {
+   "id": "genius-stats-03",
+   "argv": [
+    "genius",
+    "stats",
+    "10 20 30 40 50",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d24bd04167c1c5b284009a33fea6fd8acff714fa7de4e2219622d4b928d4feca",
+   "bytes": 496
+  },
+  {
+   "id": "genius-stats-04",
+   "argv": [
+    "genius",
+    "stats",
+    "2.5 2.5 2.5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2737fcf8208e7238690346ede27736f05f5c13ae9965d337c11af53f24b84a31",
+   "bytes": 434
+  },
+  {
+   "id": "genius-stats-05",
+   "argv": [
+    "genius",
+    "stats",
+    "42",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "9b4e42b0ef5ec85b80410914bdb25baa0127054798f506cd8effb50e0d23fda4",
+   "bytes": 446
+  },
+  {
+   "id": "genius-stats-06",
+   "argv": [
+    "genius",
+    "stats",
+    "1 2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d862e66372900fbe7f430f533b38cfb838c3a68c4506ae00cd841b10ae44a508",
+   "bytes": 469
+  },
+  {
+   "id": "genius-stats-07",
+   "argv": [
+    "genius",
+    "stats",
+    "5 5 5 5 5 5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "cb8b9cec9587128acf739726ff244bb838ce67c5c054ed6bbbf1ee3cc7ce10f7",
+   "bytes": 434
+  },
+  {
+   "id": "genius-stats-08",
+   "argv": [
+    "genius",
+    "stats",
+    "100 200 300",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1a31439b996b1dd2bb139ae26bfe0ef9a0a4c07a4e470c5d81afa531b118464c",
+   "bytes": 484
+  },
+  {
+   "id": "genius-matrix-01",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[2,1],[1,3]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8a6ff74ec25a07c309a13426985508dba71e746a8d0bb02fdd71b0c2f7ddc4a7",
+   "bytes": 142
+  },
+  {
+   "id": "genius-matrix-02",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[1,0],[0,1]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "95fdaaad8ed9b0c4722bb2939f5ee302fefc6bfcdb5192e53bba2aa0f7269a7a",
+   "bytes": 128
+  },
+  {
+   "id": "genius-matrix-03",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[4,7],[2,6]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "cb0f347ce46f85268583d9dd4ae5375ee25bd9868eb41397bf1ba146c96043fb",
+   "bytes": 143
+  },
+  {
+   "id": "genius-matrix-04",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[3]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "d5a5c1168deeecdb8e6b590d74780378968203df00aa5e97117d4845ce9a48d8",
+   "bytes": 109
+  },
+  {
+   "id": "genius-matrix-05",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[5,2],[7,3]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "409a5aac1a2dc21eda6ee310a4ca917e546ff37e6c448087bc76ae1b26195815",
+   "bytes": 157
+  },
+  {
+   "id": "genius-matrix-06",
+   "argv": [
+    "genius",
+    "matrix",
+    "[[0,1],[1,0]]",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b27b970aa1301d345e7bb2f0e35d4aae0b8daac83475ab720d0231ff07b34980",
+   "bytes": 129
+  },
+  {
+   "id": "genius-solve-01",
+   "argv": [
+    "genius",
+    "solve",
+    "x**2 - 4",
+    "--lo",
+    "0",
+    "--hi",
+    "5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "76d275dc9677fdce4b5416ffb41905c1f1abf883e7c1fae8b666fdbadbe381cd",
+   "bytes": 1107
+  },
+  {
+   "id": "genius-solve-02",
+   "argv": [
+    "genius",
+    "solve",
+    "x - 3",
+    "--lo",
+    "0",
+    "--hi",
+    "10",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "502b1afb59d53b8582f74489477b68e1e4727f78d22ec797e38324fa3d695a60",
+   "bytes": 1104
+  },
+  {
+   "id": "genius-solve-03",
+   "argv": [
+    "genius",
+    "solve",
+    "sin(x) - 0.5",
+    "--lo",
+    "0",
+    "--hi",
+    "2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "eeec744ea358302522c1737bb3caeb7ec8e49937a016cc57c2b7c7a20adb0dfe",
+   "bytes": 1120
+  },
+  {
+   "id": "genius-solve-04",
+   "argv": [
+    "genius",
+    "solve",
+    "x**3 - 8",
+    "--lo",
+    "0",
+    "--hi",
+    "4",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fe26c1150d485cea00bfe79cd38d32c45b846981b6ee690140ba1bc3300b235c",
+   "bytes": 218
+  },
+  {
+   "id": "genius-calcopt-01",
+   "argv": [
+    "genius",
+    "calc",
+    "--derivative",
+    "x**2",
+    "--at",
+    "3",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1a5bff90c61cfad7dca4e4adbc2843f3e02eeea238a2bf843fc2110df1b2673a",
+   "bytes": 78
+  },
+  {
+   "id": "genius-calcopt-02",
+   "argv": [
+    "genius",
+    "calc",
+    "--derivative",
+    "sin(x)",
+    "--at",
+    "0",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "51f88b584d416346a90b2ccbee7fcf0fbdd5098792923af48fb6d15ca4483f91",
+   "bytes": 75
+  },
+  {
+   "id": "genius-calcopt-03",
+   "argv": [
+    "genius",
+    "calc",
+    "--integral",
+    "x**2",
+    "--a",
+    "0",
+    "--b",
+    "1",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "56cc64d6e5e675338715183f39c88cde1390a784ba03762fb8914e4586165e1c",
+   "bytes": 168
+  },
+  {
+   "id": "genius-calcopt-04",
+   "argv": [
+    "genius",
+    "calc",
+    "--taylor",
+    "exp(x)",
+    "--at",
+    "0",
+    "--order",
+    "5",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "6131c317a5b038d08f0b85c4bfa61f65bb87a7ee7c5be793602d5a6fac350fe1",
+   "bytes": 552
+  },
+  {
+   "id": "genius-calcopt-05",
+   "argv": [
+    "genius",
+    "calc",
+    "--derivative",
+    "x**3 - 2*x",
+    "--at",
+    "1",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "ae9bae455817cd6e16ef3ca29f0e6873d968926db62f3cc9634198839a9d402f",
+   "bytes": 114
+  },
+  {
+   "id": "genius-calcopt-06",
+   "argv": [
+    "genius",
+    "calc",
+    "--integral",
+    "sin(x)",
+    "--a",
+    "0",
+    "--b",
+    "3.141592653589793",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "b539fa42ea4c8e5e1108479174fc45f71f9bfa895ce89fa70f3720a07f28d457",
+   "bytes": 181
+  },
+  {
+   "id": "do-01",
+   "argv": [
+    "do",
+    "what is 15% of 240",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "613f37fd76a0696b0f4980819de4ea64e07801a46c6e992ba2646d11ef13a4e0",
+   "bytes": 407
+  },
+  {
+   "id": "do-02",
+   "argv": [
+    "do",
+    "convert 5 km to m",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "13c09decd51b758d72b830f9f49250d7721546c6cbbfd623243f667ce17e6798",
+   "bytes": 444
+  },
+  {
+   "id": "do-03",
+   "argv": [
+    "do",
+    "convert 2 hours to minutes",
+    "--json"
+   ],
+   "rc": 1,
+   "sha": "12a808c360a60d423443048c2f5cc348cce61d725d07fab0bb527d9276a69c66",
+   "bytes": 380
+  },
+  {
+   "id": "do-04",
+   "argv": [
+    "do",
+    "what is 3^4",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "e55e3bec06d0329b94d78401cb5c1eb821bb1ea2e190d0074c1956a70af9acca",
+   "bytes": 486
+  },
+  {
+   "id": "do-05",
+   "argv": [
+    "do",
+    "20 percent of 150",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "286bc23c7f6e06b2fe19140b81c4859f46f800c421230a4844d7bbc0c0683ede",
+   "bytes": 485
+  },
+  {
+   "id": "do-06",
+   "argv": [
+    "do",
+    "convert 1 GB to MB",
+    "--json"
+   ],
+   "rc": 1,
+   "sha": "4fa01fb1fdeaae51a055bc734e11a9d569f478013abcf539da4ba7c51782023f",
+   "bytes": 369
+  },
+  {
+   "id": "do-07",
+   "argv": [
+    "do",
+    "convert -40 C to F",
+    "--json"
+   ],
+   "rc": 1,
+   "sha": "2b98847a355cadcdba519e504b41a7e21235f2719d35abe8cd66b6f3a43daf6b",
+   "bytes": 457
+  },
+  {
+   "id": "do-08",
+   "argv": [
+    "do",
+    "what is sqrt(144)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "377ad6de66e04bba8978e4afd4dddf5981372a2d78d5adb0d3afd42300adb922",
+   "bytes": 503
+  },
+  {
+   "id": "do-09",
+   "argv": [
+    "do",
+    "convert 3 days to hours",
+    "--json"
+   ],
+   "rc": 1,
+   "sha": "7bdb9a038c6b1c80283b3681da08ce5bd4a8f569dbfeb26f20a334180e49d355",
+   "bytes": 376
+  },
+  {
+   "id": "do-10",
+   "argv": [
+    "do",
+    "what is 7 + 8 * 2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4659d758c31458101fa97b9615eaf2fa6090f714a67cfa96bc547782cb8b0afc",
+   "bytes": 520
+  },
+  {
+   "id": "eval-routing",
+   "argv": [
+    "eval",
+    "routing",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "dbb5993c615f7db0a5e18b7eafc9087210ec7780cfd9cfe9042aaa5dce48c964",
+   "bytes": 4162
+  },
+  {
+   "id": "eval-nlplan",
+   "argv": [
+    "eval",
+    "nlplan",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "80aa4ddb228f553ca7c6c0ecfb442f906f8c554a9bd223fdac1da83e886f8d65",
+   "bytes": 175
+  },
+  {
+   "id": "eval-abstention",
+   "argv": [
+    "eval",
+    "abstention",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5f6a74f6c3df2a2054f2d33a76e59d857ee1180597774cf7dd2119aa2495878f",
+   "bytes": 136
+  },
+  {
+   "id": "eval-calibration",
+   "argv": [
+    "eval",
+    "calibration",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1ccca691f9804d280938624dc5c1f24b0e05d45bf33e53ea9ccbc0056100aadd",
+   "bytes": 586
+  },
+  {
+   "id": "a11y-01",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#000000",
+    "#ffffff",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "bac6ae33f352beb85d416c19e774284b96a6221e87b8c5b798843e6f9465a414",
+   "bytes": 1070
+  },
+  {
+   "id": "a11y-02",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#ffffff",
+    "#000000",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7b0aee0001ed25aff1ffecd6d00c858d81cb0410a8992e42c01dc2f16d84d4ac",
+   "bytes": 1070
+  },
+  {
+   "id": "a11y-03",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#777777",
+    "#ffffff",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "98e121a265b857b496d332273c578ce06c50fc14a30d8824e83042045186ceb1",
+   "bytes": 1073
+  },
+  {
+   "id": "a11y-04",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#333333",
+    "#e0e0e0",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "527c72db97c178f007cb7b5b88c2a0094507a0401c150ebd6b2e98619eed7cb9",
+   "bytes": 1071
+  },
+  {
+   "id": "a11y-05",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#ffcc00",
+    "#333366",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "cbe26a3218c7521557809d654c5729581ab674ce83b3941d6e290c8ae21715be",
+   "bytes": 1071
+  },
+  {
+   "id": "a11y-06",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#aaaaaa",
+    "#dddddd",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "7db2c7bf1c9360e74d9ed0b16c80fc9a37f6c52d5e565097db257f4f149fedfd",
+   "bytes": 1074
+  },
+  {
+   "id": "genius-math2-01",
+   "argv": [
+    "genius",
+    "math",
+    "erf(0.5)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "06ad709dded41c306517b5ebac4318c58ab87a2a8105d0478768acdc1a16e3cf",
+   "bytes": 211
+  },
+  {
+   "id": "genius-math2-02",
+   "argv": [
+    "genius",
+    "math",
+    "gamma(5)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5f38e445caf6ceaea65efd3a5fb404523e6e0bd43c2de00f30d4685e8e8b6fd0",
+   "bytes": 169
+  },
+  {
+   "id": "genius-math2-03",
+   "argv": [
+    "genius",
+    "math",
+    "sinh(0)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2096c685e3df9891fc3ef787f9088245cc408bd6999c10e4c8e36d516f215b94",
+   "bytes": 163
+  },
+  {
+   "id": "genius-math2-04",
+   "argv": [
+    "genius",
+    "math",
+    "cosh(0)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "013864d4c2917947db2aab73bcede08e4296e9b4458cfaac90f3a0d688f09745",
+   "bytes": 163
+  },
+  {
+   "id": "genius-math2-05",
+   "argv": [
+    "genius",
+    "math",
+    "atan(1) * 4",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a73858e7451117e514aeba6882811f76b864f6bc40e1b2b664ee6b870cbee368",
+   "bytes": 211
+  },
+  {
+   "id": "genius-math2-06",
+   "argv": [
+    "genius",
+    "math",
+    "sqrt(2) * sqrt(8)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1295bd88a2b7ec735c4fbee2bacefc6e4988993cfc92f301f6f708dc10894abd",
+   "bytes": 187
+  },
+  {
+   "id": "genius-math2-07",
+   "argv": [
+    "genius",
+    "math",
+    "3! + 4!",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1fee357db46ec17d5cc7fe0976be374834ec3f4d8209593152bd5a645c5f8979",
+   "bytes": 153
+  },
+  {
+   "id": "genius-math2-08",
+   "argv": [
+    "genius",
+    "math",
+    "fact(6) / fact(4)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fb12f85568fa037a079d36937560ece6ad46fc51f447209e9d63ef7406d9ff16",
+   "bytes": 177
+  },
+  {
+   "id": "genius-math2-09",
+   "argv": [
+    "genius",
+    "math",
+    "hypot(3, 4) * 2",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5a5ffe700ced270b908b1ce06ff5d7b1040694f8884b9f7eaf8126650c0ffb47",
+   "bytes": 191
+  },
+  {
+   "id": "genius-math2-10",
+   "argv": [
+    "genius",
+    "math",
+    "ncr(10, 3)",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "2ddf1cf71017948ce75537a00a0fec33eed754d1985b2f1f9fa55a80891730de",
+   "bytes": 179
+  },
+  {
+   "id": "a11y2-01",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#123456",
+    "#fedcba",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "068f36c036a9f28472ce20a02be270dd19635354f67b725f913f51b7516a9472",
+   "bytes": 1071
+  },
+  {
+   "id": "a11y2-02",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#ff0000",
+    "#00ff00",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a9c37f8a4c555d19661f4b1f3793fbc51b7ccb6d99358024c4c1089b36a4ed32",
+   "bytes": 1074
+  },
+  {
+   "id": "a11y2-03",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#202020",
+    "#f0f0f0",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5db110f8032515d790cca4729bf9b0a28be023aaf7c6a490646221e16d40d6d3",
+   "bytes": 1073
+  },
+  {
+   "id": "a11y2-04",
+   "argv": [
+    "settings",
+    "--accessibility-check",
+    "#abcdef",
+    "#123456",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "f592682c75bf33a7f3852fedc5ab3a4d46f15f9fce9d46b87663f03ff564976c",
+   "bytes": 1065
+  },
+  {
+   "id": "settings2-01",
+   "argv": [
+    "settings",
+    "make the text smaller in the bar",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "8c184404544e9087392522f19074bb5dc09154fb0d5077fe9b7987f629240f7a",
+   "bytes": 785
+  },
+  {
+   "id": "settings2-02",
+   "argv": [
+    "settings",
+    "show the battery percentage",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-03",
+   "argv": [
+    "settings",
+    "hide the workspace indicator",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-04",
+   "argv": [
+    "settings",
+    "set volume to fifty percent",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-05",
+   "argv": [
+    "settings",
+    "mute the microphone",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-06",
+   "argv": [
+    "settings",
+    "make the icons round",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-07",
+   "argv": [
+    "settings",
+    "enable the floating dock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a7526fc8802a178309b90557f6978076ecc8065f3377adad86ba08aca2365720",
+   "bytes": 386
+  },
+  {
+   "id": "settings2-08",
+   "argv": [
+    "settings",
+    "set the clock to 24 hour",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-09",
+   "argv": [
+    "settings",
+    "show seconds on the clock",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
+   "bytes": 24084
+  },
+  {
+   "id": "settings2-10",
+   "argv": [
+    "settings",
+    "disable notifications at night",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "671aa371059765462bc9d1cba2fba9955e090e987ab54e1d3be1ff760618a60d",
+   "bytes": 525
+  },
+  {
+   "id": "graph2-01",
+   "argv": [
+    "graph",
+    "breaks",
+    "setBarScale"
+   ],
+   "rc": 0,
+   "sha": "dd7836176e005f7d0925291ad8e089084e2f6a7387370d317b60250d0085a643",
+   "bytes": 805
+  },
+  {
+   "id": "graph2-02",
+   "argv": [
+    "graph",
+    "related",
+    "setPosition"
+   ],
+   "rc": 1,
+   "sha": "9b4bb24241b527aacac52a004145524d686a9064adabb6178fb2df450cb86d5d",
+   "bytes": 40
+  },
+  {
+   "id": "graph2-03",
+   "argv": [
+    "graph",
+    "affects",
+    "notifications.doNotDisturb"
+   ],
+   "rc": 1,
+   "sha": "066e0ddb2830b670b2c848c2e88ff4054a323d0592ed329058493c9425d3c22d",
+   "bytes": 54
+  },
+  {
+   "id": "graph2-04",
+   "argv": [
+    "graph",
+    "affects",
+    "blur.enabled"
+   ],
+   "rc": 1,
+   "sha": "dfa789c80976ae05a040ccf6761fa95ca0628092446657ea8af0888aaf5303a8",
+   "bytes": 40
+  },
+  {
+   "id": "graph2-05",
+   "argv": [
+    "graph",
+    "related",
+    "setWallpaper"
+   ],
+   "rc": 1,
+   "sha": "368616aa993f174bfc9ab6977e3a6ddcd0b1cf45fae680d2877b809ffd98c4a8",
+   "bytes": 41
+  },
+  {
+   "id": "graph2-06",
+   "argv": [
+    "graph",
+    "breaks",
+    "setPosition"
+   ],
+   "rc": 1,
+   "sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  {
+   "id": "qa-01",
+   "argv": [
+    "brain",
+    "qa",
+    "how do I fix a missing qml module metadata",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "4b9b57cd761a16705ef28cbe65b44c8604234e32313b963fb0a1ba2d5ba2682d",
+   "bytes": 509
+  },
+  {
+   "id": "qa-02",
+   "argv": [
+    "brain",
+    "qa",
+    "what causes the vesktop freeze on screenshare",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "48673a20af8ac445134a52e83aec6a3ff5559a70f8c83c0ecb8ac346f3b8cbae",
+   "bytes": 376
+  },
+  {
+   "id": "qa-03",
+   "argv": [
+    "brain",
+    "qa",
+    "when was the quickshell crash dialog issue reported",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "584a950e2291d2cc1992e1e2da7d8924c441ffbc54d1fbfdd499c6889a77b9a4",
+   "bytes": 614
+  },
+  {
+   "id": "qa-04",
+   "argv": [
+    "brain",
+    "qa",
+    "why does the installer build fail",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "fcd57630e410ec66a374f04f67e3671c44618ec44fdd5b9322478cb9218782af",
+   "bytes": 363
+  },
+  {
+   "id": "qa-05",
+   "argv": [
+    "brain",
+    "qa",
+    "how do I fix gamescope launching in half the screen",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "370d6f1e1166bfb46b5576482cc3b54509428768de462f9e3b1d7098c3e1ce99",
+   "bytes": 928
+  },
+  {
+   "id": "qa-06",
+   "argv": [
+    "brain",
+    "qa",
+    "why is my bluetooth turning on and off",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "1ba0a3e74acf251240d8286ab2b5efa826efcd37417804412709f247eb560e05",
+   "bytes": 517
+  },
+  {
+   "id": "qa-07",
+   "argv": [
+    "brain",
+    "qa",
+    "zzqq blorptastic frumious",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "595b3a6fa0f2095eb99cde4b5fc6fa9ce364188397446181bfdb7e83a1742177",
+   "bytes": 216
+  },
+  {
+   "id": "misc-selfcheck",
+   "argv": [
+    "selfcheck"
+   ],
+   "rc": 0,
+   "sha": "52e2ae6fa5426f9fd77fe77f8f0b4ee7e2f1c3388f7a2a13c9f2b677e833285f",
+   "bytes": 103
+  },
+  {
+   "id": "misc-capabilities",
+   "argv": [
+    "capabilities"
+   ],
+   "rc": 0,
+   "sha": "64962d3b067e08d20569d25718047e001fe63f728a8141cc1878939384546d67",
+   "bytes": 843
+  },
+  {
+   "id": "misc-graph-rank",
+   "argv": [
+    "graph",
+    "rank"
+   ],
+   "rc": 0,
+   "sha": "e0c9f6af75555680baf4b11ba1d08fc4e07cca21afae06cb300894ba01c7bc5f",
+   "bytes": 691
+  },
+  {
+   "id": "misc-graph-related",
+   "argv": [
+    "graph",
+    "related",
+    "setBarScale"
+   ],
+   "rc": 1,
+   "sha": "f7e28e4205966997f821c2de19841efed85e8052fa4df148e861c5a9a7b2eebd",
+   "bytes": 40
+  },
+  {
+   "id": "misc-graph-affects",
+   "argv": [
+    "graph",
+    "affects",
+    "bar.scale"
+   ],
+   "rc": 0,
+   "sha": "17f1591e54ba232bfc917047e9725877429b5e57588563d89882a47370c11655",
+   "bytes": 375
+  },
+  {
+   "id": "misc-graph-path",
+   "argv": [
+    "graph",
+    "path",
+    "setBarScale",
+    "setBlur"
+   ],
+   "rc": 1,
+   "sha": "985d1d11431db2bf6940fb3a7418094a9b8cdd9ef1071749313b88eedf3e9dc5",
+   "bytes": 52
+  },
+  {
+   "id": "misc-inbox-list",
+   "argv": [
+    "inbox",
+    "list"
+   ],
+   "rc": 0,
+   "sha": "e35f337f99c31d681d52f09e945fcc66182d27b08970d0450f2f2fb32156fd49",
+   "bytes": 48
+  },
+  {
+   "id": "misc-cortex-report",
+   "argv": [
+    "cortex",
+    "report"
+   ],
+   "rc": 0,
+   "sha": "0bb2fcbe6a4c0a64ee6d3a07af244455da6093c08f09b5d20cf3774a489f776d",
+   "bytes": 718
+  },
+  {
+   "id": "misc-search-1",
+   "argv": [
+    "search",
+    "bar scale",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5806381ddbd606dc4e5b64f1abd1305ab31ca97bda8f0ad5bcb09c3471bb8a99",
+   "bytes": 2024
+  },
+  {
+   "id": "misc-search-2",
+   "argv": [
+    "search",
+    "notification position",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "a90ae1e1b869687877e71cdaac8ce34b4ab0cec110acce4542a1b519f1752ed1",
+   "bytes": 1621
+  },
+  {
+   "id": "misc-search-3",
+   "argv": [
+    "search",
+    "how to reset layout",
+    "--json"
+   ],
+   "rc": 0,
+   "sha": "5517997a9e962db415b5d1800a4cc6f1d1566425508e348ba7bd87b6d7a96e6b",
+   "bytes": 1900
+  },
+  {
+   "id": "misc-usage",
+   "argv": [
+    "--help"
+   ],
+   "rc": 0,
+   "sha": "b101d5473fdc9578362b78a51c4e1ddc4ccc43b80c9f664d3bf91d429edc93da",
+   "bytes": 2199
+  }
+ ]
+}

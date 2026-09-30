@@ -115,6 +115,7 @@ OPS = {
     "bursts_report": lambda q, s, l: _bursts_report(q),
     "gp_preferences": lambda q, s, l: _gp_preferences(q),
     "rules_eval": lambda q, s, l: _rules_eval(q),
+    "sizing_report": lambda q, s, l: _sizing_report(q),
 }
 
 
@@ -355,6 +356,24 @@ def _rules_eval(q):
     if rules is None:
         rules = rete.load_rules(rete.DEFAULT_RULES_PATH)
     return rete.run_events(rules, events)
+
+
+def _sizing_report(q):
+    """Space-Saving heavy hitters + t-digest quantiles over
+    caller-supplied sizes (C15). Pure math; the disk is never read."""
+    from assistant.capabilities import enabled
+    if not enabled("size_sketches"):
+        return {"error": "size_sketches capability is off on this "
+                         "install"}
+    from assistant.brain import sketch
+    sizes = q.get("sizes")
+    if not isinstance(sizes, list) or not sizes:
+        return {"error": "need 'sizes': the values to size"}
+    return sketch.sizing_report(
+        [float(x) for x in sizes],
+        keys=q.get("keys"),
+        k=int(q.get("k", 8)),
+        quantiles=q.get("quantiles"))
 
 
 

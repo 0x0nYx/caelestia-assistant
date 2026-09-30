@@ -590,6 +590,24 @@ def rete_default_path():
     return rete.DEFAULT_RULES_PATH
 
 
+
+def cmd_sizes(args, out):
+    """Space-Saving heavy hitters + t-digest quantiles for sizing (C15)."""
+    from . import sketch
+    sizes = [float(x) for x in str(args.sizes).split(",") if x.strip()]
+    keys = [k for k in str(args.keys).split(",")] if args.keys else None
+    quantiles = [float(q) for q in str(args.quantiles).split(",")
+                 if q.strip()] if args.quantiles else None
+    r = sketch.sizing_report(sizes, keys, k=args.k,
+                             quantiles=quantiles)
+    if getattr(args, "json", False):
+        out.write(json.dumps(r, sort_keys=True) + "\n")
+        return 0
+    for line in sketch.render_sizing(r):
+        out.write(line + "\n")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -747,6 +765,19 @@ def build_parser():
                          "just list rules)")
     rl.add_argument("--json", action="store_true")
     rl.set_defaults(fn=cmd_rules)
+
+    sz = sub.add_parser("sizes", help="sizing card: Space-Saving heavy "
+                        "hitters + t-digest quantiles over byte counts "
+                        "or line lengths (C15)")
+    sz.add_argument("sizes", help="comma-separated numbers")
+    sz.add_argument("--keys", default=None,
+                    help="comma-separated keys (paths, apps) paired "
+                         "one-to-one with the sizes")
+    sz.add_argument("--k", type=int, default=8,
+                    help="how many heavy hitters to keep (default 8)")
+    sz.add_argument("--quantiles", default="0.5,0.9,0.95,0.99")
+    sz.add_argument("--json", action="store_true")
+    sz.set_defaults(fn=cmd_sizes)
     return p
 
 

@@ -94,6 +94,10 @@ DEFAULTS: Dict[str, bool] = {
                                   # rules FILE is the opt-in and every
                                   # fired action is a ledger proposal,
                                   # never an applied change
+    "size_sketches": True,        # brain: Space-Saving heavy hitters and
+                                  # t-digest quantiles over caller-passed
+                                  # sizes; counts are labeled estimates
+                                  # with reported max error (pure math)
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

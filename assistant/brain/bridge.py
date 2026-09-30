@@ -114,6 +114,7 @@ OPS = {
     "patterns_report": lambda q, s, l: _patterns_report(q),
     "bursts_report": lambda q, s, l: _bursts_report(q),
     "gp_preferences": lambda q, s, l: _gp_preferences(q),
+    "rules_eval": lambda q, s, l: _rules_eval(q),
 }
 
 
@@ -339,6 +340,21 @@ def _gp_preferences(q):
             break
     return {**fit, "next_question": model.next_question(),
             "proposal": proposal}
+
+
+def _rules_eval(q):
+    """Run user-authored rules over events through the Rete network
+    (C14). The events and rules come IN the request; what leaves is a
+    list of SUGGESTED_NOT_EXECUTED proposals for the ledger."""
+    from assistant.capabilities import enabled
+    if not enabled("user_rules"):
+        return {"error": "user_rules capability is off on this install"}
+    from assistant.brain import rete
+    events = q.get("events") or []
+    rules = q.get("rules")
+    if rules is None:
+        rules = rete.load_rules(rete.DEFAULT_RULES_PATH)
+    return rete.run_events(rules, events)
 
 
 

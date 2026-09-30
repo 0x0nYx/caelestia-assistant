@@ -89,6 +89,11 @@ DEFAULTS: Dict[str, bool] = {
                                   # bounded at 50 items); emits ONE
                                   # registry-validated setter proposal,
                                   # SUGGESTED_NOT_EXECUTED
+    "user_rules": True,           # brain: user-authored event-condition-
+                                  # action rules on a Rete network; the
+                                  # rules FILE is the opt-in and every
+                                  # fired action is a ledger proposal,
+                                  # never an applied change
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

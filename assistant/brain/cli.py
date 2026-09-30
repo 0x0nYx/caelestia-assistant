@@ -556,6 +556,40 @@ def cmd_gpprefs(args, out):
     return 0
 
 
+
+def cmd_rules(args, out):
+    """User-authored event-condition-action rules on a Rete network
+    (C14). The rules file is the opt-in; actions are proposals only."""
+    from . import rete
+    path = pathlib.Path(args.file).expanduser()
+    if not path.exists():
+        out.write(f"rules: no rules file at {path} — create it to opt "
+                  f"in (JSON: {json.dumps({'rules': [{'id': 'example', 'when': [{'field': 'kind', 'op': 'eq', 'value': 'crash'}], 'within_seconds': 600, 'min_events': 3, 'then': {'tool': 'setNotifsMaxPopups', 'value': 3}, 'reason': 'why not'}]})})\n")
+        return 1
+    rules = rete.load_rules(path)
+    if args.events:
+        events = json.loads(pathlib.Path(args.events).read_text())
+        if isinstance(events, dict):
+            events = events.get("events", [])
+        r = rete.run_events(rules, events)
+        if getattr(args, "json", False):
+            out.write(json.dumps(r, sort_keys=True) + "\n")
+            return 0
+        for line in rete.render_report(r):
+            out.write(line + "\n")
+        return 0
+    out.write(f"{len(rules)} rules in {path}:\n")
+    for rule in rules:
+        out.write(f"  {rule.get('id')}: when {json.dumps(rule.get('when', []), sort_keys=True)}\n")
+        out.write(f"    then {json.dumps(rule.get('then', {}), sort_keys=True)}\n")
+    return 0
+
+
+def rete_default_path():
+    from . import rete
+    return rete.DEFAULT_RULES_PATH
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="brain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -701,6 +735,18 @@ def build_parser():
                                  "features}], pairs: [{winner, loser}]}")
     gp.add_argument("--json", action="store_true")
     gp.set_defaults(fn=cmd_gpprefs)
+
+    rl = sub.add_parser("rules", help="your event-condition-action rules "
+                        "on a Rete network (a rules file is the opt-in); "
+                        "every fired action is a proposal, nothing "
+                        "applies itself (C14)")
+    rl.add_argument("--file", default=str(rete_default_path()),
+                    help="rules JSON (default: %(default)s)")
+    rl.add_argument("--events", default=None,
+                    help="JSON file of events to evaluate (omit to "
+                         "just list rules)")
+    rl.add_argument("--json", action="store_true")
+    rl.set_defaults(fn=cmd_rules)
     return p
 
 

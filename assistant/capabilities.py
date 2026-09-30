@@ -107,6 +107,11 @@ DEFAULTS: Dict[str, bool] = {
                                   # spans with doc/section/line provenance;
                                   # thin evidence says THIN, none says
                                   # NOT_FOUND (no generation, ever)
+    # -- optional model tier (Group E): OFF, and never on the offline core
+    "model_reranker": False,      # generative: sub-1B loopback reranker over
+                                  # the router's OWN candidate list; output
+                                  # constrained to candidate names, marked
+                                  # MODEL_SUGGESTED, plan/apply gates untouched
     # -- surfaces that shell out or extend the import surface: OFF ------
     "package_audit": False,       # read-only package-manager query (quarantined)
     "dbus_surface": False,        # kwriteconfig6/kscreen/powerdevil/KWin scripts

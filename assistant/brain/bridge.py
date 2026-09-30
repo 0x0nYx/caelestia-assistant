@@ -118,6 +118,7 @@ OPS = {
     "sizing_report": lambda q, s, l: _sizing_report(q),
     "nlg_summary": lambda q, s, l: _nlg_summary(q),
     "qa_answer": lambda q, s, l: _qa_answer(q),
+    "model_rerank": lambda q, s, l: _model_rerank(q),
 }
 
 
@@ -410,6 +411,27 @@ def _qa_answer(q):
         return {"error": "'notes' must be a list of {name, text} records"}
     return qa.answer(question, notes=notes,
                      sources=str(q.get("sources", "both")))
+
+
+def _model_rerank(q):
+    """Optional sub-1B reranker (E2): one loopback generate() over the
+    router's OWN candidates; MODEL_SUGGESTED or UNCHANGED, never a
+    plan. The caller routes any resulting choice through the ordinary
+    plan/apply gates — this op cannot apply anything."""
+    from assistant.capabilities import enabled
+    if not enabled("model_reranker"):
+        return {"error": "model_reranker capability is off on this "
+                         "install (edit the capabilities file, never a "
+                         "request)"}
+    from assistant.generative import reranker
+    query = str(q.get("query") or q.get("text") or "")
+    candidates = q.get("candidates")
+    if not query.strip() or not isinstance(candidates, list) or \
+            not candidates:
+        return {"error": "need 'query' and a non-empty 'candidates' "
+                         "list of {name, description} (the router's own "
+                         "shortlist)"}
+    return reranker.rerank(query, candidates)
 
 
 

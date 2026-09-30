@@ -54,13 +54,15 @@ output passes a sanitizer that labels every command-shaped line
 entirely. The layer degrades to plain retrieval whenever the server is
 absent — no crash, no retry storm.
 
-`assistant/generative/MODELS.md` adds model-choice guidance only: it points
-at the Apertus 8B open-weight family — the family a maintainer collaborator
-pointed issue #120 itself at — served quantized via the user's local Ollama,
-with the honest note that the Ollama model library has no `apertus` listing
-yet, so the recommendation is the family and the size class, not a command.
-The layer's own default stays `llama3` (itself 8B-class, matching
-`aiconfig.hpp`). Nothing is trained, nothing is bundled, and the mechanism
+`assistant/generative/MODELS.md` adds model-choice guidance only — and its
+recommendation is now a withdrawal: the earlier 8B-scale suggestion
+contradicted the README's own hardware statement ("hardware that would
+struggle to load an 8B model"), so the only class the repository will
+recommend is sub-1B, and only for the reranker role, with candidates
+verified against the Ollama library before they are named. The layer's own
+default stays `llama3` for upstream alignment with `aiconfig.hpp`; the
+tension is stated on the page rather than resolved by breaking that
+alignment. Nothing is trained, nothing is bundled, and the mechanism
 — loopback-only, off by default, single POST, sanitized — is unchanged by
 that guidance.
 

@@ -30,7 +30,12 @@ from assistant.capabilities.settings.consequences import EDGES, project, render
 
 
 def _find_shell_root(start: Path) -> Optional[Path]:
+    # the vendored caelestia QML lives inside the adapter since the
+    # restructure; fall back to a sibling upstream checkout
     for cand in [start, *start.parents]:
+        inrepo = cand / "assistant" / "adapters" / "caelestia" / "shell"
+        if (inrepo / "modules" / "bar" / "BarWrapper.qml").is_file():
+            return inrepo
         if (cand / "shell" / "modules" / "bar" / "BarWrapper.qml").is_file():
             return cand
     return None

@@ -9,7 +9,7 @@ function BODIES are also checked across the new modules (exact
 3+-line duplicates only — layer isolation deliberately repeats small
 shapes, and those stay).
 
-Run: PYTHONPATH=. python3 scripts/z_deadcode.py
+Run: PYTHONPATH=. python3 scripts/dev/z_deadcode.py
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 PKG = REPO / "assistant"
 
 # everything the groups added, plus their tests

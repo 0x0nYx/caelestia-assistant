@@ -11,7 +11,7 @@ choice is the measured winner, not a guess:
   p=0     v = U                 (directions only)
   drop1   p=1/2 minus the top component (the shared 'tool-ness' direction)
 
-Run: PYTHONPATH=. python3 scripts/measure_svd_variants.py
+Run: PYTHONPATH=. python3 scripts/dev/measure_svd_variants.py
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ ADOPT a channel only if its top1 on the arena EXCEEDS the shipped
 baseline point (0.8843) AND its per-query cost fits the route budget
 (p50 <= 15 ms). Anything else is CUT with the numbers recorded.
 
-Run: PYTHONPATH=. python3 scripts/measure_meanpool.py
+Run: PYTHONPATH=. python3 scripts/dev/measure_meanpool.py
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from pathlib import Path
 
 import sys
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from assistant.core.corpus import tool_documents  # noqa: E402

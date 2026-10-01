@@ -3,7 +3,7 @@
 
 Re-runs every golden case in a fresh subprocess (isolated HOME, pinned
 PYTHONHASHSEED=0), normalizes the sandbox home path away, and compares
-rc + sha256(stdout) against assistant/tests/goldens/manifest.json.
+rc + sha256(stdout) against tests/goldens/manifest.json.
 
 This is a scripts/ dev tool ON PURPOSE: the import policy forbids
 subprocess inside assistant/ Python, so the byte lock cannot live in

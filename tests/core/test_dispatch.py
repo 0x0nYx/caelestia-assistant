@@ -374,7 +374,7 @@ class QmlDispatchTransportGuards(unittest.TestCase):
     must live in cortex.dispatch (bridge op "dispatch"), never in the QML.
     The sidebar only carries the verdict — these guards keep it that way."""
 
-    QML = (Path(__file__).resolve().parents[2] / "adapters" / "caelestia" /
+    QML = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
        "shell" / "modules" / "sidebar" / "AiAssistant.qml")
 
     @unittest.skipIf(not QML.exists(), "AiAssistant.qml absent — QML guards skip")

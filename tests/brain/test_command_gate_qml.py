@@ -39,9 +39,9 @@ import unittest
 from pathlib import Path
 from typing import List
 
-QML_PATH = (Path(__file__).resolve().parents[3] / "adapters" / "caelestia" /
+QML_PATH = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
             "shell" / "modules" / "sidebar" / "AiAssistant.qml")
-GATE_PATH = (Path(__file__).resolve().parents[3] / "adapters" / "caelestia" /
+GATE_PATH = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
             "shell" / "services" / "CommandGate.qml")
 
 # The verified upstream `caelestia` subcommand list (src/bin/caelestia @ dev,

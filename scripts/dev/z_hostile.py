@@ -11,7 +11,7 @@ dict-where-list). Contract per surface: no traceback, no hang, rc in
 {0,1,2}; the honest verdicts (NOT_FOUND / UNCHANGED / ABSTAIN / empty)
 are the expected GOOD outcomes.
 
-Run: PYTHONPATH=. python3 scripts/z_hostile.py
+Run: PYTHONPATH=. python3 scripts/dev/z_hostile.py
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 BIG = "x" * 1_000_000

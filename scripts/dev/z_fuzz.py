@@ -13,7 +13,7 @@ Seeded (deterministic) garbage against two surface families:
      rc in {0,1,2} and no 'Traceback' on stderr (argparse usage lines
      are rc=2 and fine).
 
-Run: PYTHONPATH=. python3 scripts/z_fuzz.py
+Run: PYTHONPATH=. python3 scripts/dev/z_fuzz.py
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import tempfile
 import contextlib
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from assistant.capabilities.brain import bridge as brain_bridge  # noqa: E402

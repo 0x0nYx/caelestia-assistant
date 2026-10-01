@@ -42,7 +42,7 @@ from typing import Any, List, Tuple
 from assistant.capabilities.settings import cli, history, macros
 from assistant.capabilities.settings.applier import apply
 from assistant.adapters.caelestia.registry import tool_by_path
-from assistant.capabilities.settings.tests.test_cli_calls import _Recorder
+from tests.settings.test_cli_calls import _Recorder
 
 
 def _plan(*ops: Tuple[str, Any]) -> dict:

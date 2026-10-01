@@ -6,7 +6,7 @@ sweep pins the seeds-and-interpreters dimension the lock cannot cover.
 Every surface runs 6 times (3 PYTHONHASHSEED values x 2 interpreters)
 in a throwaway HOME; all 6 stdout bytes must be identical.
 
-Run: python3 scripts/z_determinism.py
+Run: python3 scripts/dev/z_determinism.py
 """
 import json
 import os
@@ -15,7 +15,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 
 PLAN_PATH = Path(tempfile.gettempdir()) / "z-sweep-plan.json"
 PLAN_PATH.write_text(json.dumps(

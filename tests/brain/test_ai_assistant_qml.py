@@ -27,7 +27,7 @@ from pathlib import Path
 
 from assistant.capabilities.brain import bridge
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 QML_PATH = (REPO_ROOT / "assistant" / "adapters" / "caelestia" / "shell" /
             "modules" / "sidebar" / "AiAssistant.qml")
 

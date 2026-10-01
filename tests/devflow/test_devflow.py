@@ -163,7 +163,8 @@ class PartitionTests(unittest.TestCase):
     """§7's hard requirement, checked structurally."""
 
     def test_readme_carries_the_disclaimer(self):
-        readme = Path(__file__).resolve().parent.parent / "README.md"
+        readme = (Path(__file__).resolve().parents[2] / "assistant" /
+              "capabilities" / "devflow" / "README.md")
         text = readme.read_text(encoding="utf-8")
         self.assertIn("no", text.lower())
         self.assertIn("#120", text)
@@ -172,7 +173,7 @@ class PartitionTests(unittest.TestCase):
         self.assertIn("KDE shell", text)
 
     def test_no_120_bound_surface_references_devflow(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = Path(__file__).resolve().parents[2]
         checked = 0
         for pattern in ("assistant/capabilities/settings/**/*.py", "assistant/core/**/*.py",
                         "assistant/adapters/caelestia/shell/**/*.qml",
@@ -188,7 +189,7 @@ class PartitionTests(unittest.TestCase):
                            "#120-bound surfaces")
 
     def test_devflow_does_not_import_shell_facing_layers(self):
-        repo_root = Path(__file__).resolve().parents[3]
+        repo_root = Path(__file__).resolve().parents[2]
         for path in (repo_root / "assistant" / "devflow").glob("*.py"):
             source = path.read_text(encoding="utf-8")
             for banned in ("from ..settings", "from ..cortex",

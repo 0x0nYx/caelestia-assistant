@@ -461,7 +461,8 @@ class ModelGuidanceTests(unittest.TestCase):
     outside assistant/generative/.
     """
 
-    MODELS_MD = Path(__file__).resolve().parent.parent / "MODELS.md"
+    MODELS_MD = (Path(__file__).resolve().parents[2] / "assistant" /
+              "capabilities" / "generative" / "MODELS.md")
 
     def _text(self) -> str:
         self.assertTrue(self.MODELS_MD.is_file(), f"missing: {self.MODELS_MD}")

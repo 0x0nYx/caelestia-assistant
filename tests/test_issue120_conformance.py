@@ -202,8 +202,8 @@ class B1IntentToValidatedCalls(unittest.TestCase):
         """The ConfigObject side lives in the shell's own QML service;
         its function surface is pinned by the settings layer's own
         cross-check suite (skips when the checkout is absent)."""
-        qml = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" /
-        "caelestia" / "shell" /
+        qml = (Path(__file__).resolve().parents[1] / "assistant" / "adapters" /
+               "caelestia" / "shell" /
                "services" / "SettingsTools.qml")
         if not qml.exists():
             self.skipTest("SettingsTools.qml absent — QML guards skip")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Behavior-lock goldens (Stage C1).
 
-Generates assistant/tests/goldens/manifest.json: >= 300 read-only CLI
+Generates tests/goldens/manifest.json: >= 300 read-only CLI
 cases, each run TWICE in-process from an isolated environment; a case
 is kept only when both runs return rc 0 and byte-identical stdout
 (self-filtering — timing-dependent surfaces drop out on their own).
@@ -28,7 +28,7 @@ sys.path.insert(0, str(REPO))
 
 from assistant.hub import main as hub_main  # noqa: E402
 
-GOLD_DIR = REPO / "assistant" / "tests" / "goldens"
+GOLD_DIR = REPO / "tests" / "goldens"
 SAMPLE_COUNT = 60
 
 

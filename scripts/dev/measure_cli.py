@@ -8,7 +8,7 @@ fresh state, one `route` call, wall-clocked. This is the number the
 see interpreter startup or module import, and the import policy
 rightly forbids subprocess inside assistant/.
 
-Run: PYTHONPATH=. python3 scripts/measure_cli.py [N]
+Run: PYTHONPATH=. python3 scripts/dev/measure_cli.py [N]
 """
 import json
 import os
@@ -18,7 +18,7 @@ import tempfile
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 
 
 def one_cold_route() -> float:

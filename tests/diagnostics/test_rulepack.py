@@ -94,7 +94,8 @@ class ExportTests(unittest.TestCase):
                          "fixture-pack-test")
 
     def test_export_of_the_shipped_rulesets(self):
-        shipped = Path(__file__).resolve().parents[1] / "rules.d"
+        shipped = (Path(__file__).resolve().parents[2] / "assistant" /
+              "capabilities" / "diagnostics" / "rules.d")
         pack = rulepack.export_pack(shipped, ["config_kde"],
                                     "shipped-config")
         self.assertGreaterEqual(pack["pack"]["rule_count"], 1)

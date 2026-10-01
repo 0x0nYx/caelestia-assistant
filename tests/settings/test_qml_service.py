@@ -25,9 +25,9 @@ from typing import List
 
 from assistant.adapters.caelestia.registry import TOOL_COUNT
 
-QML_PATH = (Path(__file__).resolve().parents[3] / "adapters" / "caelestia" /
+QML_PATH = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
             "shell" / "services" / "SettingsTools.qml")
-TOOLS_JSON = Path(__file__).resolve().parents[3] / "adapters" / "caelestia" / "tools.json"
+TOOLS_JSON = Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json"
 
 TABLE_START = "    readonly property var toolTable: ["
 TABLE_END = "    ]"

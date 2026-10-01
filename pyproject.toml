@@ -35,4 +35,4 @@ version = { attr = "assistant.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["assistant*"]
-exclude = ["assistant/retrieval/corpus"]
+exclude = ["assistant/data/corpus", "assistant/data/index"]

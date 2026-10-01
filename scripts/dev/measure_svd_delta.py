@@ -11,7 +11,7 @@ Supervision ablation: with a deterministic every-4th-row supervised split
 (labeled pairs at LABEL_WEIGHT), evaluated on the OTHER rows — shows the
 reroute-correction mechanism moves accuracy above the corpus prior.
 
-Run: python3 scripts/measure_svd_delta.py
+Run: python3 scripts/dev/measure_svd_delta.py
 Prints the numbers; asserts nothing. The committed test
 (cortex/tests/test_svd_embedder.py) pins the direction (SVD >= RP at
 top-1) so CI catches regressions without pinning floats.

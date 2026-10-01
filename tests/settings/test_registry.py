@@ -89,7 +89,7 @@ GOLDEN_CORE: tuple = (
 # real invariant.
 import json as _json
 
-_TOOLS_JSON = Path(__file__).resolve().parents[3] / "adapters" / "caelestia" / "tools.json"
+_TOOLS_JSON = Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json"
 _META_COUNTS = _json.loads(_TOOLS_JSON.read_text(encoding="utf-8")).get(
     "meta", {})
 EXPANSION_COUNT = _META_COUNTS.get("tool_count")

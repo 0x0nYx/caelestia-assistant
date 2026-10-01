@@ -49,7 +49,7 @@ class BuildTests(unittest.TestCase):
         # source of truth), never re-pinned by hand: a deliberate registry
         # re-pin must not desync this test from the artifact it describes.
         meta = json.loads(
-            (Path(__file__).resolve().parents[3] / "adapters" / "caelestia" / "tools.json")
+            (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json")
             .read_text(encoding="utf-8")).get("meta", {})
         g = gbuild.build_graph()
         types = {}

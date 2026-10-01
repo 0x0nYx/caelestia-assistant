@@ -936,7 +936,7 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--expr", default=None,
                    help="evaluate a named-column expression over --csv "
                         "(whitelisted syntax: columns, numbers, + - * / "
-                        "// % **, comparisons, and/or/not, aggregates "
+                        "// modulo **, comparisons, and/or/not, aggregates "
                         "count/sum/min/max/mean/median/stdev/variance/"
                         "quantile/pearson)")
     q.add_argument("--series")

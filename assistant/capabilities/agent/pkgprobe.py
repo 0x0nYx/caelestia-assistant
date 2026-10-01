@@ -39,7 +39,7 @@ from assistant.executor import ActionPlan, Step, run as executor_run
 __all__ = ["query_installed", "stale_match", "PROBES"]
 
 # The allow-listed probes: (binary, fixed args, output format).
-# Adding an entry here is a reviewable diff with a RATIONALE line —
+# Adding an entry here is a reviewable diff with a the package rationale line —
 # the list is pinned by tests.
 PROBES: Tuple[Tuple[str, Tuple[str, ...], str], ...] = (
     ("pacman", ("-Q",), "name version"),          # Arch-family local DB

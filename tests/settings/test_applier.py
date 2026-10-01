@@ -1,4 +1,4 @@
-"""Applier tests for the settings layer (DESIGN.md §5, §9).
+"""Applier tests for the settings layer (the settings design notes (see module docstrings) §5, §9).
 
 The applier is the ONLY module that writes, and only behind write=True.
 Every test runs against fixture files in temp dirs and proves the write

@@ -1,4 +1,4 @@
-"""CLI for the settings layer (DESIGN.md §5):
+"""CLI for the settings layer (the settings design notes (see module docstrings) §5):
 
     python3 -m assistant.capabilities.settings "<text>" [--apply] [--file PATH] [--json]
     python3 -m assistant.capabilities.settings --call NAME=VALUE [--call ...] [--apply] [--file PATH] [--json]
@@ -684,7 +684,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     gate5.add_argument(
         "--gen-catalog", action="store_true",
         help="community docs generator (F23): (re)write the generated "
-             "TOOL_CATALOG.md and bash completion from the frozen "
+             "the generated tool catalog (`settings --gen-catalog`) and bash completion from the frozen "
              "registry; with --verify it only CHECKS byte-identity (CI "
              "safe)",
     )

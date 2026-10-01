@@ -1,4 +1,4 @@
-"""Applier for the settings layer (DESIGN.md §5): plan -> written file.
+"""Applier for the settings layer (the settings design notes (see module docstrings) §5): plan -> written file.
 
 This is the ONLY module in the whole assistant that writes anything, and it
 writes ONLY when the caller passes ``write=True`` (the CLI's ``--apply``

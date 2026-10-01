@@ -18,7 +18,7 @@ Guarantees shared by every module in this package:
 - Suggestion-only: output is post-processed (SUGGESTED_NOT_EXECUTED labels +
   risk tiers; DESTRUCTIVE suggestions withheld). Nothing is ever executed,
   auto-run, trained on, or written to disk; no subprocess/socket imports.
-- Model guidance: which model to serve locally — see MODELS.md.
+- Model guidance: which model to serve locally — see the model guidance (see the generative package docs).
 """
 
 from .rag import build_rag_prompt, sanitize_suggestion, suggest

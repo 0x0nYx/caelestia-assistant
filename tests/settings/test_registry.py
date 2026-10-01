@@ -1,4 +1,4 @@
-"""Registry tests for the settings layer (DESIGN.md §1, §9-§10).
+"""Registry tests for the settings layer (the settings design notes (see module docstrings) §1, §9-§10).
 
 Three independent guards:
 
@@ -40,7 +40,7 @@ from assistant.adapters.caelestia.registry import (
     tool_by_path,
 )
 
-# The golden table (DESIGN.md §1, rows 1-18): (name, path, kind, default,
+# The golden table (the settings design notes (see module docstrings) §1, rows 1-18): (name, path, kind, default,
 # minimum, maximum, enum, global_only, step, nouns)
 GOLDEN_CORE: tuple = (
     ("setBarScale", "bar.scale", "float", 1.0, 0.6, 1.6, None, False, 0.1,

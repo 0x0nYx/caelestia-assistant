@@ -1,4 +1,4 @@
-"""Intent parser for the settings layer (DESIGN.md §3): text -> ops.
+"""Intent parser for the settings layer (the settings design notes (see module docstrings) §3): text -> ops.
 
 Guarantees:
 
@@ -105,7 +105,7 @@ _SIZE_TOOLS = frozenset(
 )
 _NUMERIC_TOOLS = _SIZE_TOOLS | _ANIM_TOOLS | _TRANS_TOOLS
 
-# Honest note texts (verbatim from DESIGN.md where quoted).
+# Honest note texts (verbatim from the settings design notes (see module docstrings) where quoted).
 _BOOL_NO_STRENGTH_LABELS = {
     "setBlurEnabled": "blur",
     "setLivePreviews": "live previews",
@@ -476,7 +476,7 @@ def _candidates_from_specs(specs: List[ToolSpec]) -> List[Dict[str, Any]]:
 def parse(text: str) -> Dict[str, Any]:
     """Parse one natural-language settings request into a verdict + ops.
 
-    See the module docstring for the guarantees; DESIGN.md §3 is the
+    See the module docstring for the guarantees; the settings design notes (see module docstrings) §3 is the
     normative grammar. Value resolution (current values, clamping) happens
     only in the planner, never here.
     """

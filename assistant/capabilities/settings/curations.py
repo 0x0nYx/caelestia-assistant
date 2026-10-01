@@ -393,7 +393,7 @@ CORE_TOOLS: Dict[str, Dict[str, object]] = {
     "bar.livePreviews": {"name": "setLivePreviews", "nouns": ["live previews|window previews|thumbnails|previews"],
                          "extra_citations": [
                              # Path re-verified at 70ee7da: the file lives under
-                             # shell/components/images/ (an earlier DESIGN.md path
+                             # shell/components/images/ (an earlier the settings design notes (see module docstrings) path
                              # shell/modules/bar/components/ no longer exists).
                              ("shell/components/images/WindowPreview.qml:42", "live reader"),
                          ]},
@@ -405,7 +405,7 @@ CORE_TOOLS: Dict[str, Dict[str, object]] = {
                                      "nouns": ["base opacity|transparency|opacity"],
                                      "extra_citations": [
                                          # Path re-verified at 70ee7da: ContentWindow.qml lives under
-                                         # shell/modules/drawers/ (an earlier DESIGN.md path
+                                         # shell/modules/drawers/ (an earlier the settings design notes (see module docstrings) path
                                          # shell/modules/components/containers/ no longer exists).
                                          ("shell/modules/drawers/ContentWindow.qml:383", "surface opacity reader"),
                                      ]},

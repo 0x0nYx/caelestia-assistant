@@ -53,7 +53,7 @@ FORBIDDEN_OS_ATTRS = ("system", "popen", "execv", "execve", "execvp", "spawnv", 
 # rejects BY NAME for all other files). Each entry names the ONE module
 # allowed a named import; the set is pinned by test
 # (diagnostics/tests/test_safety_lint.py) and every addition requires a
-# matching RATIONALE.md entry and a capability kill-switch defaulting to
+# matching the package rationale (see module docstrings) entry and a capability kill-switch defaulting to
 # off in the module itself. This is a quarantine, never a relaxation:
 # every other module in assistant/ stays under the zero-tolerance rule.
 _QUARANTINED_IMPORTS: Dict[str, frozenset] = {

@@ -1,9 +1,9 @@
-"""Parser tests for the settings layer (DESIGN.md §3, §9).
+"""Parser tests for the settings layer (the settings design notes (see module docstrings) §3, §9).
 
 The parser is a PURE function (no file I/O, no environment, no clock, no
 randomness); these tests pin the grammar by executable example:
 
-- issue #120's five example sentences, with the exact verdicts/ops DESIGN.md
+- issue #120's five example sentences, with the exact verdicts/ops the settings design notes (see module docstrings)
   §2 promised for them;
 - absolute values pass through unvalidated (range REJECTION is the
   planner's job — "set the bar scale to 9" is still an INTENT op here);
@@ -26,7 +26,7 @@ from unittest import mock
 
 from assistant.capabilities.settings.parser import parse
 
-# Issue #120's five example sentences (DESIGN.md §2.1).
+# Issue #120's five example sentences (the settings design notes (see module docstrings) §2.1).
 SENTENCE_THINNER = "Make my bar thinner."
 SENTENCE_DOCK_LEFT = "Move the dock to the left."
 SENTENCE_BLUR = "Increase the blur."
@@ -273,7 +273,7 @@ class SuggestedTests(unittest.TestCase):
 
 class ExtendedCoreToolParserTests(unittest.TestCase):
     """Three tools added to the 18-tool core after the original 14
-    (DESIGN.md §16): setPitchBlack, setNotifsMaxPopups, setNotifsMaxNotifs —
+    (the settings design notes (see module docstrings) §16): setPitchBlack, setNotifsMaxPopups, setNotifsMaxNotifs —
     and the preserved dead-ends around them."""
 
     def test_pitch_black_bool_wording(self) -> None:
@@ -375,7 +375,7 @@ class ExtendedCoreToolParserTests(unittest.TestCase):
         self.assertIn("transparency LEVEL", result["question"])
 
     def test_drag_threshold_and_other_rejected_candidates_stay_out(self) -> None:
-        # bar.dragThreshold is grounded but NOT a tool (DESIGN.md §16): a natural
+        # bar.dragThreshold is grounded but NOT a tool (the settings design notes (see module docstrings) §16): a natural
         # sentence naming it must not invent a tool; "bar ... 50" hits the
         # pre-existing bar-scale reading, unaffected by these tools.
         result = parse("set the bar drag threshold to 50")
@@ -391,7 +391,7 @@ class ExtendedCoreToolParserTests(unittest.TestCase):
 
 
 class DockBadgesParserTests(unittest.TestCase):
-    """The fourth tool added to the 18-tool core (DESIGN.md §16):
+    """The fourth tool added to the 18-tool core (the settings design notes (see module docstrings) §16):
     setDockBadges, plus the bare-"dock" collision traces pinned to their
     honest outcomes. The noun surface "app badges|badges|badge" mirrors the
     shipped control label (BarDock.qml:77) and collides with no other tool
@@ -419,7 +419,7 @@ class DockBadgesParserTests(unittest.TestCase):
         # only the bool tool: the plan stays a clean single setDockBadges op
         # and bar.dock.iconSize is never written. (Pre-change this phrasing
         # was AMBIGUOUS — "what should I do with setDockIconSize?" — so the
-        # extension strictly improves it; see DESIGN.md §16.)
+        # extension strictly improves it; see the settings design notes (see module docstrings) §16.)
         for sentence, value in (("hide the dock badges", False),
                                 ("show the dock badges", True)):
             result = parse(sentence)
@@ -463,7 +463,7 @@ class DockBadgesParserTests(unittest.TestCase):
         self.assertIn("app badges", result["ops"][0]["note"])
 
     def test_dock_badges_comparative_with_dock_is_the_known_residual(self) -> None:
-        # KNOWN RESIDUAL, pinned honestly (DESIGN.md §"Registry scope
+        # KNOWN RESIDUAL, pinned honestly (the settings design notes (see module docstrings) §"Registry scope
         # extension" collision analysis): a size comparative + the
         # user-volunteered word "dock" steps iconSize TOO — the same
         # pre-existing bare-"dock" hazard already documented for the

@@ -1,6 +1,6 @@
 """F23 tests — generated community docs (assistant/settings/catalog.py).
 
-The contract: the committed docs/TOOL_CATALOG.md and
+The contract: the committed docs/the generated tool catalog (`settings --gen-catalog`) and
 scripts/completions/caelestia-assist.bash are OUTPUT of the generator;
 a registry change that outdates them fails the build (the gen_adapter
 --verify discipline applied to prose and completions).

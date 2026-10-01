@@ -1,4 +1,4 @@
-"""Planner for the settings layer (DESIGN.md §4): ops -> a validated plan.
+"""Planner for the settings layer (the settings design notes (see module docstrings) §4): ops -> a validated plan.
 
 Guarantees:
 
@@ -14,7 +14,7 @@ Guarantees:
 - #120's range rule: an absolute out-of-range value becomes a REJECTED
   entry carrying the allowed range; it is listed, not silently dropped.
   Relative ops (multiply/step) are CLAMPED to the registry range with a
-  visible ``clamped`` notice (§7d of DESIGN.md).
+  visible ``clamped`` notice (§7d of the settings design notes (see module docstrings)).
 - All-or-nothing: any entry error marks the whole plan ``apply_blocked``;
   the applier then refuses to write anything (§4.5).
 - Per-monitor overrides are only READ, best-effort, to warn that a global

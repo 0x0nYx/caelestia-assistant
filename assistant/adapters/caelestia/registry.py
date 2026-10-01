@@ -1,4 +1,4 @@
-"""Frozen tool registry for the settings layer (issue #120, DESIGN.md §1).
+"""Frozen tool registry for the settings layer (issue #120, the settings design notes (see module docstrings) §1).
 
 One ToolSpec per editable shell.json leaf. Every row is grounded in this
 checkout's own sources — the C++ property declaration in
@@ -7,7 +7,7 @@ CONFIG_GLOBAL_PROPERTY / the *_ENUM_PROPERTY variants: type, name,
 default) plus the shipped Nexus control that reads/writes it — and every
 row carries its citations as ("file:line", "what it evidences") pairs, so
 the provenance travels with the data instead of living only in
-DESIGN.md's appendix.
+the settings design notes (see module docstrings)'s appendix.
 
 The registry: an 18-tool hand-frozen core inside the generated whole — every scalar leaf
 that a shipped scalar Nexus control touches. The table is no longer
@@ -31,7 +31,7 @@ ordinary typed property (the template overload returns false
 unconditionally, "Only QVariant unions can be given the wrong type",
 node.hpp:88-92); only the QVariant-union keys get a metatype check
 (node.cpp:133-141). The ranges below are therefore the assistant's OWN
-conservative validation (DESIGN.md §1.1), adopting the shipped Nexus
+conservative validation (the settings design notes (see module docstrings) §1.1), adopting the shipped Nexus
 controls' ranges verbatim — in the STORED unit, which for a handful of
 transformed steppers (seconds/ms, percent/fraction, minutes/seconds) is a
 documented unit conversion (curations.RANGE_FIXUPS) — implementing issue
@@ -60,7 +60,7 @@ EnumValue = Union[str, int]
 
 _TOOLS_JSON_PATH = Path(__file__).resolve().parent / "tools.json"
 
-# The 18-tool core order of the 18 core tools (DESIGN.md §1 rows 1-18:
+# The 18-tool core order of the 18 core tools (the settings design notes (see module docstrings) §1 rows 1-18:
 # # extension). They lead TOOL_SPECS in exactly this order; tools.json must
 # contain all of them (their values are pinned by tests/test_registry.py).
 CORE_TOOL_NAMES: Tuple[str, ...] = (
@@ -87,9 +87,9 @@ CORE_TOOL_NAMES: Tuple[str, ...] = (
 
 @dataclass(frozen=True)
 class ToolSpec:
-    """One editable shell.json leaf (DESIGN.md §1).
+    """One editable shell.json leaf (the settings design notes (see module docstrings) §1).
 
-    ``nouns`` holds the parser's noun groups (DESIGN.md §3.4): each element
+    ``nouns`` holds the parser's noun groups (the settings design notes (see module docstrings) §3.4): each element
     is a regex alternation; a tool's noun matches when EVERY group appears
     (most tools have exactly one group). Only the 18 core tools carry
     nouns — the remaining tools are addressed by name (--call), not words.

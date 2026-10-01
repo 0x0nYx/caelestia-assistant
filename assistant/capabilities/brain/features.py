@@ -8,7 +8,7 @@ feature function without sharing state.
 
 Why this module exists: the router (cortex), the genius meta router,
 and the preset/plan learners each keep SEPARATELY AUDITABLE state
-files — that boundary is deliberate (RATIONALE's per-learner
+files — that boundary is deliberate (the package rationale's per-learner
 reviewability) — but they can still TRANSFER signal on structurally
 similar inputs by agreeing on the same feature mapping. Share the
 projection, never the state.

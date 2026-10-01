@@ -1,4 +1,4 @@
-"""Planner tests for the settings layer (DESIGN.md §4, §9).
+"""Planner tests for the settings layer (the settings design notes (see module docstrings) §4, §9).
 
 The planner resolves parser ops against the CURRENT target file (fixtures in
 temp dirs — never the real ~/.config/caelestia/shell.json):

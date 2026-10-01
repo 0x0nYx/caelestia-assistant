@@ -95,7 +95,7 @@ _REJECTED_CONFIDENCE = 0.3
 # a full read of assistant/settings/tools.json (the generated, citation-
 # verified registry of every then-exposed setXxx tool) found NO rename-shaped pair
 # — every row is a current name with its citations, and the registry
-# carries no history of old names (nothing in tools.json, DESIGN.md or
+# carries no history of old names (nothing in tools.json, the settings design notes (see module docstrings) or
 # the settings sources records a tool that was renamed). Manufacturing
 # an old->new pair without a source would be a fake claim, so the table
 # ships empty (pinned by test) and the SUBSTITUTION MECHANISM is still

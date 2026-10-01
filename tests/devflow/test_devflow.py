@@ -162,11 +162,12 @@ class TodoTriageTests(unittest.TestCase):
 class PartitionTests(unittest.TestCase):
     """§7's hard requirement, checked structurally."""
 
-    def test_readme_carries_the_disclaimer(self):
-        readme = (Path(__file__).resolve().parents[2] / "assistant" /
-              "capabilities" / "devflow" / "README.md")
-        text = readme.read_text(encoding="utf-8")
-        self.assertIn("no", text.lower())
+    def test_package_docstring_carries_the_disclaimer(self):
+        import inspect
+
+        from assistant.capabilities import devflow
+
+        text = inspect.getdoc(devflow) or ""
         self.assertIn("#120", text)
         self.assertIn("never be included in any upstream-bound pull request",
                       text)

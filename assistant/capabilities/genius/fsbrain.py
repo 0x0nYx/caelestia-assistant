@@ -44,7 +44,7 @@ implementation of anything):
    atomic-save discipline every learner uses.
 
 Event-driven watching (the §5 invariant): this module ships NO watcher
-and no sleep-loop of any kind — see RATIONALE.md's known-gaps entry for
+and no sleep-loop of any kind — see the package rationale (see module docstrings)'s known-gaps entry for
 the measured reason (select() on a directory fd is always "ready" on
 this platform, and ctypes — the only stdlib route to inotify(7) — is
 rejected by the behavioral safety tests). Every scan here is a

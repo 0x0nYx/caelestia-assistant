@@ -1,4 +1,4 @@
-"""Compositional slot grammar for the settings parser (DESIGN.md §3.8).
+"""Compositional slot grammar for the settings parser (the settings design notes (see module docstrings) §3.8).
 
 Issue A1's contract: paraphrases of the SAME intent should route through
 ONE grammar — a slot model ``{intensifier, target, direction, dimension}``
@@ -7,11 +7,11 @@ ONE grammar — a slot model ``{intensifier, target, direction, dimension}``
 Design boundary (why this is a RECOVERY layer, not a replacement):
 
 - ``settings/parser.py``'s frozen grammar is a documented, test-pinned
-  contract (RATIONALE.md §7: "the frozen 18 tools and their natural-language
+  contract (the package rationale (see module docstrings) §7: "the frozen 18 tools and their natural-language
   grammar are preserved byte-for-byte"). This module therefore NEVER runs
   when the frozen grammar resolves a request: parser.py calls
   ``recover()`` only on the paths where the frozen grammar already gave
-  up ("noun matched, no applicable cue" — DESIGN.md §3.3 step 7). Every
+  up ("noun matched, no applicable cue" — the settings design notes (see module docstrings) §3.3 step 7). Every
   frozen-verdict output is byte-identical to before by construction; the
   only observable change is that some previously-AMBIGUOUS requests now
   resolve to the same ops their canonical phrasings produce.
@@ -36,7 +36,7 @@ axis, opacity = +1). The same multiplication resolves every
 verb/noun combination without listing the phrases.
 
 Intensifiers ("a bit", "slightly", "a lot", ...) are EXTRACTED and
-reported but deliberately magnitude-neutral: DESIGN.md §3.1 pins
+reported but deliberately magnitude-neutral: the settings design notes (see module docstrings) §3.1 pins
 "'a bit / slightly' does NOT change the step count (still ±1) —
 documented, deterministic". Extending that pin to strong intensifiers
 keeps one rule instead of two.
@@ -86,7 +86,7 @@ _STRONG_INTENSIFIER_RE = re.compile(
 # sign semantics per axis:
 #   size   : +1 larger, -1 smaller (plain polarity)
 #   anim   : +1 slower (durations UP), -1 faster (durations DOWN) — the
-#            documented inversion (parser.py §3.4, DESIGN.md §2)
+#            documented inversion (parser.py §3.4, the settings design notes (see module docstrings) §2)
 #   trans  : sign on the OPACITY-BASE axis (+1 more opaque, -1 more
 #            transparent); noun polarity multiplies this below
 # ---------------------------------------------------------------------------
@@ -386,6 +386,6 @@ def _recovered(ops: List[Dict[str, Any]], slots: Dict[str, Any]) -> Dict[str, An
             slot_bits.append(f"direction={word_dir}")
     if intensifier:
         slot_bits.append(
-            f"intensifier={intensifier} (magnitude-neutral per DESIGN.md §3.1)")
+            f"intensifier={intensifier} (magnitude-neutral per the settings design notes (see module docstrings) §3.1)")
     note = "compositional slot grammar (§3.8): " + "; ".join(slot_bits)
     return _result("INTENT", ops=ops, notes=[note])

@@ -12,7 +12,7 @@ Pinned here:
   reviewable doc in the brain state and future unknowns of the same byte
   shape rank the taught type;
 - no watcher, no sleep-loop, nothing resident (the module ships none —
-  see RATIONALE's known-gaps entry for the measured reason).
+  see the package rationale's known-gaps entry for the measured reason).
 """
 from __future__ import annotations
 

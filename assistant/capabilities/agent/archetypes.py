@@ -25,7 +25,7 @@ dispatchers):
   history, reusing the NamedBandit machinery. The live DBus observation
   surface is deliberately NOT here: it needs the quarantined DBus
   surface (a maintainer sign-off per the DBus proposal) plus a bounded
-  dbus-monitor watch; see RATIONALE and WORKLOG for the honest gap.
+  dbus-monitor watch; see the package rationale and WORKLOG for the honest gap.
 - **screenshot_diff**: pixel-REGION hashing between two PNG files
   (grid block-mean hashes — NOT OCR, by explicit exclusion) chained
   into issue drafting for structural bug reports.
@@ -241,7 +241,7 @@ def triage_draft_description(triage: Dict[str, Any]) -> str:
 
 # ---------------------------------------------------------------------------
 # 4. Notification triage (the PURE classifier; observation surface is a
-#    documented gap — see the module docstring and RATIONALE).
+#    documented gap — see the module docstring and the package rationale).
 # ---------------------------------------------------------------------------
 
 
@@ -297,7 +297,7 @@ def triage_notifications(events: Sequence[Dict[str, Any]],
                      "shape); high-frequency AND low-acceptance => batch",
         "note": "pure classification of caller-provided event records; "
                 "the live DBus observation surface is a separate "
-                "capability-gated concern (see RATIONALE)",
+                "capability-gated concern (see the package rationale)",
     }
 
 

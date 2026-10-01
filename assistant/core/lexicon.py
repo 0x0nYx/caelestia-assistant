@@ -448,7 +448,7 @@ def distributional_neighbors(embedder, word: str, k: int = 5) -> List[str]:
     nothing about words absent from the corpus (unknown -> empty list)
     and adds no semantics to the router by itself — a maintainer reading
     these rows and promoting a genuine synonym into SYNONYMS is the
-    intended workflow (the reviewed-diff discipline RATIONALE.md §5
+    intended workflow (the reviewed-diff discipline the package rationale (see module docstrings) §5
     applies to lexicon changes too).
 
     ``embedder`` is any PpmiEmbedder/PpmiSvdEmbedder (both expose

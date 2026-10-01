@@ -8,20 +8,16 @@ prose still described them). This module extends the gen_adapter
 pattern — GENERATE, never hand-write, verify byte-identity — to the two
 community-facing artifacts that list the tool surface:
 
-- ``docs/TOOL_CATALOG.md``: every registry tool — name, config path,
-  kind, range/enum/default, which presets set it — with the registry's
-  own counts pinned;
+- the tool catalog (every registry tool — name, config path, kind,
+  range/enum/default, which presets set it — with the registry's own
+  counts pinned), generated on demand by ``settings --gen-catalog``;
 - ``scripts/completions/caelestia-assist.bash``: a bash completion for
-  the settings layer's flags, preset names, and tool names.
-
-The committed files are the OUTPUT of this module; a test re-runs the
-generator and asserts byte-identity (the gen_adapter --verify
-discipline), so a registry change that outdates the catalog FAILS THE
-BUILD instead of silently shipping stale docs. ``--verify`` exposes the
-same check to CI and to contributors.
+  the settings layer's flags, preset names, and tool names (committed;
+  ``--verify`` re-checks byte-identity so a registry change that
+  outdates it FAILS THE BUILD instead of silently drifting).
 
 Pure generation: no I/O in the pure functions; the CLI writes only the
-two declared paths (or verifies).
+declared path (or verifies).
 """
 
 from __future__ import annotations
@@ -38,7 +34,6 @@ __all__ = ["catalog_markdown", "completions_bash", "ARTIFACTS",
 # The committed artifacts, relative to the repo root (the CLI resolves
 # the root as the parent of the assistant package directory).
 ARTIFACTS: Tuple[Tuple[str, str], ...] = (
-    ("docs/TOOL_CATALOG.md", "catalog_markdown"),
     ("scripts/completions/caelestia-assist.bash", "completions_bash"),
 )
 

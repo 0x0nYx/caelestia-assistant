@@ -78,7 +78,7 @@ _TIMEOUT_SECONDS = 10
 # The command catalog: every entry is a complete fixed command shape.
 # Adding an entry (or a risk class above STATE_CHANGING) is a reviewable
 # diff: the pinning test asserts the exact ids and classes, and
-# RATIONALE.md §16 must grow with it.
+# the package rationale (see module docstrings) §16 must grow with it.
 # ---------------------------------------------------------------------------
 
 CATALOG: Tuple[Dict[str, Any], ...] = (

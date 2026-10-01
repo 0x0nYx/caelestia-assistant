@@ -1,4 +1,4 @@
-"""Safety tests for the settings layer (DESIGN.md §6, §9).
+"""Safety tests for the settings layer (the settings design notes (see module docstrings) §6, §9).
 
 Three structural guarantees, re-checked here so they can never regress
 quietly:
@@ -169,7 +169,7 @@ class CliExitCodeContractTests(unittest.TestCase):
 class ExtendedCoreToolApplyRestoreTests(unittest.TestCase):
     """These three tools ride the SAME write protocol as the original 14:
     --apply writes only the target + backup sibling, --restore undoes it
-    byte-identically, dry-run writes nothing (DESIGN.md §5, §6; task: add a
+    byte-identically, dry-run writes nothing (the settings design notes (see module docstrings) §5, §6; task: add a
     case that a new tool's --apply writes the key and --restore undoes it)."""
 
     def setUp(self) -> None:
@@ -261,7 +261,7 @@ class ExtendedCoreToolApplyRestoreTests(unittest.TestCase):
 
 class DockBadgesApplyRestoreTests(unittest.TestCase):
     """setDockBadges rides the SAME write protocol as the previous 17
-    (DESIGN.md §5, §6; [C36]): dry-run default writes nothing, --apply
+    (the settings design notes (see module docstrings) §5, §6; [C36]): dry-run default writes nothing, --apply
     writes only the target + backup sibling, --restore undoes it
     byte-identically, and an out-of-type value (a number on the bool tool)
     is REJECTED and blocks the apply — never coerced."""

@@ -1,6 +1,6 @@
 """Paraphrase-equivalence battery for the compositional slot grammar (A1).
 
-Design contract under test (DESIGN.md §3.8, slots.py):
+Design contract under test (the settings design notes (see module docstrings) §3.8, slots.py):
 
 - FROZEN OUTPUTS UNCHANGED: every canonical phrasing below is resolved by
   parser.py's own frozen grammar, and its route is pinned here so a future

@@ -50,7 +50,7 @@ MAX_ENTRIES = 12  # >= the required 10; oldest evicted first
 # write path, same sibling path — no new write surface) and survives
 # the 12-entry ring's evictions; it is itself bounded (FIFO at
 # UNDO_LOG_MAX) so the config directory cannot grow without limit — the
-# same discipline DESIGN.md applies to the ring.
+# same discipline the settings design notes (see module docstrings) applies to the ring.
 UNDO_LOG_MAX = 500
 UNDO_LOG_KEY = "undo_log"
 

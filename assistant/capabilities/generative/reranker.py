@@ -35,7 +35,7 @@ the library's own download numbers):
                             Apache 2.0
 
 All three are IN the Ollama model library (unlike the apertus family
-the old MODELS.md recommended, which had no listing at all). Serving
+the old the model guidance (see the generative package docs) recommended, which had no listing at all). Serving
 one is a user-side step; the assistant downloads nothing, ever.
 
 Determinism, stated plainly: model output is NOT deterministic, so this
@@ -55,7 +55,7 @@ from . import client
 __all__ = ["rerank", "render_lines", "VERIFIED_CANDIDATES"]
 
 # the only role this project recommends a model for, and the only
-# candidates named in MODELS.md — each verified against the Ollama
+# candidates named in the model guidance (see the generative package docs) — each verified against the Ollama
 # library before being written down (see module docstring)
 VERIFIED_CANDIDATES = [
     {"name": "smollm2:135m", "download": "271 MB", "license": "Apache 2.0"},

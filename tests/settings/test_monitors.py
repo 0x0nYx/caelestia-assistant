@@ -94,14 +94,23 @@ class CliTests(unittest.TestCase):
         # pins HOME; no --file is passed.
         import os
         tmp = Path(tempfile.mkdtemp(prefix="monitors-cli-"))
-        old = os.environ.get("HOME")
+        old_home = os.environ.get("HOME")
+        old_xdg = os.environ.get("XDG_CONFIG_HOME")
         os.environ["HOME"] = str(tmp)
+        # CI images (ubuntu-24.04) export XDG_CONFIG_HOME, which would
+        # win over HOME; this test pins the HOME fallback path, so the
+        # var must be cleared for the duration.
+        os.environ.pop("XDG_CONFIG_HOME", None)
 
         def _restore_home():
-            if old is None:
+            if old_home is None:
                 os.environ.pop("HOME", None)
             else:
-                os.environ["HOME"] = old
+                os.environ["HOME"] = old_home
+            if old_xdg is None:
+                os.environ.pop("XDG_CONFIG_HOME", None)
+            else:
+                os.environ["XDG_CONFIG_HOME"] = old_xdg
         self.addCleanup(_restore_home)
         rc, out, err = _cli(["set the bar scale to 0.8", "--apply",
                              "--confirm", "--monitor", "DP-1"])

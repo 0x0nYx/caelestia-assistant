@@ -1,5 +1,5 @@
 {
- "protocol": "Behavior-lock goldens (Stage C1).\n\nGenerates assistant/tests/goldens/manifest.json: >= 300 read-only CLI\ncases, each run TWICE in-process from an isolated environment; a case\nis kept only when both runs return rc 0 and byte-identical stdout\n(self-filtering \u2014 timing-dependent surfaces drop out on their own).\nEvery kept case records sha256(stdout); a reviewable sample of full\noutputs is stored alongside as samples/*.txt.\n\nUpdate protocol: goldens change ONLY via\n    python3 scripts/regen_goldens.py\nfollowed by a reviewed commit whose message states the behavior change\nthat justified the update. The lock test fails loudly on any silent\ndrift, including case-count loss (minimum 300).",
+ "protocol": "Behavior-lock goldens (Stage C1).\n\nGenerates tests/goldens/manifest.json: >= 300 read-only CLI\ncases, each run TWICE in-process from an isolated environment; a case\nis kept only when both runs return rc 0 and byte-identical stdout\n(self-filtering \u2014 timing-dependent surfaces drop out on their own).\nEvery kept case records sha256(stdout); a reviewable sample of full\noutputs is stored alongside as samples/*.txt.\n\nUpdate protocol: goldens change ONLY via\n    python3 scripts/regen_goldens.py\nfollowed by a reviewed commit whose message states the behavior change\nthat justified the update. The lock test fails loudly on any silent\ndrift, including case-count loss (minimum 300).",
  "min_cases": 300,
  "cases": [
   {
@@ -1990,8 +1990,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np11",
@@ -2001,8 +2001,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np12",
@@ -2012,8 +2012,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np13",
@@ -2111,8 +2111,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np22",
@@ -2122,8 +2122,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np23",
@@ -2144,8 +2144,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np25",
@@ -2166,8 +2166,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np27",
@@ -2177,8 +2177,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np28",
@@ -2199,8 +2199,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-np30",
@@ -2210,8 +2210,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-manual-01",
@@ -2276,8 +2276,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-manual-07",
@@ -2298,8 +2298,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-manual-09",
@@ -2320,8 +2320,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-manual-11",
@@ -2364,8 +2364,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings-manual-15",
@@ -3669,8 +3669,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-03",
@@ -3680,8 +3680,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-04",
@@ -3691,8 +3691,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-05",
@@ -3702,8 +3702,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-06",
@@ -3713,8 +3713,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-07",
@@ -3735,8 +3735,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-09",
@@ -3746,8 +3746,8 @@
     "--json"
    ],
    "rc": 0,
-   "sha": "00e0fa635564e78d3e9881d94dec7eae8d0cd19b6b60ce792d358a820c3f0235",
-   "bytes": 24084
+   "sha": "9a5f6a3f311fd501b198cb2b5b85e40fa80400fdf5b45533879e7ee9c6cce780",
+   "bytes": 24093
   },
   {
    "id": "settings2-10",
@@ -3916,8 +3916,8 @@
     "selfcheck"
    ],
    "rc": 0,
-   "sha": "52e2ae6fa5426f9fd77fe77f8f0b4ee7e2f1c3388f7a2a13c9f2b677e833285f",
-   "bytes": 103
+   "sha": "3dd6d5114847df7b25a8fd7ac835cbb20f2c28e3a4168978118e77ac5df515c5",
+   "bytes": 101
   },
   {
    "id": "misc-capabilities",

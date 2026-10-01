@@ -24,7 +24,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-MANIFEST = REPO / "assistant" / "tests" / "goldens" / "manifest.json"
+MANIFEST = REPO / "tests" / "goldens" / "manifest.json"
 
 
 def run_case(argv):

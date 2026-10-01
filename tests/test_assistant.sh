@@ -28,27 +28,27 @@ run_assistant_suite() {
 }
 
 test_assistant_layer1() {
-    run_assistant_suite "assistant/diagnostics/tests"
+    run_assistant_suite "tests/diagnostics"
 }
 
 test_assistant_layer2() {
-    run_assistant_suite "assistant/retrieval/tests"
+    run_assistant_suite "tests/retrieval"
 }
 
 test_assistant_layer3() {
-    run_assistant_suite "assistant/generative/tests"
+    run_assistant_suite "tests/generative"
 }
 
 test_assistant_layer4() {
-    run_assistant_suite "assistant/issues/tests"
+    run_assistant_suite "tests/issues"
 }
 
 test_assistant_layer5() {
-    run_assistant_suite "assistant/settings/tests"
+    run_assistant_suite "tests/settings"
 }
 
 test_assistant_brain() {
-    run_assistant_suite "assistant/brain/tests"
+    run_assistant_suite "tests/brain"
 }
 
 test_assistant_layer1
@@ -57,11 +57,11 @@ test_assistant_layer3
 test_assistant_layer4
 test_assistant_layer5
 test_assistant_brain
-test_agent_suite() { run_assistant_suite "assistant/agent/tests"; }
-test_scan_suite()   { run_assistant_suite "assistant/scan/tests"; }
-test_cortex_suite() { run_assistant_suite "assistant/cortex/tests"; }
-test_shellkb_suite() { run_assistant_suite "assistant/shellkb/tests"; }
-test_genius_suite() { run_assistant_suite "assistant/genius/tests"; }
+test_agent_suite() { run_assistant_suite "tests/agent"; }
+test_scan_suite()   { run_assistant_suite "tests/scan"; }
+test_cortex_suite() { run_assistant_suite "tests/core"; }
+test_shellkb_suite() { run_assistant_suite "tests/shellkb"; }
+test_genius_suite() { run_assistant_suite "tests/genius"; }
 test_agent_suite
 test_scan_suite
 test_cortex_suite
@@ -102,8 +102,8 @@ test_conformance_suite() {
     return 0
   fi
   PYTHONPATH="$REPO_ROOT" python3 -m unittest discover \
-    -s "$REPO_ROOT/assistant/tests" -t "$REPO_ROOT" >/dev/null 2>&1
-  assert_status 0 "$?" "assistant suite assistant/tests (issue #120 conformance)"
+    -s "$REPO_ROOT/tests" -t "$REPO_ROOT" >/dev/null 2>&1
+  assert_status 0 "$?" "tests/ (issue #120 conformance)"
 }
 test_conformance_suite
 
@@ -113,7 +113,7 @@ test_lazy_imports() {
   # in-process and earlier tests may already have imported engines).
   local hits
   hits=$(python3 -X importtime -m assistant.hub --help 2>&1 >/dev/null \
-         | grep -cE "assistant\.(agent|genius|cortex\.router|diagnostics)" || true)
+         | grep -cE "assistant\.(capabilities\.(agent|genius|diagnostics)|core\.router)" || true)
   if [ "$hits" != "0" ]; then
     echo "FAIL: --help imported engine modules ($hits hits)"
     exit 1
@@ -125,7 +125,7 @@ test_golden_lock() {
   # (count lives in the manifest: cases + min_cases — never a constant)
   # Lives in scripts/ (the import policy forbids subprocess inside
   # assistant/ Python); the unittest tree pins manifest structure.
-  if [ ! -f "$REPO_ROOT/assistant/tests/goldens/manifest.json" ]; then
+  if [ ! -f "$REPO_ROOT/tests/goldens/manifest.json" ]; then
     echo "FAIL: golden manifest missing (run scripts/regen_goldens.py)"
     exit 1
   fi

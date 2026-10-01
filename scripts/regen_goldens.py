@@ -33,7 +33,7 @@ SAMPLE_COUNT = 60
 
 
 def _items(suite_file):
-    data = json.loads((REPO / "assistant" / "eval" / "sets" /
+    data = json.loads((REPO / "assistant" / "core" / "eval" / "sets" /
                        suite_file).read_text())
     return data["items"]
 

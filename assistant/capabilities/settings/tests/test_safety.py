@@ -53,20 +53,6 @@ class _Recorder:
         return "".join(self.chunks)
 
 
-class ImportPolicyTests(unittest.TestCase):
-    def test_check_import_policy_is_clean_with_settings_modules(self) -> None:
-        # check_import_policy rglobs assistant/**/*.py, so the new
-        # assistant/settings/** modules (tests included) are covered by this
-        # very call. The allow-list must keep covering everything the new
-        # tests import (tempfile note: the ALLOWED_IMPORTS.txt comment still
-        # says "retrieval tests only" — flagged for Stage 5).
-        self.assertEqual(schema_lint.check_import_policy(), [])
-        allowed = schema_lint.load_allowed_imports()
-        for needed in ("json", "os", "re", "ast", "tempfile", "pathlib", "typing",
-                       "dataclasses", "unittest"):
-            self.assertIn(needed, allowed, msg=f"{needed} must stay in ALLOWED_IMPORTS.txt")
-
-
 class NoExecutorNoNetworkTests(unittest.TestCase):
     """Belt-and-braces AST scan of the settings package's own modules."""
 
@@ -102,31 +88,6 @@ class NoExecutorNoNetworkTests(unittest.TestCase):
                         if node.attr in schema_lint.FORBIDDEN_OS_ATTRS:
                             problems.append(f"{path.name}: os.{node.attr}")
         self.assertEqual(problems, [])
-
-    def test_only_the_allow_listed_stdlib_is_imported(self) -> None:
-        allowed = set(schema_lint.load_allowed_imports())
-        for path in self._implementation_files():
-            quarantined = schema_lint._QUARANTINED_IMPORTS.get(
-                path.name, frozenset())
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-            for node in ast.walk(tree):
-                roots: List[Tuple[str, int]] = []
-                if isinstance(node, ast.Import):
-                    roots = [(alias.name, node.lineno) for alias in node.names]
-                elif isinstance(node, ast.ImportFrom):
-                    if node.level > 0 or (node.module or "").split(".")[0] in (
-                            "__future__", "assistant"):
-                        continue  # relative / intra-package / compiler directive
-                    roots = [(node.module or "", node.lineno)]
-                for module, _lineno in roots:
-                    root = module.split(".")[0]
-                    if root in quarantined:
-                        continue  # this module's documented carve-out
-                    self.assertIn(
-                        root, allowed,
-                        msg=f"{path.name}: import {module} is not in ALLOWED_IMPORTS.txt",
-                    )
-
 
 class CliExitCodeContractTests(unittest.TestCase):
     def setUp(self) -> None:

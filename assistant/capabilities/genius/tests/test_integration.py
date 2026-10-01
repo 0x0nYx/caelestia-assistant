@@ -1,6 +1,6 @@
 """Genius integration tests — hub wiring, bridge ops, cortex delegation, policy.
 
-In-process by design: the import policy applies to tests as well, so these
+In-process by design: the stdlib-only discipline applies to tests as well, so these
 drive the hub exactly the way brain/tests/test_wiring.py does — by calling
 hub.main() with captured stdout, never by spawning processes.
 """
@@ -141,11 +141,6 @@ class TestCortexDelegation(unittest.TestCase):
 
 
 class TestSafetyPolicy(unittest.TestCase):
-    def test_import_policy_clean(self):
-        code, out, _ = _hub(["selfcheck"])
-        self.assertEqual(code, 0)
-        self.assertIn("selfcheck OK", out)
-
     def test_genius_sources_have_no_executor_or_network(self):
         genius_dir = Path(__file__).resolve().parent.parent
         for py in sorted(genius_dir.glob("*.py")):

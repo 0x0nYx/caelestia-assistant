@@ -4,7 +4,7 @@ Offline and deterministic: the dedup-warning case injects a fabricated hits
 list directly into the compose function (template.render_draft) so the real
 retrieval index is never needed for it. All writes go to temporary dirs.
 
-Note: io.StringIO is not on assistant/ALLOWED_IMPORTS.txt, so the captures
+Note: captures use a duck-typed sink so the package imports stay stdlib-only
 below are tiny hand-rolled file-like objects instead.
 """
 
@@ -243,12 +243,6 @@ class TestCliErrors(unittest.TestCase):
         code, _out, err = run_main(["draft", "--title", "t"], stdin_text="   ")
         self.assertEqual(code, 2)
         self.assertIn("--from-file", err)
-
-
-class TestImportPolicy(unittest.TestCase):
-    def test_whole_assistant_import_policy_holds(self) -> None:
-        """AST scan over assistant/** — includes assistant/issues/** and stays clean."""
-        self.assertEqual(schema_lint.check_import_policy(), [])
 
 
 if __name__ == "__main__":

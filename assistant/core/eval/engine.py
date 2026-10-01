@@ -24,7 +24,7 @@ Six suites, each honest about what it measures:
                   route latency p50/p95, process peak RSS. Cold-process
                   CLI latency is measured by ``scripts/measure_cli.py``
                   at the repo root — spawning processes from inside
-                  ``assistant/`` is forbidden by the import policy, and
+                  ``assistant/`` is forbidden by the behavioral safety tests, and
                   the arena does not get an exception.
 
 Determinism: routing/abstention/calibration are pure functions of the
@@ -95,7 +95,7 @@ def available(split: str) -> List[str]:
 
 
 # ---------------------------------------------------------------------------
-# Timing (datetime deltas: the import policy has no `time` module; wall
+# Timing (datetime deltas: stdlib-only discipline keeps `time` off the eval path; wall
 # clock has microsecond resolution, which is enough for ms-scale medians).
 # ---------------------------------------------------------------------------
 
@@ -469,7 +469,7 @@ def run_footprint() -> Dict[str, Any]:
         "note": ("in-process measurements. fresh_router_ms is a new Router() over "
                  "already-built process singletons — the true COLD first-route "
                  "and cold-CLI numbers are subprocess measurements taken by "
-                 "scripts/measure_cli.py (import policy forbids subprocess inside "
+                 "scripts/measure_cli.py (the behavioral tests forbid subprocess inside "
                  "assistant/; no exception was requested)"),
     }
 

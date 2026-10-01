@@ -15,18 +15,6 @@ LAYER1_TEXT = (
 )
 
 
-class TestImportPolicy(unittest.TestCase):
-    def test_whole_assistant_tree_is_import_clean(self) -> None:
-        """schema_lint.check_import_policy AST-scans assistant/**/*.py, which
-        now includes assistant/retrieval/** and assistant/pipeline.py."""
-        self.assertEqual(schema_lint.check_import_policy(), [])
-
-    def test_forbidden_modules_still_rejected_by_name(self) -> None:
-        allowed = schema_lint.load_allowed_imports()
-        for module in ("subprocess", "socket", "http", "urllib", "requests", "pty", "shutil"):
-            self.assertNotIn(module, allowed)
-
-
 class TestPipelineLayering(unittest.TestCase):
     def test_layer1_match_stays_on_rules(self) -> None:
         payload = assist(LAYER1_TEXT)

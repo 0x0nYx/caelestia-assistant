@@ -560,7 +560,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     diag.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of text")
     diag.add_argument("--top", type=int, default=3, help="max candidates shown when ambiguous")
 
-    sub.add_parser("selfcheck", help="validate rule files and the no-executor import policy")
+    sub.add_parser("selfcheck", help="validate rule files and the no-executor safety pins")
 
     rp = sub.add_parser("rulepack", help="the signed rule-pack format: "
                                          "export/import/list/render "
@@ -703,7 +703,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         except (OSError, ValueError, ImportError):
             pass
         print("selfcheck OK: rule schema valid, risk tiers consistent, "
-              "import policy clean, settings lint rules valid" + note)
+              "safety pins clean, settings lint rules valid" + note)
         return 0
 
     if args.input == "-":

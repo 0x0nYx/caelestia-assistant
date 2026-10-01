@@ -53,7 +53,7 @@ is NOT the blocker — measured on this machine (2026-09-26), a stdlib
 pHash of a 1920x1080 PNG costs ~0.02 s (zlib IDAT decode ~0.01 s,
 32x32 luminance sample ~0.000 s, naive 32x32 DCT ~0.013 s). The blocker
 is format coverage: wallpapers in the wild are heavily JPEG, and the
-stdlib-only import policy (ALLOWED_IMPORTS.txt) provides no JPEG
+stdlib-only dependency set provides no JPEG
 decoder, so a pHash here would silently cover only PNG — a partial
 feature pretending to be a general one. If image near-dup matters
 later, revisit with the coverage question answered first.

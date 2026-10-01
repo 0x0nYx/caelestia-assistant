@@ -10,7 +10,7 @@ This file is the ONLY network surface in the entire assistant. Guarantees:
   No retries, no backoff, no pools, no background work; short timeout (10s).
 - stdlib http.client only. No urllib (URL parsing is done by a tiny local
   parser so that neither urllib nor socket is ever imported), no subprocess,
-  no file writes. The allow-list entry lives in assistant/ALLOWED_IMPORTS.txt
+  no file writes. The loopback-only entry is pinned by the generative tests
   as the dotted name "http.client"; bare "http" stays forbidden.
 - Injectable: both entry points accept a connection factory so tests can
   supply fakes and never open a real socket.

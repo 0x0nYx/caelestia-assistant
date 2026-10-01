@@ -32,7 +32,7 @@ Safety spine (unchanged, inherited — this module adds zero write paths):
 - every runner is read-only or preview-only (see per-runner notes);
 - a runner failure degrades to the caller's hint path (``run_delegate``
   returns None) — the turn shows the "try:" fallback, never a crash;
-- stdlib + existing assistant modules only; ALLOWED_IMPORTS.txt is
+- stdlib + existing assistant modules only; the behavioral safety tests
   untouched; no subprocess, no network, no clock dependence beyond what
   the called modules already do.
 """

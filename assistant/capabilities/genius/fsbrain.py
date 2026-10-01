@@ -47,7 +47,7 @@ Event-driven watching (the §5 invariant): this module ships NO watcher
 and no sleep-loop of any kind — see RATIONALE.md's known-gaps entry for
 the measured reason (select() on a directory fd is always "ready" on
 this platform, and ctypes — the only stdlib route to inotify(7) — is
-rejected by name in ALLOWED_IMPORTS.txt). Every scan here is a
+rejected by the behavioral safety tests). Every scan here is a
 user-invoked one-shot; steady-state RSS when idle is zero because
 nothing is resident.
 

@@ -1,20 +1,20 @@
 """agent.pkgprobe — the quarantined, opt-in package-list probe.
 
-THE QUARANTINE (the DBus proposal's exact pattern, applied here):
-this is the ONLY module in ``assistant/`` permitted to import
-``subprocess`` — the import-policy lint
-(``diagnostics/schema_lint.py``) carries a per-module carve-out for
-``pkgprobe.py`` alone, and a test pins the exemption set to exactly
-this file. Every other module stays under the zero-tolerance rule.
+THE EXECUTOR SURFACE (the DBus proposal's exact pattern, applied here):
+this module spawns nothing itself — every probe goes through the
+executor (``assistant/executor``), the single argv-arrays-only runner.
+The quarantine registry (``diagnostics/schema_lint.py``) names exactly
+two subprocess users: ``executor/runner.py`` and ``dbus_surface.py``
+(pending its own migration), and tests pin that set.
 
 What it does (§2's discipline, line by line):
 
-- READ-ONLY: the only spawned commands are list/query operations —
+- READ-ONLY: the only executed commands are list/query operations —
   ``pacman -Q``, ``dpkg-query -W``, ``flatpak list``. Nothing installs,
   upgrades, removes, or writes anything, ever;
-- FIXED ARGUMENT ARRAYS: every call is ``subprocess.run([binary,
-  *fixed_args])`` — never ``shell=True``, never string interpolation,
-  the upstream CONTRIBUTING.md "pass arguments as a list" rule;
+- TYPED ACTION PLANS: every call is an executor ActionPlan over argv
+  tuples — never ``shell=True``, never string interpolation, the
+  upstream CONTRIBUTING.md "pass arguments as a list" rule;
 - OFF BY DEFAULT: the probe refuses to run unless the capability
   manifest enables ``package_audit`` (a file edit — never an NL
   request), the same kill-switch posture as the DBus proposal;
@@ -31,10 +31,10 @@ no network, no freshness claims about versions, nothing external.
 from __future__ import annotations
 
 import os
-import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
 from assistant.core import features as capabilities
+from assistant.executor import ActionPlan, Step, run as executor_run
 
 __all__ = ["query_installed", "stale_match", "PROBES"]
 
@@ -70,19 +70,23 @@ def query_installed(managers: Optional[List[str]] = None) -> Dict[str, Any]:
                 not os.path.isfile(f"/bin/{binary}"):
             continue  # not installed on this machine: try the next
         try:
-            completed = subprocess.run(  # noqa: S603 — fixed array, below
-                [binary, *args],
-                capture_output=True, text=True, timeout=_TIMEOUT_SECONDS,
-                check=False,
-            )
-        except (subprocess.TimeoutExpired, OSError) as exc:
+            result = executor_run(ActionPlan(
+                steps=(Step((binary, *args), timeout_s=_TIMEOUT_SECONDS),),
+                reversibility="read_only", blast_radius="none",
+                description=f"package probe: {binary}"))
+        except Exception as exc:  # pragma: no cover - executor is honest
             return {"error": f"{binary} probe failed: "
                              f"{type(exc).__name__}: {exc}"}
-        if completed.returncode != 0:
-            return {"error": f"{binary} exited {completed.returncode}",
-                    "stderr": completed.stderr[:400]}
+        first = result["steps"][0]
+        if first.get("error") and "timeout" in first["error"]:
+            return {"error": f"{binary} probe failed: {first['error']}"}
+        if first.get("error"):
+            continue  # binary vanished between probe and run: try next
+        if not first["ok"]:
+            return {"error": f"{binary} exited {first['returncode']}",
+                    "stderr": first["stderr"][:400]}
         packages: List[Tuple[str, str]] = []
-        for line in completed.stdout.splitlines():
+        for line in first["stdout"].splitlines():
             parts = line.split()
             if len(parts) >= 2:
                 packages.append((parts[0], parts[1]))

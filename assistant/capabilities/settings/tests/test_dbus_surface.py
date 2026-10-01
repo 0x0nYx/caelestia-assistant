@@ -350,11 +350,13 @@ class ReadProbeTests(unittest.TestCase):
 
 
 class LintParityTests(unittest.TestCase):
-    def test_quarantine_covers_exactly_two_modules(self) -> None:
+    def test_quarantine_constant_pins_the_two_spawn_users(self) -> None:
+        # the import allow-list is gone; the quarantine constant survives
+        # as documentation of the only two modules allowed to spawn
         from assistant.capabilities.diagnostics.schema_lint import _QUARANTINED_IMPORTS
         self.assertEqual(
             _QUARANTINED_IMPORTS,
-            {"pkgprobe.py": frozenset({"subprocess"}),
+            {"executor/runner.py": frozenset({"subprocess"}),
              "dbus_surface.py": frozenset({"subprocess"})})
 
 

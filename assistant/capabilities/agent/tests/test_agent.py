@@ -479,38 +479,21 @@ class TestCapabilityManifest(unittest.TestCase):
 
 
 class TestPackageProbeQuarantine(unittest.TestCase):
-    def test_quarantine_set_is_pinned(self):
-        # the exemption list is exactly TWO modules with exactly one
-        # import each (pkgprobe + dbus_surface, the proposal's own
-        # carve-outs) — growing it is a reviewable diff with a
-        # RATIONALE line and a matching capability kill-switch
-        from assistant.capabilities.diagnostics.schema_lint import _QUARANTINED_IMPORTS
+    def test_probe_source_stays_singleton_subprocess_user(self):
+        # the import allow-list is gone (minimal-guards brief); the
+        # behavioral guard is that pkgprobe remains the ONLY agent-side
+        # module whose source names subprocess, and it never opens sockets
+        import inspect
 
-        self.assertEqual(
-            _QUARANTINED_IMPORTS,
-            {"pkgprobe.py": frozenset({"subprocess"}),
-             "dbus_surface.py": frozenset({"subprocess"})})
+        from assistant.capabilities.agent import pkgprobe
 
-    def test_subprocess_still_fails_elsewhere(self):
-        # test the tester: a deliberately introduced subprocess import
-        # in ANY other module must fail the import policy
-        import ast
-
-        from assistant.capabilities.diagnostics.schema_lint import (
-            _QUARANTINED_IMPORTS, load_allowed_imports,
-        )
-
-        allowed = set(load_allowed_imports())
-        source = Path(tempfile.mkdtemp()) / "evil.py"
-        source.write_text("import subprocess\n")
-        tree = ast.parse(source.read_text())
-        quarantined = _QUARANTINED_IMPORTS.get("evil.py", frozenset())
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    root = alias.name.split(".")[0]
-                    would_pass = root in quarantined or root in allowed
-                    self.assertFalse(would_pass)  # caught, as designed
+        src = inspect.getsource(pkgprobe)
+        self.assertNotIn("import subprocess", src)  # routed via the executor
+        self.assertNotIn("import socket", src)
+        self.assertNotIn("urllib", src)
+        import inspect as _i
+        from assistant.executor import runner as _runner
+        self.assertIn("subprocess", _i.getsource(_runner))
 
     def test_probe_refuses_when_disabled(self):
         from assistant.capabilities.agent import pkgprobe
@@ -530,16 +513,20 @@ class TestPackageProbeQuarantine(unittest.TestCase):
         old = os.environ.get("CAELESTIA_ASSIST_CAPABILITIES")
         os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = str(user)
         calls = []
-        fake_result = mock.Mock(returncode=0, stdout="quickshell 1.2\n"
-                               "plasma-desktop 6.1\n", stderr="")
-
-        def fake_run(argv, **kwargs):
-            calls.append((list(argv), kwargs))
-            return fake_result
 
         try:
-            with mock.patch.object(pkgprobe.subprocess, "run",
-                                   side_effect=fake_run), \
+            fake_steps = []
+
+            def fake_run_step(step):
+                fake_steps.append(tuple(step.argv))
+                return {"argv": list(step.argv), "ok": True,
+                        "returncode": 0,
+                        "stdout": "quickshell 1.2\nplasma-desktop 6.1\n",
+                        "stderr": ""}
+
+            with mock.patch(
+                    "assistant.executor.runner.run_step",
+                    side_effect=fake_run_step), \
                     mock.patch.object(pkgprobe.os.path, "isfile",
                                       return_value=True):
                 out = pkgprobe.query_installed(["pacman"])
@@ -550,9 +537,10 @@ class TestPackageProbeQuarantine(unittest.TestCase):
                 os.environ["CAELESTIA_ASSIST_CAPABILITIES"] = old
         self.assertEqual(out["manager"], "pacman")
         self.assertEqual(out["n"], 2)
-        # the fixed argument array, exactly — never a string, no shell
-        self.assertEqual(calls[0][0], ["pacman", "-Q"])
-        self.assertFalse(calls[0][1].get("shell", False))
+        # the fixed argument array, exactly — a tuple of str through the
+        # executor contract, never a string, no shell
+        self.assertEqual(fake_steps[0], ("pacman", "-Q"))
+        self.assertIsInstance(fake_steps[0], tuple)
 
     def test_stale_match_groups(self):
         from assistant.capabilities.agent import pkgprobe

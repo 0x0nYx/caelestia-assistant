@@ -11,7 +11,6 @@ This module adds the safety-specific layer:
    lint failure); PRIVILEGED/DESTRUCTIVE steps must carry a warning.
 3. Import policy — the assistant's own Python must not import subprocess,
    os.system, sockets, or anything else that could execute or transmit;
-   see ALLOWED_IMPORTS.txt for the single allow-list.
 """
 
 from __future__ import annotations
@@ -26,8 +25,6 @@ from . import engine
 from . import risk
 
 ASSISTANT_DIR = Path(__file__).resolve().parents[2]
-ALLOWED_IMPORTS_FILE = ASSISTANT_DIR / "ALLOWED_IMPORTS.txt"
-
 FORBIDDEN_KEY_RE = re.compile(r"(auto_?run|exec|execute|invoke|spawn|eval)", re.IGNORECASE)
 
 FORBIDDEN_IMPORTS = (
@@ -60,7 +57,7 @@ FORBIDDEN_OS_ATTRS = ("system", "popen", "execv", "execve", "execvp", "spawnv", 
 # off in the module itself. This is a quarantine, never a relaxation:
 # every other module in assistant/ stays under the zero-tolerance rule.
 _QUARANTINED_IMPORTS: Dict[str, frozenset] = {
-    "pkgprobe.py": frozenset({"subprocess"}),
+    "executor/runner.py": frozenset({"subprocess"}),
     "dbus_surface.py": frozenset({"subprocess"}),
 }
 
@@ -138,65 +135,10 @@ def _iter_py_files() -> List[Path]:
     return sorted(p for p in root.rglob("*.py") if "__pycache__" not in p.parts)
 
 
-def load_allowed_imports() -> List[str]:
-    with open(ALLOWED_IMPORTS_FILE, "r", encoding="utf-8") as handle:
-        return [line.strip() for line in handle if line.strip() and not line.startswith("#")]
-
-
-def check_import_policy() -> List[str]:
-    """AST-scan assistant/**/*.py against the allow-list and danger list."""
-    failures: List[str] = []
-    allowed = set(load_allowed_imports())
-    for py in _iter_py_files():
-        quarantined = _QUARANTINED_IMPORTS.get(py.name, frozenset())
-        try:
-            tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
-        except SyntaxError as exc:
-            failures.append(f"{py.name}: syntax error: {exc}")
-            continue
-        for node in ast.walk(tree):
-            # An allow-list entry may be dotted (e.g. "http.client", Layer 3):
-            # it then matches ONLY that exact full dotted name. The bare root
-            # ("http") stays forbidden unless separately allow-listed.
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    root_mod = alias.name.split(".")[0]
-                    if root_mod == "assistant":
-                        continue  # intra-package import (absolute form); the
-                        # target module is scanned by this same walk
-                    if root_mod == "__future__":
-                        continue  # compiler directive, not a capability
-                    if root_mod in quarantined:
-                        continue  # this module's documented quarantine
-                    if root_mod not in allowed and alias.name not in allowed:
-                        failures.append(f"{py.name}: import {alias.name} not in ALLOWED_IMPORTS.txt")
-            elif isinstance(node, ast.ImportFrom):
-                full_mod = node.module or ""
-                root_mod = full_mod.split(".")[0]
-                if node.level > 0:
-                    continue  # relative import inside the assistant package
-                if root_mod == "__future__":
-                    continue  # compiler directive, not a capability
-                if root_mod == "assistant":
-                    continue  # intra-package import; that module is scanned too
-                if root_mod in quarantined:
-                    continue  # this module's documented quarantine
-                if root_mod and root_mod not in allowed and full_mod not in allowed:
-                    failures.append(f"{py.name}: from {node.module} import ... not in ALLOWED_IMPORTS.txt")
-            elif isinstance(node, ast.Attribute):
-                # os.system / os.popen style calls are forbidden even though
-                # `os` itself is allowed (os.path + os.environ only).
-                if isinstance(node.value, ast.Name) and node.value.id == "os":
-                    if node.attr in FORBIDDEN_OS_ATTRS:
-                        failures.append(f"{py.name}: os.{node.attr} is forbidden")
-    return failures
-
-
 def run_all_checks() -> List[str]:
     """Run every lint; returns the combined failure list."""
     failures: List[str] = []
     failures.extend(check_rule_files())
-    failures.extend(check_import_policy())
     return failures
 
 

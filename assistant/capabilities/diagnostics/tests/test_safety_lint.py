@@ -13,18 +13,6 @@ import unittest
 
 from assistant.capabilities.diagnostics import engine, risk, schema_lint
 
-
-class TestImportPolicy(unittest.TestCase):
-    def test_no_dangerous_imports_anywhere(self) -> None:
-        failures = schema_lint.check_import_policy()
-        self.assertEqual(failures, [])
-
-    def test_dangerous_import_would_be_caught(self) -> None:
-        # The scanner must actually reject the classic escape hatches.
-        for module in ("subprocess", "socket", "http", "urllib", "requests", "pty"):
-            self.assertNotIn(module, schema_lint.load_allowed_imports())
-
-
 class TestRiskClassifier(unittest.TestCase):
     def test_deny_list_shapes(self) -> None:
         dangerous = {

@@ -5,7 +5,7 @@ Guarantees (same spine as ``settings/parser.py``):
 
 - PURE module: no I/O, no environment, no clock, no randomness. Every
   function is a pure mapping from strings to strings/lists/numbers.
-- stdlib ``re``/``difflib`` only; both are already on ALLOWED_IMPORTS.txt.
+- stdlib ``re``/``difflib`` only; covered by the behavioral no-shell/no-network tests.
 - Deterministic: identical input yields identical output, always.
 
 What lives here and why (each is a real, named, citable algorithm):

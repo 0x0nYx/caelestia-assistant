@@ -56,7 +56,7 @@ ORIGINAL = (
 
 
 class _Recorder:
-    """Duck-typed stdout/stderr sink (io is not on ALLOWED_IMPORTS.txt)."""
+    """Duck-typed stdout/stderr sink."""
 
     def __init__(self) -> None:
         self.chunks: List[str] = []

@@ -4,7 +4,7 @@ Narrow, offline-first helper for caelestia-kde: deterministic diagnostics,
 local retrieval over the repo's own docs and resolved issues, an optional
 generative suggestion layer, and an issue-drafting helper.
 
-Hard invariants (enforced by tests, see ALLOWED_IMPORTS.txt):
+Hard invariants (enforced by behavioral tests):
 - The assistant never executes shell commands. Suggested commands are inert
   strings, always prefixed with SUGGESTED_NOT_EXECUTED.
 - No network access except an explicitly enabled optional localhost Ollama

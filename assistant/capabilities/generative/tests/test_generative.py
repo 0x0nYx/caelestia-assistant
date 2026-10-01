@@ -345,14 +345,17 @@ class SuggestTests(unittest.TestCase):
 
 
 class PolicyTests(unittest.TestCase):
-    def test_import_policy_scan_stays_clean(self) -> None:
-        self.assertEqual(schema_lint.check_import_policy(), [])
+    def test_generative_client_imports_no_forbidden_module(self) -> None:
+        # the import allow-list is gone; the behavioral pin is on the
+        # client's own source: loopback http.client only, never a
+        # general network or execution surface
+        import inspect
 
-    def test_allowlist_gains_only_the_exact_dotted_http_client_entry(self) -> None:
-        allowed = schema_lint.load_allowed_imports()
-        self.assertIn("http.client", allowed)
-        for still_forbidden in ("http", "urllib", "socket", "subprocess", "requests", "asyncio"):
-            self.assertNotIn(still_forbidden, allowed)
+        src = inspect.getsource(client)
+        self.assertIn("http.client", src)
+        for forbidden in ("import socket", "import urllib", "import subprocess",
+                          "import requests", "import asyncio"):
+            self.assertNotIn(forbidden, src)
 
 
 class CliTests(unittest.TestCase):

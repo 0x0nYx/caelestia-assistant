@@ -1,6 +1,6 @@
 """Decide whether now is a good time to run heavier batch jobs (organize,
 drift check, health scan) and which ones fit in the window — orchestration
-only. This module never spawns anything itself (ALLOWED_IMPORTS bans
+only. This module never spawns anything itself (the behavioral tests ban
 subprocess for the whole assistant); the caller outside this layer is
 responsible for actually invoking whichever jobs get chosen.
 

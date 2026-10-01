@@ -485,7 +485,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--recommend", metavar="TOOL", default=None,
         help="read-only value recommendation (F29) for a numeric tool: "
              "hierarchical partial pooling over the registry default, "
-             "the preset pool and your approved history, with a 95% "
+             "the preset pool and your approved history, with a "
+             "95-percent "
              "credible interval and the Pareto position against the "
              "optimization profiles; a proposal, never applied",
     )

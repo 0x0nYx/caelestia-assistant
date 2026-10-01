@@ -50,10 +50,12 @@ the embedder's projection uses a fixed seed.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from assistant.adapters.caelestia.registry import PRESETS, TOOL_SPECS
+from .phonetics import phonetic_hit_rate
 from .corpus import tool_atoms, tool_document
 from .lexicon import (
     ABSOLUTE_WORDS,
@@ -976,14 +978,31 @@ class Router:
 
         scored: List[Tuple[float, str]] = []
         features: Dict[str, Dict[str, float]] = {}
+        # Capability-1 phonetic channel: per-tool soundex hit rate over the
+        # query's content tokens (0.0 for value-only requests). Lifts
+        # typo'd/misheard atoms without widening the lexical channel.
+        raw_content = [w for w in raw_words if len(w) > 2]
+        _ch_lex: Dict[str, float] = {}
+        _ch_sem: Dict[str, float] = {}
+        _ch_fuzz: Dict[str, float] = {}
         for key, (doc, kind) in self.documents.items():
             lex_raw = (bm25_raw[key] / raw_max) if raw_max > 0 else 0.0
             lex_exp = (bm25_exp[key] / exp_max) if exp_max > 0 else 0.0
             lex = 0.7 * lex_raw + 0.3 * lex_exp
             sem = self.embedder.cosine(q_vec, self.doc_vectors[key])
             fuzz = ngram_similarity(raw, self.name_atoms.get(key, key))
+            phon = phonetic_hit_rate(raw_content,
+                                     self.name_atom_sets.get(key, ()))
+            # additive blend (NOT max): the phonetic lift must not erase
+            # the ngram channel's ordering among same-soundex siblings
+            # ("default" vs "fullscreen" expire timeouts differ exactly
+            # there).
+            fuzz = min(1.0, fuzz + 0.15 * phon)
             noun = 1.0 if key in noun_hits else 0.0
             score = w_lex * lex + w_sem * sem + w_fuzz * fuzz + w_noun * noun + bias
+            _ch_lex[key] = lex
+            _ch_sem[key] = sem
+            _ch_fuzz[key] = fuzz
             # F2: the structural lift (noun floor, pattern floors, coverage
             # floor, Enabled prior, name bigram) is tracked per candidate
             # and exposed as the "struct" feature so the learner's student
@@ -1067,6 +1086,7 @@ class Router:
             scored.append((score, key))
             features[key] = {"lex": round(lex, 4), "sem": round(sem, 4),
                              "fuzz": round(fuzz, 4), "noun": noun,
+                             "phon": round(phon, 4),
                              "cue": round(cue_delta, 4),
                              "coverage": round(coverage, 4),
                              "struct": round(struct_lift, 4)}
@@ -1262,6 +1282,27 @@ class Router:
                 question=f"several settings could match: {names} — which one?",
                 features=features,
             )
+        # Capability-1 ensemble-disagreement abstention (demote-only): when
+        # the lexical, semantic, and fuzzy channels each prefer a DIFFERENT
+        # tool on a strictly-contested top (margin under twice the bar) and
+        # no candidate is specifically addressed (coverage >= 0.5), the
+        # honest verdict is a clarifying question, not a confident route.
+        # This is the confident-wrong killer: it only ever DEMOTES.
+        if (len(candidates) > 1 and candidates[0].kind == "tool"
+                and margin < 3 * state.min_margin
+                and coverage_hits.get(candidates[0].surface, 0.0) < 0.5):
+            tool_keys = [c.surface for c in candidates if c.kind == "tool"]
+            _win = Counter()
+            for ch in (_ch_lex, _ch_sem, _ch_fuzz):
+                _win[max(tool_keys, key=lambda kk: (ch[kk], kk))] += 1
+            if _win[candidates[0].surface] < 2:
+                names = ", ".join(f"'{c.surface}'" for c in candidates[:2])
+                return RouteResult(
+                    verdict="AMBIGUOUS", candidates=candidates,
+                    question=(f"the wording matches several settings "
+                              f"({names}) about equally — which one?"),
+                    features=features,
+                )
         return RouteResult(verdict="ROUTED", candidates=candidates, features=features)
 
 

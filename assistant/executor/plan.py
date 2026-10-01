@@ -41,11 +41,17 @@ class Step:
 @dataclass(frozen=True)
 class ActionPlan:
     """A typed plan the executor can run: argv arrays only, with the
-    safety metadata every caller must own up to."""
+    safety metadata every caller must own up to. The proposal protocol
+    (capability 3) adds the fields a reviewer needs BEFORE approving:
+    evidence for the change, a calibrated confidence (a probability in
+    [0,1], never a vibe), reversibility class, and blast radius."""
     steps: Tuple[Step, ...]
     reversibility: str = "read_only"      # one of Reversibility
     blast_radius: str = "none"            # one of BlastRadius
     description: str = ""
+    # capability-3 proposal protocol:
+    evidence: Tuple[str, ...] = ()        # cited facts behind the change
+    confidence: float = 0.0               # calibrated probability in [0,1]
     # postcondition: argv of a probe to run after the steps; a non-zero
     # exit means the plan did NOT hold and the caller must revert.
     postcondition_argv: Optional[Tuple[str, ...]] = None
@@ -63,8 +69,20 @@ class ActionPlan:
             raise TypeError("ActionPlan needs at least one step")
         if isinstance(self.steps, list):
             object.__setattr__(self, "steps", tuple(self.steps))
+        if not (0.0 <= self.confidence <= 1.0):
+            raise TypeError("confidence is a calibrated probability in [0,1]")
         if (self.reversibility not in ("read_only", "journaled", "reversible")
                 and self.revert is None):
             raise TypeError(
                 "plans that are not read-only/journaled/reversible must "
                 "carry a revert plan")
+        # the autonomy ladder: a mutating plan may only auto-apply when
+        # its calibrated confidence clears the Beta-posterior lower bound
+        # threshold recorded in runner.AUTO_APPLY_FLOOR — and never when
+        # the blast radius is system-wide.
+        if (self.reversibility in ("journaled", "reversible")
+                and self.blast_radius == "system"
+                and self.confidence < 1.0):
+            raise TypeError(
+                "system-blast-radius plans require explicit confirmation "
+                "(confidence cannot substitute for consent)")

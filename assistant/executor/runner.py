@@ -13,14 +13,48 @@ The runner is the one place in assistant/ that imports subprocess
 """
 from __future__ import annotations
 
+import math
 import subprocess
 from typing import Any, Dict
 
 from .plan import ActionPlan, Step
 
-__all__ = ["run", "run_step"]
+__all__ = ["run", "run_step", "auto_apply_allowed", "AUTO_APPLY_FLOOR"]
 
 _RUNNER = {"subprocess": subprocess}  # patchable point for tests
+
+# The auto-apply floor: a journaled/reversible plan may run without a
+# prompt only when its calibrated confidence clears this Beta-posterior
+# lower bound (Beta(1,1) prior, one observed success and no failures —
+# i.e. the LOWEST honest floor; it rises with real approval history as
+# the brain's posterior thickens). Destructive/privileged classes never
+# clear it by construction (plan.py refuses system-blast-radius
+# auto-apply entirely).
+AUTO_APPLY_FLOOR = 0.5
+
+
+def auto_apply_allowed(plan: ActionPlan,
+                       successes: int = 0, failures: int = 0) -> bool:
+    """Beta-posterior lower bound (Wilson-style one-sided 95%) on the
+    true success rate must clear AUTO_APPLY_FLOOR; read-only plans are
+    always allowed; system blast radius is never auto-applied."""
+    if plan.reversibility == "read_only":
+        return True
+    if plan.reversibility in ("confirm", "privileged") \
+            or plan.blast_radius == "system":
+        return False
+    if plan.reversibility not in ("journaled", "reversible"):
+        return False
+    n = successes + failures
+    if n == 0:
+        # pure prior: Beta(1,1) 5th percentile ≈ 0.05 — far below the floor
+        return False
+    z = 1.645
+    phat = successes / n
+    lower = (phat + z * z / (2 * n)
+             - z * math.sqrt((phat * (1 - phat) + z * z / (4 * n)) / n)) \
+        / (1 + z * z / n)
+    return lower >= AUTO_APPLY_FLOOR
 
 
 def run_step(step: Step) -> Dict[str, Any]:

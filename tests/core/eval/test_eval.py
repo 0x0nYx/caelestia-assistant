@@ -145,7 +145,8 @@ class ArenaSmokeTests(unittest.TestCase):
 class RatchetTests(unittest.TestCase):
     """eval/baseline.json floors hold (accuracy suites only)."""
 
-    BASELINE = Path(__file__).parent.parent / "baseline.json"
+    BASELINE = (Path(__file__).resolve().parents[3] / "assistant" /
+                "core" / "eval" / "baseline.json")
 
     @classmethod
     def setUpClass(cls):

@@ -47,7 +47,7 @@ ARGHOSTILE = [h for h in HOSTILE if len(h) < 100_000]
 
 def bridge_op(op: str, payload_key: str):
     def run(value, tmp: Path):
-        from assistant.brain import bridge
+        from assistant.capabilities.brain import bridge
         req = {"op": op}
         if value is not None:
             req[payload_key] = value

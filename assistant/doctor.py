@@ -42,9 +42,9 @@ def locate_upstream() -> Optional[Path]:
     repo exposing shell/plugin/src/Caelestia/Config). None when absent —
     the honest installed-assistant case. Shared by the doctor check and
     the hermetic test so both mean the same thing by 'present'."""
-    from .settings.gen_adapter import CANONICAL_ADAPTER, verify, \
+    from assistant.capabilities.settings.gen_adapter import CANONICAL_ADAPTER, verify, \
         build_registry
-    here = _REPO_ROOT / "assistant" / "settings"
+    here = _REPO_ROOT / "assistant"
     root = build_registry.find_repo_root(here)
     if root is None:
         for sibling in sorted(_REPO_ROOT.parent.iterdir()):
@@ -61,10 +61,10 @@ def _check_gen_adapter() -> Dict[str, Any]:
     checkout; when absent the verdict is UNAVAILABLE — the honest
     installed-assistant case)."""
     try:
-        from .settings.gen_adapter import CANONICAL_ADAPTER, verify, \
+        from assistant.capabilities.settings.gen_adapter import CANONICAL_ADAPTER, verify, \
             build_registry
-        here = _REPO_ROOT / "assistant" / "settings"
-        committed = here / "tools.json"
+        here = _REPO_ROOT / "assistant"
+        committed = here / "adapters" / "caelestia" / "tools.json"
         root = locate_upstream()
         if root is None or not committed.exists():
             # the build convention: the upstream checkout sits as a
@@ -73,7 +73,7 @@ def _check_gen_adapter() -> Dict[str, Any]:
                     "detail": "no committed tools.json or no caelestia "
                               "checkout beside this repo — the "
                               "byte-identity check needs both",
-                    "repro": "python3 -m assistant.settings.gen_adapter "
+                    "repro": "python3 -m assistant.capabilities.settings.gen_adapter "
                              "--verify --repo-root <checkout>"}
         report = verify(CANONICAL_ADAPTER, str(root), committed)
     except Exception as exc:  # noqa: BLE001 — doctor reports, never crashes
@@ -84,35 +84,35 @@ def _check_gen_adapter() -> Dict[str, Any]:
     if report.get("drift"):
         return {"verdict": "FAIL",
                 "detail": f"registry drift: {report.get('drift')}",
-                "repro": "python3 -m assistant.settings.gen_adapter --verify"}
+                "repro": "python3 -m assistant.capabilities.settings.gen_adapter --verify"}
     return {"verdict": "PASS",
             "detail": "committed tools.json is byte-identical to a fresh "
                       "generation from the pinned upstream checkout",
-            "repro": "python3 -m assistant.settings.gen_adapter --verify"}
+            "repro": "python3 -m assistant.capabilities.settings.gen_adapter --verify"}
 
 
 def _check_catalog() -> Dict[str, Any]:
     try:
-        from .settings import catalog
+        from assistant.capabilities.settings import catalog
         problems = catalog.verify()
     except Exception as exc:  # noqa: BLE001
         return {"verdict": "UNAVAILABLE", "detail": f"catalog: {exc}"}
     if problems:
         return {"verdict": "FAIL", "detail": "; ".join(problems),
-                "repro": "python3 -m assistant.settings --gen-catalog "
+                "repro": "python3 -m assistant.capabilities.settings --gen-catalog "
                          "--verify"}
     return {"verdict": "PASS",
             "detail": "generated docs are byte-identical",
-            "repro": "python3 -m assistant.settings --gen-catalog --verify"}
+            "repro": "python3 -m assistant.capabilities.settings --gen-catalog --verify"}
 
 
 def _check_arena_smoke() -> Dict[str, Any]:
     try:
-        from .eval.engine import run_routing
+        from assistant.core.eval.engine import run_routing
         report = run_routing("dev")
     except Exception as exc:  # noqa: BLE001
         return {"verdict": "UNAVAILABLE", "detail": f"arena: {exc}",
-                "repro": "python3 -m assistant.eval routing"}
+                "repro": "python3 -m assistant.core.eval routing"}
     # The shipped behavior includes A2 label fusion (demote-only), so
     # the honest smoke check measures the FUSED rate; the raw router
     # rate rides along in the detail for comparison.
@@ -131,11 +131,11 @@ def _check_arena_smoke() -> Dict[str, Any]:
         source = "2% constant"
         try:
             base = json.loads(
-                (_REPO_ROOT / "eval" / "baseline.json")
+                (_REPO_ROOT / "assistant" / "core" / "eval" / "baseline.json")
                 .read_text(encoding="utf-8"))
         except OSError:
             base = json.loads(
-                (_REPO_ROOT / "assistant" / "eval" / "baseline.json")
+                (_REPO_ROOT / "assistant" / "core" / "eval" / "baseline.json")
                 .read_text(encoding="utf-8"))
         cw_floor = base.get("confident_wrong")
         if cw_floor and cw_floor.get("rate") is not None:
@@ -150,14 +150,14 @@ def _check_arena_smoke() -> Dict[str, Any]:
                                      f"{cw['of_routed']} = {rate:.1%} > "
                                      f"{source}")
     return {"verdict": verdict, "detail": note,
-            "repro": "python3 -m assistant.eval routing"}
+            "repro": "python3 -m assistant.core.eval routing"}
 
 
 def _check_calibration() -> Dict[str, Any]:
     try:
-        from .brain.state import load as load_state
-        from .cortex.cli import LEARN_KEY
-        from .cortex.learn import CortexLearner
+        from assistant.capabilities.brain.state import load as load_state
+        from assistant.core.cli import LEARN_KEY
+        from assistant.core.learn import CortexLearner
     except Exception as exc:  # noqa: BLE001
         return {"verdict": "UNAVAILABLE", "detail": f"learner: {exc}"}
     try:
@@ -209,7 +209,7 @@ def _budget_probe() -> Dict[str, Any]:
         for name in list(saved):
             del sys.modules[name]
         t0 = datetime.now()
-        from .cortex.router import route as _route  # cold: import + build
+        from assistant.core.router import route as _route  # cold: import + build
         _route("make the bar thinner")
         cold_s = (datetime.now() - t0).total_seconds()
         # restore the rest of the saved modules for a clean warm phase

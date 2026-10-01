@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import time
 
-from assistant.cortex.corpus import all_rows, tool_documents
-from assistant.cortex.vectorize import (
+from assistant.core.corpus import all_rows, tool_documents
+from assistant.core.vectorize import (
     LABEL_WEIGHT,
     PpmiEmbedder,
     PpmiSvdEmbedder,

@@ -37,8 +37,8 @@ import sys
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from assistant.cortex.corpus import tool_documents  # noqa: E402
-from assistant.retrieval.indexer import tokenize  # noqa: E402
+from assistant.core.corpus import tool_documents  # noqa: E402
+from assistant.capabilities.retrieval.indexer import tokenize  # noqa: E402
 
 ARENA = REPO / "assistant" / "eval" / "sets" / "routing_dev.json"
 BASELINE = REPO / "assistant" / "eval" / "baseline.json"

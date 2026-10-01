@@ -33,11 +33,11 @@ sys.path.insert(0, str(REPO_ROOT / "tests"))
 
 from prop import for_all, one_of  # noqa: E402
 
-import assistant.settings.planner as planner  # noqa: E402
-import assistant.settings.applier as applier  # noqa: E402
-import assistant.settings.history as history  # noqa: E402
+import assistant.capabilities.settings.planner as planner  # noqa: E402
+import assistant.capabilities.settings.applier as applier  # noqa: E402
+import assistant.capabilities.settings.history as history  # noqa: E402
 
-_TOOLS = json.loads((REPO_ROOT / "assistant" / "settings" /
+_TOOLS = json.loads((REPO_ROOT / "assistant" / "adapters" / "caelestia" /
                      "tools.json").read_text(encoding="utf-8"))["tools"]
 _SETTABLE = [t for t in _TOOLS if not t.get("global_only", False)]
 

@@ -21,7 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from assistant.settings.tests.test_qml_service import (  # noqa: E402
+from assistant.capabilities.settings.tests.test_qml_service import (  # noqa: E402
     QML_PATH,
     TOOLS_JSON,
     TABLE_START,

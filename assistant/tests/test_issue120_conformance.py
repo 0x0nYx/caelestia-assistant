@@ -66,8 +66,8 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
-from assistant.cortex.nlhistory import parse_query as parse_history_query
-from assistant.cortex.nlhistory import plan as plan_history
+from assistant.core.nlhistory import parse_query as parse_history_query
+from assistant.core.nlhistory import plan as plan_history
 
 STATUS = {
     "b1": "IMPLEMENTED", "b2a": "IMPLEMENTED", "b2b": "IMPLEMENTED",
@@ -97,7 +97,7 @@ STATUS = {
 def _settings(argv, state="{}", target=None):
     """Run the settings CLI in-process against a scratch file (or an
     EXISTING target, so history/backup siblings persist across calls)."""
-    from assistant.settings import cli as settings_cli
+    from assistant.capabilities.settings import cli as settings_cli
     if target is None:
         tmp = tempfile.mkdtemp(prefix="iss120-")
         target = Path(tmp) / "shell.json"
@@ -123,7 +123,7 @@ def _mk_target():
 
 def _route(text):
     """The NL front door (cortex route verb) in-process."""
-    from assistant.cortex import pipeline
+    from assistant.core import pipeline
     home = tempfile.mkdtemp(prefix="iss120-home-")
     old = os.environ.get("HOME")
     os.environ["HOME"] = home
@@ -149,7 +149,7 @@ class TableDriftTests(unittest.TestCase):
         """A NOT_IMPLEMENTED row is a PROMISE about the surface set: the
         named capability must not secretly exist. When it ships, the
         row flips in the same commit (the drift detector)."""
-        from assistant.settings import cli as settings_cli
+        from assistant.capabilities.settings import cli as settings_cli
         parser = settings_cli._build_arg_parser()
         flags = {a.option_strings[0]
                  for a in parser._actions if a.option_strings}
@@ -202,7 +202,8 @@ class B1IntentToValidatedCalls(unittest.TestCase):
         """The ConfigObject side lives in the shell's own QML service;
         its function surface is pinned by the settings layer's own
         cross-check suite (skips when the checkout is absent)."""
-        qml = (Path(__file__).resolve().parents[2] / "shell" /
+        qml = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" /
+        "caelestia" / "shell" /
                "services" / "SettingsTools.qml")
         if not qml.exists():
             self.skipTest("SettingsTools.qml absent — QML guards skip")
@@ -265,7 +266,7 @@ class B3Explainability(unittest.TestCase):
         self.assertIn("AppearancePage.qml", out)
 
     def test_graph_affects_lists_curated_upstream(self) -> None:
-        from assistant.graph import build as gbuild, queries as gq
+        from assistant.capabilities.graph import build as gbuild, queries as gq
         r = gq.what_affects(gbuild.build_graph(), "appearance.blur")
         self.assertEqual(r["verdict"], "OK")
         self.assertTrue(r["upstream"])
@@ -374,7 +375,7 @@ class B6Phase3(unittest.TestCase):
         self.assertEqual(STATUS["b6e"], "IMPLEMENTED")
 
     def test_b6a_context_recommendations_surface(self) -> None:
-        from assistant.cortex import context as context_mod
+        from assistant.core import context as context_mod
         view = context_mod.recommend_contextual(
             now=datetime(2026, 9, 28, 12, 0),
             power={"percent": 14.0, "charging": False,
@@ -384,7 +385,7 @@ class B6Phase3(unittest.TestCase):
                       view["findings"][0]["command"])
 
     def test_b6b_profile_algebra_composes(self) -> None:
-        from assistant.settings import cli as settings_cli
+        from assistant.capabilities.settings import cli as settings_cli
         parser = settings_cli._build_arg_parser()
         flags = {a.option_strings[0]
                  for a in parser._actions if a.option_strings}
@@ -393,12 +394,12 @@ class B6Phase3(unittest.TestCase):
             self.assertIn(flag, flags)
 
     def test_b6c_schedules_are_pull_based(self) -> None:
-        from assistant.cortex import schedules
+        from assistant.core import schedules
         self.assertTrue(hasattr(schedules, "evaluate"))
         self.assertTrue(hasattr(schedules, "file_firing"))
 
     def test_b6d_monitor_report_targets_override_layers(self) -> None:
-        from assistant.settings import monitors
+        from assistant.capabilities.settings import monitors
         tmp, target = _mk_target()
         resolved = monitors.resolve_target(target, "DP-1")
         self.assertEqual(resolved.name, target.name)
@@ -407,7 +408,7 @@ class B6Phase3(unittest.TestCase):
         self.assertTrue(any(r["name"] == "setMonitor" for r in rows))
 
     def test_b6e_personalization_files_into_the_ledger(self) -> None:
-        from assistant.cortex import personalize
+        from assistant.core import personalize
         mined = personalize.mine([
             {"id": i, "at": f"2026-09-28T1{i}:00:00",
              "label": "preset: battery-saver", "ops": []}

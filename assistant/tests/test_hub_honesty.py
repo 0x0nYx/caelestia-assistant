@@ -45,7 +45,7 @@ class UncalibratedConfidenceTests(unittest.TestCase):
     def _cold_result(self):
         import tempfile
         from pathlib import Path
-        from assistant.cortex.pipeline import process
+        from assistant.core.pipeline import process
         with tempfile.TemporaryDirectory() as tmp:
             return process("make the bar taller",
                            file_path=Path(tmp) / "shell.json")
@@ -56,14 +56,14 @@ class UncalibratedConfidenceTests(unittest.TestCase):
         self.assertIs(False, result.calibrated)
 
     def test_card_renders_the_honest_label(self):
-        from assistant.cortex import cli as cortex_cli
+        from assistant.core import cli as cortex_cli
         result = self._cold_result()
         result.calibrated = False
         lines = cortex_cli._render_turn(result)
         self.assertTrue(any("uncalibrated (no history)" in ln for ln in lines))
 
     def test_calibrated_card_shows_the_number(self):
-        from assistant.cortex import cli as cortex_cli
+        from assistant.core import cli as cortex_cli
         result = self._cold_result()
         result.calibrated = True
         result.confidence = 0.83

@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import math
 
-from assistant.cortex.corpus import all_rows, tool_documents
-from assistant.cortex.vectorize import (
+from assistant.core.corpus import all_rows, tool_documents
+from assistant.core.vectorize import (
     PpmiEmbedder,
     _count_pairs,
     _corpus_rows,
@@ -51,7 +51,7 @@ def build_components(dim=64, seed=0x20260926, power_iters=2):
     qc = len(q[0])
     aq_cols = [_sparse_matvec(ppmi, [q[r][c] for r in range(n)]) for c in range(qc)]
     aq = [[aq_cols[c][r] for c in range(qc)] for r in range(n)]
-    from assistant.genius import linalg
+    from assistant.capabilities.genius import linalg
     b = linalg.matmul(linalg.transpose(q), aq)
     eigvals, w = _jacobi_eigh(b)
     return vocab, index, q, w, eigvals
@@ -87,7 +87,7 @@ def topk(vectors, index, rows, doc_vecs, ks=(1, 3, 5)):
     n = 0
 
     def embed(text):
-        from assistant.cortex.vectorize import tokenize
+        from assistant.core.vectorize import tokenize
         from collections import Counter as C
         toks = tokenize(text)
         counts = C(toks)
@@ -156,7 +156,7 @@ def main() -> None:
         vectors, kept = vectors_for(vocab, q, w, eigvals, power, drop_first, use_abs)
 
         def embed_doc(doc_text):
-            from assistant.cortex.vectorize import tokenize
+            from assistant.core.vectorize import tokenize
             from collections import Counter as C
             toks = tokenize(doc_text)
             counts = C(toks)

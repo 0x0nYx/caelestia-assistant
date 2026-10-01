@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from assistant.brain import bridge as brain_bridge  # noqa: E402
+from assistant.capabilities.brain import bridge as brain_bridge  # noqa: E402
 
 WORDS = ["bar", "scale", "dock", "notifications", "cairo", "\U0001f600",
          "null", "None", "true", "0", "-1", "1e999", "nan", "import",

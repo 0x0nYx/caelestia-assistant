@@ -26,11 +26,11 @@ import unittest
 from pathlib import Path
 
 from assistant import fixtures
-from assistant.brain.ledger import Ledger
-from assistant.brain import state as brain_state
-from assistant.brain.personal.graph import decay_weights, links
-from assistant.brain.personal.vault import scan
-from assistant.diagnostics import telemetry
+from assistant.capabilities.brain.ledger import Ledger
+from assistant.capabilities.brain import state as brain_state
+from assistant.capabilities.brain.personal.graph import decay_weights, links
+from assistant.capabilities.brain.personal.vault import scan
+from assistant.capabilities.diagnostics import telemetry
 
 
 class ShellConfigFixtureTests(unittest.TestCase):

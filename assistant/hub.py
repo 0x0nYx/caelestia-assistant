@@ -45,53 +45,53 @@ USAGE = __doc__
 # (tests inject these); the second element is keep_name (the module
 # parses its own subcommand token).
 ROUTES = {
-    "diagnose": ("assistant.diagnostics.cli:main", True),
-    "selfcheck": ("assistant.diagnostics.cli:main", True),
+    "diagnose": ("assistant.capabilities.diagnostics.cli:main", True),
+    "selfcheck": ("assistant.capabilities.diagnostics.cli:main", True),
     "doctor": ("assistant.doctor:main", True),
     # rulepack: the signed rule-pack surface (export/import/list/
     # render — exponential-build-3 F1; same parser as diagnose)
-    "rulepack": ("assistant.diagnostics.cli:main", True),
-    "search": ("assistant.retrieval.cli:main", True),
-    "scan": ("assistant.scan.cli:main", False),
-    "ask": ("assistant.pipeline:main", False),
-    "issue": ("assistant.issues.cli:main", False),
-    "settings": ("assistant.settings.cli:main", False),
-    "brain": ("assistant.brain.cli:main", False),
+    "rulepack": ("assistant.capabilities.diagnostics.cli:main", True),
+    "search": ("assistant.capabilities.retrieval.cli:main", True),
+    "scan": ("assistant.capabilities.scan.cli:main", False),
+    "ask": ("assistant.core.ask_pipeline:main", False),
+    "issue": ("assistant.capabilities.issues.cli:main", False),
+    "settings": ("assistant.capabilities.settings.cli:main", False),
+    "brain": ("assistant.capabilities.brain.cli:main", False),
     # brief/tidy are brain subcommands surfaced at the top level too
     "brief": (lambda _argv=None: import_module(
-        "assistant.brain.cli").main(["brief"]), False),
-    "tidy": ("assistant.brain.cli:main", False),
-    "api": ("assistant.brain.bridge:main", False),
+        "assistant.capabilities.brain.cli").main(["brief"]), False),
+    "tidy": ("assistant.capabilities.brain.cli:main", False),
+    "api": ("assistant.capabilities.brain.bridge:main", False),
     # cortex: chat/route keep their own subcommand token (argparse owns it)
-    "chat": ("assistant.cortex.cli:main", True),
-    "route": ("assistant.cortex.cli:main", True),
-    "cortex": ("assistant.cortex.cli:main", False),
+    "chat": ("assistant.core.cli:main", True),
+    "route": ("assistant.core.cli:main", True),
+    "cortex": ("assistant.core.cli:main", False),
     # the unified pending-decisions inbox: one ranked view over the
     # ledger, gap clusters, the pending plan and agent consents
-    "inbox": ("assistant.cortex.inbox:main", False),
+    "inbox": ("assistant.core.inbox:main", False),
     # one `why` over every engine's own explanation output (walks back
     # through whichever engine produced the last surfaced item)
-    "why": ("assistant.cortex.explain_unified:main", False),
+    "why": ("assistant.core.explain_unified:main", False),
     # genius: the universal intelligence layer (its own subcommands;
     # `do` is the one-word front door)
-    "do": ("assistant.genius.cli:main", False),
-    "genius": ("assistant.genius.cli:main", False),
+    "do": ("assistant.capabilities.genius.cli:main", False),
+    "genius": ("assistant.capabilities.genius.cli:main", False),
     # agent: the consent-gated orchestrator over every layer
-    "agent": ("assistant.agent.cli:main", False),
+    "agent": ("assistant.capabilities.agent.cli:main", False),
     # shellkb: the shell employee (read-only knowledge of the shell's
     # own CLI/configs/deps; everything it prints is SUGGESTED_NOT_EXECUTED)
-    "shellkb": ("assistant.shellkb.cli:main", False),
+    "shellkb": ("assistant.capabilities.shellkb.cli:main", False),
     # capabilities: the per-install manifest card (read-only listing)
     "capabilities": (lambda _argv=None: (_print_card(), 0)[1], False),
     # eval: the measurement arena (exponential-build-5 F1). Lazily:
     # the arena pulls the full router/diagnostics stack and must never
     # sit on the cold-start path of other verbs.
-    "eval": ("assistant.eval.cli:main", False),
+    "eval": ("assistant.core.eval.cli:main", False),
     # graph: the shell knowledge graph (exponential-build-5 F12) —
     # rebuildable from tools.json + the curated consequences table +
     # the diagnostic rules; read-only queries with provenance. Lazy for
     # the same reason as eval: it pulls the settings + genius stacks.
-    "graph": ("assistant.graph.cli:main", True),
+    "graph": ("assistant.capabilities.graph.cli:main", True),
 }
 
 
@@ -109,7 +109,7 @@ def _resolve(verb: str):
 
 
 def _print_card() -> None:
-    from . import capabilities as capabilities_mod  # lazy (R4)
+    from .core import features as capabilities_mod  # lazy (R4)
     print(capabilities_mod.render())
 
 
@@ -132,7 +132,7 @@ def suggest_verb(cmd: str) -> Optional[Tuple[str, int]]:
     only when exactly one verb is closest (ties are abstentions, mirroring
     the router's unique-correction rule); ``None`` otherwise.
     """
-    from .cortex.lexicon import levenshtein  # lazy: cold path stays cold
+    from assistant.core.lexicon import levenshtein  # lazy: cold path stays cold
     if len(cmd) < _SUGGEST_MIN_LEN or not cmd.isalpha():
         return None
     lowered = cmd.lower()

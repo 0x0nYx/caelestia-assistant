@@ -1,5 +1,5 @@
 import sys
 
-from .hub import _run
+from assistant.hub import _run
 
 sys.exit(_run())

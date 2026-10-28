@@ -142,7 +142,8 @@ class TestCortexDelegation(unittest.TestCase):
 
 class TestSafetyPolicy(unittest.TestCase):
     def test_genius_sources_have_no_executor_or_network(self):
-        genius_dir = Path(__file__).resolve().parent.parent
+        genius_dir = (Path(__file__).resolve().parents[2]
+                      / "assistant" / "capabilities" / "genius")
         for py in sorted(genius_dir.glob("*.py")):
             src = py.read_text()
             for banned_import in ("subprocess", "socket", "urllib", "requests",

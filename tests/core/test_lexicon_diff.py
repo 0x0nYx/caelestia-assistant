@@ -285,7 +285,7 @@ class EmbedderSeamTests(unittest.TestCase):
         blob = repr([[round(x, 12) for x in e.embed(p)] for p in probes])
         self.assertEqual(
             hashlib.sha256(blob.encode()).hexdigest()[:16],
-            "f75efd7e12d8a82d")  # corpus spans the generated registry; the pin
+            "a4de5c5edd794224")  # corpus spans the generated registry; the pin
         # updates deliberately on every registry resync (not a refactor signal)
 
 

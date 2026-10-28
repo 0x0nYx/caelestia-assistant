@@ -231,7 +231,7 @@ class AmbiguityTests(unittest.TestCase):
             [
                 "setBarScale", "setDockIconSize", "setRoundingScale", "setSpacingScale",
                 "setPaddingScale", "setFontScale", "setBorderThickness", "setLauncherMaxShown",
-                "setNotifsMaxPopups", "setNotifsMaxNotifs",
+                "setNotifsMaxPopups", "setNotifsMaxNotifs", "setDefaultExpireTimeout",
             ],
         )
         self.assertIn("which setting did you mean?", result["question"])

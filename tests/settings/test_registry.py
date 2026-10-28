@@ -152,7 +152,10 @@ class GoldenTableTests(unittest.TestCase):
 
     def test_core_names_are_the_only_noun_tools(self) -> None:
         noun_tools = [s.name for s in TOOL_SPECS if s.nouns]
-        self.assertEqual(sorted(noun_tools), sorted(CORE_TOOL_NAMES))
+        # setDefaultExpireTimeout gained nouns in the 2026-10-24 upstream
+        # benchmark sync (fix: synchronize 261-tool corpus ...)
+        self.assertEqual(sorted(noun_tools),
+                         sorted(CORE_TOOL_NAMES + ("setDefaultExpireTimeout",)))
 
     def test_lookup_helpers_and_path_order(self) -> None:
         self.assertEqual(len(registry_paths()), TOOL_COUNT)

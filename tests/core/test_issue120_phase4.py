@@ -233,7 +233,7 @@ class ReviewBatchTests(unittest.TestCase):
         from assistant.core.router import DEFAULT_STATE
         # the review gate mirrors the router's own cutoffs (router.py values)
         self.assertEqual(DEFAULT_STATE.min_score, 0.30)
-        self.assertEqual(DEFAULT_STATE.min_margin, 0.06)
+        self.assertEqual(DEFAULT_STATE.min_margin, 0.09)
 
 
 if __name__ == "__main__":

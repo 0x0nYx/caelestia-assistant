@@ -40,7 +40,7 @@
  "recorded": "2026-09-30",
  "confident_wrong": {
   "count": 8,
-  "of_routed": 83,
-  "rate": 0.0964
+  "of_routed": 67,
+  "rate": 0.1194
  }
 }

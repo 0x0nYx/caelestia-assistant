@@ -148,7 +148,7 @@
   {
    "id": "np25",
    "text": "set the ambient opacity to 0.8",
-   "expect_tool": "setAmbientOpacity",
+   "expect_tool": "setDashboardAmbientOpacity",
    "expect_value": 0.8
   },
   {

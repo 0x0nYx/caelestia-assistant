@@ -47,7 +47,8 @@ Singleton {
         if (!argv || argv.length < 2 || String(argv[0]) !== "caelestia")
             return false;
         var sub = String(argv[1]);
-        if (caelestiaReadOnly.indexOf(sub) !== -1)
+        // Bare form only: any trailing argument falls back to confirmation.
+        if (caelestiaReadOnly.indexOf(sub) !== -1 && argv.length === 2)
             return true; // `caelestia version`, `caelestia help`
         if (sub === "scheme" && argv.length === 3) {
             // bare read forms only: `caelestia scheme list`, `caelestia scheme get`

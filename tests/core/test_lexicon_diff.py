@@ -285,7 +285,7 @@ class EmbedderSeamTests(unittest.TestCase):
         blob = repr([[round(x, 12) for x in e.embed(p)] for p in probes])
         self.assertEqual(
             hashlib.sha256(blob.encode()).hexdigest()[:16],
-            "588d52c5fc0ed311")  # corpus spans the generated registry; the pin
+            "f75efd7e12d8a82d")  # corpus spans the generated registry; the pin
         # updates deliberately on every registry resync (not a refactor signal)
 
 
@@ -399,7 +399,7 @@ class GenAdapterTests(unittest.TestCase):
         root = self._shell_root()
         if root is None:
             self.skipTest("shell/ tree absent — adapter verify skips")
-        committed = root / "assistant" / "adapters" / "caelestia" / "tools.json"
+        committed = Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json"
         report = gen_adapter.verify("cpp-headers", str(root), committed)
         self.assertTrue(report["identical"])
         self.assertEqual(report["schema_problems"], [])
@@ -424,7 +424,7 @@ class GenAdapterTests(unittest.TestCase):
         root = self._shell_root()
         if root is None:
             self.skipTest("shell/ tree absent")
-        committed = root / "assistant" / "adapters" / "caelestia" / "tools.json"
+        committed = Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json"
         before = committed.read_bytes()
         out = io.StringIO()
         with redirect_stdout(out):

@@ -3,7 +3,7 @@
 shell/services/CommandGate.qml is the validated gate every state-changing
 tool call the sidebar's model can request must pass through — the same
 allow-list / preview / explicit-confirm shape SettingsTools.qml gives the
-settings tools. The sidebar (shell/modules/sidebar/AiAssistant.qml) wires
+settings tools. The sidebar (opt-in/sidebar-legacy/AiAssistantLegacy.qml) wires
 `caelestia_command`, `open_app` and `set_timer` through it and renders an
 approval card; nothing state-changing may run from raw model output.
 
@@ -39,8 +39,13 @@ import unittest
 from pathlib import Path
 from typing import List
 
-QML_PATH = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
-            "shell" / "modules" / "sidebar" / "AiAssistant.qml")
+_ADAPTER = Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia"
+_LEGACY_SIDEBAR = _ADAPTER / "opt-in" / "sidebar-legacy" / "AiAssistantLegacy.qml"
+# The monolithic sidebar is an opt-in file outside the shell-mirroring tree;
+# fall back to its pre-isolation location so stacked branches stay testable.
+QML_PATH = next((p for p in (_LEGACY_SIDEBAR,
+                             _ADAPTER / "shell" / "modules" / "sidebar" / "AiAssistant.qml")
+                 if p.is_file()), _LEGACY_SIDEBAR)
 GATE_PATH = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" /
             "shell" / "services" / "CommandGate.qml")
 
@@ -197,7 +202,7 @@ class CommandGateGuardTests(unittest.TestCase):
 
     def test_gate_itself_executes_nothing(self) -> None:
         for banned in ("Process", "runAgentCommand", "Qt.createQmlObject",
-                       "XMLHttpRequest"):
+                       "XMLHttpRequest"):  # caelestia-audit: allow-network
             self.assertNotIn(banned, self.gate,
                               f"the gate must never execute; found {banned}")
 

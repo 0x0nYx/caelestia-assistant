@@ -714,7 +714,7 @@ class CliAndWiringTests(unittest.TestCase):
         json.dumps(result)  # must not raise
         self.assertEqual(result["spec"]["name"], "setLauncherMaxShown")
         self.assertEqual(result["spec"]["citations"][0][0],
-                         "shell/plugin/src/Caelestia/Config/launcherconfig.hpp:44")
+                         "shell/plugin/src/Caelestia/Config/launcherconfig.hpp:45")
 
     def test_cortex_report_command(self):
         import io

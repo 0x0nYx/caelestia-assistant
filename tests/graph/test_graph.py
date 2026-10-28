@@ -48,9 +48,11 @@ class BuildTests(unittest.TestCase):
         # Node counts are DERIVED from the committed tools.json (the single
         # source of truth), never re-pinned by hand: a deliberate registry
         # re-pin must not desync this test from the artifact it describes.
-        meta = json.loads(
+        tools_data = json.loads(
             (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json")
-            .read_text(encoding="utf-8")).get("meta", {})
+            .read_text(encoding="utf-8"))
+        meta = tools_data.get("meta", {})
+        explain_rules_count = len(tools_data.get("explain_rules", []))
         g = gbuild.build_graph()
         types = {}
         for n in g["nodes"]:
@@ -63,7 +65,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(types["not_exposed"],
                          meta.get("not_exposed_count"))  # every hidden path
         self.assertEqual(types["preset"], 5)
-        self.assertEqual(types["explain_rule"], 11)
+        self.assertEqual(types["explain_rule"], explain_rules_count)
         self.assertGreaterEqual(types["file"], 100)  # citation targets
         self.assertGreaterEqual(types["group"], 20)
         kinds = {}
@@ -76,12 +78,12 @@ class BuildTests(unittest.TestCase):
             prov = e["provenance"]
             self.assertIn("source", prov)  # every edge is auditable
             kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
-        self.assertEqual(kinds["sets"], 272)          # tool -> config
+        self.assertEqual(kinds["sets"], meta.get("tool_count"))          # tool -> config
         self.assertEqual(kinds["affects"], 5)          # the curated table
-        self.assertEqual(kinds["explained_by"], 11)
-        self.assertEqual(kinds["applies"], 27)          # 5 presets' calls
+        self.assertEqual(kinds["explained_by"], explain_rules_count)
+        self.assertEqual(kinds["applies"], 28)          # 5 presets' calls
         self.assertGreaterEqual(kinds["cites"], 100)
-        self.assertGreaterEqual(kinds["member_of"], 272)
+        self.assertGreaterEqual(kinds["member_of"], meta.get("tool_count"))
 
     def test_every_affects_edge_carries_citation_and_content(self) -> None:
         g = gbuild.build_graph()

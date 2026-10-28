@@ -298,7 +298,7 @@ class CitationDriftGuardTests(unittest.TestCase):
         from assistant.capabilities.settings import build_registry
         data = build_registry.build(str(REPO_ROOT))
         rendered = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-        committed = (REPO_ROOT / "assistant" / "adapters" / "caelestia" / "tools.json").read_text(
+        committed = (Path(__file__).resolve().parents[2] / "assistant" / "adapters" / "caelestia" / "tools.json").read_text(
             encoding="utf-8")
         self.assertEqual(
             rendered, committed,

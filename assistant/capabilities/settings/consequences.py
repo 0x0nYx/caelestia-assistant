@@ -55,7 +55,7 @@ EDGES: Tuple[Dict[str, Any], ...] = (
         "effect": "Nexus toggles it off with you (the toggle handler "
                   "sets blur = false when transparency goes off)",
         "effect_value": False,
-        "citation": "shell/modules/nexus/pages/wallandstyle/AppearancePage.qml:132-137",
+        "citation": "shell/modules/nexus/pages/wallandstyle/AppearancePage.qml:172-177",
         "claimed_content": "onToggled: { GlobalConfig.appearance.transparency"
                            ".enabled = checked if (!checked) { "
                            "GlobalConfig.appearance.blur = false } }",
@@ -70,7 +70,7 @@ EDGES: Tuple[Dict[str, Any], ...] = (
         "effect": "INERT: the blur regions gate on transparency.enabled "
                   "&& blur together, so blur does nothing until "
                   "transparency is re-enabled",
-        "citation": "shell/modules/drawers/blur/BlurOffsets.qml:17",
+        "citation": "shell/modules/drawers/blur/BlurOffsets.qml:18",
         "claimed_content": "isActive: target && target.visible && target."
                            "opacity > 0 && GlobalConfig.appearance."
                            "transparency.enabled && GlobalConfig."

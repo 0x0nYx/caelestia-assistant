@@ -178,7 +178,9 @@ def main(argv: Optional[List[str]] = None) -> int:
               file=sys.stderr)
         return 2
 
-    out = Path(args.output) if args.output else here / "tools.json"
+    canonical_target = here.parents[1] / "adapters" / "caelestia" / "tools.json"
+    default_out = canonical_target if canonical_target.exists() else here / "tools.json"
+    out = Path(args.output) if args.output else default_out
 
     if args.verify:
         report = verify(args.adapter, str(root), out)

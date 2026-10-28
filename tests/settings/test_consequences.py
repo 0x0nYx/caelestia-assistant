@@ -113,7 +113,7 @@ class ProjectionTests(unittest.TestCase):
                    if d["edge"] == "transparency-off-forces-blur-off")
         self.assertEqual(row["citation"],
                          "shell/modules/nexus/pages/wallandstyle/"
-                         "AppearancePage.qml:132-137")
+                         "AppearancePage.qml:172-177")
         self.assertEqual(row["confidence"], "high")
 
     def test_transparency_on_fires_nothing(self) -> None:

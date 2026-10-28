@@ -102,8 +102,8 @@ def explain_diagnostics(text: str) -> Dict[str, Any]:
             "confidence": rule.get("confidence")}
 
 
-def explain_cortex(text: str, state: Optional[Dict[str, Any]] = None
-                   ) -> Dict[str, Any]:
+def explain_cortex(text: str, state: Optional[Dict[str, Any]] = None,
+                   file_path: Optional[Any] = None) -> Dict[str, Any]:
     """The router's own path for one request: pipeline result rendered by
     dispatch's own render_answer (the same chat card the sidebar shows),
     plus the conformal calibrator's own verdict sentence for this score."""
@@ -115,7 +115,8 @@ def explain_cortex(text: str, state: Optional[Dict[str, Any]] = None
     state = state if isinstance(state, dict) else {}
     learner = CortexLearner(state.get("cortex_learn")) \
         if state.get("cortex_learn") else None
-    result = process(text, session=SessionState(), learner=learner)
+    result = process(text, session=SessionState(), learner=learner,
+                     file_path=file_path)
     lines = dispatch_mod.render_answer(result)
     citations: List[str] = list(dict.fromkeys(result.evidence or []))
     conformal_note: Optional[str] = None

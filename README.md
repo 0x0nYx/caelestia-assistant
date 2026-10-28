@@ -1,5 +1,76 @@
 # caelestia-assistant
 
+An offline-first assistant for [Caelestia](https://github.com/ladybug-me/caelestia-kde),
+the KDE Plasma 6 desktop shell - contributed to the Caelestia community
+plugin store.
+
+| | |
+| --- | --- |
+| Plugin id | `caelestia-assistant` |
+| Type | `quickshell` (Quickshell QML integration surfaces + a Python CLI core) |
+| Version | 0.1.0 (tracks upstream `assistant.__version__`) |
+| License | GPL-3.0-or-later |
+| Upstream | [0x0nYx/caelestia-assistant](https://github.com/0x0nYx/caelestia-assistant) |
+
+## What ships in this folder
+
+This plugin folder is the upstream `caelestia-assistant` repository, migrated
+verbatim:
+
+- `assistant/` - the Python package. CLI entry `caelestia-assist`
+  (Python 3.12+, stdlib only, no required dependencies; optional numpy /
+  onnxruntime accelerators exist, each with an identical-result pure-Python
+  fallback).
+- `assistant/adapters/caelestia/shell/services/` - the `SettingsTools` /
+  `CommandGate` services. They import the shell's own QML module tree
+  (`qs.services`, `Caelestia.Config`, ...). The root `qmldir` registers them
+  as singletons and `main.qml` exposes them through lazy accessors.
+- `assistant/adapters/caelestia/opt-in/sidebar-legacy/AiAssistantLegacy.qml` -
+  the original monolithic sidebar module, kept as an opt-in integration
+  target only. It deliberately lives outside any path that mirrors the shell
+  tree and under a different file name, so copying the adapter files can
+  never overwrite the shell's own `modules/sidebar/AiAssistant.qml` or its
+  modular `ChatStore.qml` / `ChatMessage.qml`. It predates that modular
+  sidebar and is not wired into anything by this plugin.
+- `tests/`, `scripts/` - the upstream unittest suite (2,700+ tests) and dev
+  tooling; `pyproject.toml` - upstream packaging (`pip install .`).
+
+The manifest sets no `ui` entry, so the shell's `PluginLoader` falls back to
+the root `main.qml`. That file is inert: it only exposes `commandGate()` /
+`settingsTools()` accessors, and it never references the legacy sidebar. The
+Python core is the product; the QML surfaces are opt-in integration files,
+installed per the upstream documentation.
+
+`.caelestia-audit-ignore` documents, line by line, the store safety
+scanner's findings inside migrated source: every one is string data
+(safety-classification vocabularies, rulepack prose, test assertion
+targets) or the sidebar's opt-in, user-keyed provider calls - reviewed in
+the migration audit; none of it performs a surprise download or a
+privileged action.
+
+## `caelestia-assist` on `$PATH`
+
+Store installation extracts the plugin to
+`~/.config/caelestia/plugins/caelestia-assistant/`, which is not on `$PATH`.
+This plugin ships no post-install hook, so link the launcher once:
+
+```sh
+mkdir -p ~/.local/bin
+ln -sf ~/.config/caelestia/plugins/caelestia-assistant/assistant/bin/caelestia-assist \
+       ~/.local/bin/caelestia-assist
+```
+
+The launcher resolves symlinks, so it finds the `assistant` package from the
+link. `~/.local/bin` must be on `$PATH` in your shell and in the session that
+starts Quickshell; otherwise call the launcher by its absolute path from
+Quickshell `Process` runners.
+
+The upstream README follows, verbatim.
+
+---
+
+# caelestia-assistant
+
 Offline-first assistant for [caelestia-kde](https://github.com/ladybug-me/caelestia-kde):
 deterministic diagnostics, learned routing, natural-language settings editing
 (issue #120), stream scanning, and a consent-gated agent — **Python stdlib

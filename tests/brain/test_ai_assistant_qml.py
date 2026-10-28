@@ -1,6 +1,6 @@
 """Parity guards: the sidebar's caelestia_genius_* tools vs the bridge ops.
 
-The sidebar's system-prompt registry (shell/modules/sidebar/AiAssistant.qml)
+The sidebar's system-prompt registry (opt-in/sidebar-legacy/AiAssistantLegacy.qml)
 describes five deterministic compute tools backed by the assistant JSON
 bridge's genius ops (assistant/brain/bridge.py). These tests pin the two
 halves together the same way the settings suite pins tools.json to
@@ -28,8 +28,13 @@ from pathlib import Path
 from assistant.capabilities.brain import bridge
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-QML_PATH = (REPO_ROOT / "assistant" / "adapters" / "caelestia" / "shell" /
-            "modules" / "sidebar" / "AiAssistant.qml")
+_ADAPTER = REPO_ROOT / "assistant" / "adapters" / "caelestia"
+_LEGACY_SIDEBAR = _ADAPTER / "opt-in" / "sidebar-legacy" / "AiAssistantLegacy.qml"
+# The monolithic sidebar is an opt-in file outside the shell-mirroring tree;
+# fall back to its pre-isolation location so stacked branches stay testable.
+QML_PATH = next((p for p in (_LEGACY_SIDEBAR,
+                             _ADAPTER / "shell" / "modules" / "sidebar" / "AiAssistant.qml")
+                 if p.is_file()), _LEGACY_SIDEBAR)
 
 NL = chr(92) + "n"      # literal backslash-n, as the file holds it
 EQ = chr(92) + '"'      # literal backslash-quote

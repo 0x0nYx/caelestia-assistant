@@ -81,7 +81,8 @@ class CliPlainTests(unittest.TestCase):
         self.assertIn("record 1:", out)
         self.assertIn("  tool: setBarScale", out)
         # every tool appears as its own record
-        self.assertEqual(out.count("record "), 272)
+        from assistant.adapters.caelestia.registry import TOOL_COUNT
+        self.assertEqual(out.count("record "), TOOL_COUNT)
 
     def test_env_var_only_activation(self) -> None:
         import os

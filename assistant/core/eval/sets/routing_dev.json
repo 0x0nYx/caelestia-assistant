@@ -423,14 +423,16 @@
    "id": "r60",
    "text": "enable ambient color",
    "accept": [
-    "setAmbientColor"
+    "setDashboardAmbientColor",
+    "setOverviewAmbientColor"
    ]
   },
   {
    "id": "r61",
    "text": "lower the ambient opacity",
    "accept": [
-    "setAmbientOpacity"
+    "setDashboardAmbientOpacity",
+    "setOverviewAmbientOpacity"
    ]
   },
   {
@@ -665,7 +667,8 @@
    "id": "m05",
    "text": "make the ambient background more opaque",
    "accept": [
-    "setAmbientOpacity"
+    "setDashboardAmbientOpacity",
+    "setOverviewAmbientOpacity"
    ]
   },
   {

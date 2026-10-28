@@ -66,7 +66,11 @@ class CortexEngineTests(unittest.TestCase):
     def test_router_path_and_conformal_interval(self) -> None:
         state = {"conformal": {"scores": [0.9, 0.92, 0.88, 0.91, 0.93,
                                           0.9, 0.89]}}
-        result = explain_cortex("make the bar thinner", state=state)
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "shell.json"
+            target.write_text("{}", encoding="utf-8")
+            result = explain_cortex("make the bar thinner", state=state,
+                                    file_path=target)
         self.assertEqual(result["engine"], "cortex")
         self.assertTrue(result["headline"].startswith("PLAN"))
         # the conformal verdict's own guarantee sentence rides along

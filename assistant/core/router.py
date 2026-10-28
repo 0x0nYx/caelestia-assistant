@@ -258,7 +258,7 @@ class RouterState:
     w_noun: float = 0.18
     bias: float = 0.04
     min_score: float = 0.30
-    min_margin: float = 0.06
+    min_margin: float = 0.09
     temperature: float = 0.45
 
     def weights_vector(self) -> Tuple[float, float, float, float, float]:

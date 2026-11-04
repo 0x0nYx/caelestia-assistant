@@ -29,3 +29,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Bash test harness
         run: bash tests/test_assistant.sh
+
+  wheel-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        run: python -m pip install build && python -m build --wheel
+      - name: Install wheel into a clean venv
+        run: python -m venv /tmp/v && /tmp/v/bin/pip install dist/*.whl
+      - name: Exercise installed entry point outside the checkout
+        working-directory: /
+        run: |
+          /tmp/v/bin/caelestia-assist selfcheck
+          /tmp/v/bin/caelestia-assist search wallpaper
+          /tmp/v/bin/caelestia-assist settings "make my bar thinner"

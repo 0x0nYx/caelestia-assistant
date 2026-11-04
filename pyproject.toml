@@ -41,4 +41,6 @@ version = { attr = "assistant.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["assistant*"]
-exclude = ["assistant/data/corpus", "assistant/data/index"]
+
+[tool.setuptools.package-data]
+assistant = ["**/*.json", "**/*.md", "**/*.qml", "**/*.sha256", "bin/*"]
